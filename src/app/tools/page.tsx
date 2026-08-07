@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { 
-  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Download 
+  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info 
 } from 'lucide-react';
 
 export default function ToolsPage() {
@@ -50,7 +50,7 @@ export default function ToolsPage() {
           priceWeek: '50.000',
           priceMonth: '150.000',
           priceLifetime: '300.000',
-          description: 'Tự quăng cần câu, giải minigame mũi tên, tự ngồi lên thuyền và tự động dọn túi đồ đầy.',
+          description: 'Tự quăng cần câu, giải minigame mũi tên, tự ngồi lên thuyền, thông báo khi có captcha, đổi đồ ăn.',
           downloadLink: ''
         }
       ]);
@@ -154,10 +154,12 @@ export default function ToolsPage() {
                     </span>
                   </div>
 
-                  {/* Tên & Mô tả ngắn */}
+                  {/* Tên & Mô tả cắt gọn đúng 1 dòng ở ngoài */}
                   <div>
                     <h3 className="text-lg font-bold text-white">{tool.name}</h3>
-                    <p className="text-xs text-gray-400 mt-1 line-clamp-2">{tool.description || 'Chưa có mô tả sản phẩm.'}</p>
+                    <p className="text-xs text-gray-400 mt-1 line-clamp-1 truncate" title={tool.description}>
+                      {tool.description || 'Chưa có mô tả sản phẩm.'}
+                    </p>
                   </div>
 
                   {/* Bảng Giá */}
@@ -202,7 +204,7 @@ export default function ToolsPage() {
           </div>
         )}
 
-        {/* 1. MODAL XEM CHI TIẾT TOOL (HIỆN TOÀN BỘ MÔ TẢ & GIAO DIỆN) */}
+        {/* 1. MODAL XEM CHI TIẾT TOOL (HIỆN TOÀN BỘ MÔ TẢ ĐẦY ĐỦ) */}
         {selectedToolForDetail && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
             <div className="bg-[#0F141C] border border-[#1A2332] w-full max-w-2xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -218,7 +220,7 @@ export default function ToolsPage() {
                   <Info className="w-6 h-6" />
                 </div>
                 <div>
-                  <span className="text-[10px] text-cyanGlow font-bold uppercase tracking-wider">GIAO DIỆN SẢN PHẨM</span>
+                  <span className="text-[10px] text-cyanGlow font-bold uppercase tracking-wider">THÔNG TIN CHI TIẾT SẢN PHẨM</span>
                   <h2 className="text-xl font-black text-white">{selectedToolForDetail.name}</h2>
                 </div>
               </div>
@@ -235,9 +237,9 @@ export default function ToolsPage() {
                 )}
               </div>
 
-              {/* Toàn bộ Mô tả sản phẩm */}
+              {/* Toàn bộ Nội dung Mô tả sản phẩm */}
               <div className="space-y-2">
-                <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Mô tả tính năng chi tiết:</h4>
+                <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Mô tả tính năng đầy đủ:</h4>
                 <p className="text-xs text-gray-300 bg-[#080B10] border border-[#1A2332] p-4 rounded-2xl leading-relaxed whitespace-pre-line">
                   {selectedToolForDetail.description || 'Chưa có nội dung mô tả chi tiết cho sản phẩm này.'}
                 </p>
@@ -263,7 +265,7 @@ export default function ToolsPage() {
                 </div>
               </div>
 
-              {/* Nút hành động */}
+              {/* Nút Mua */}
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => {
