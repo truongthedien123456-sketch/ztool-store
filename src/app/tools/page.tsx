@@ -1,246 +1,288 @@
 'use client';
 
-import Navbar from '@/components/Navbar';
-import Image from 'next/image';
-import { ShoppingCart, Flame, X, CheckCircle2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import Navbar from '@/components/Navbar';
+import { Wrench, Download, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles } from 'lucide-react';
 
 export default function ToolsPage() {
-  const [toolsList, setToolsList] = useState<any[]>([]);
+  const [tools, setTools] = useState<any[]>([]);
   const [selectedTool, setSelectedTool] = useState<any | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState<'day' | 'week' | 'month' | 'lifetime'>('day');
-  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
+  const [selectedDuration, setSelectedDuration] = useState<'day' | 'week' | 'month' | 'lifetime'>('day');
+  const [purchaseMsg, setPurchaseMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Đọc danh sách Tool từ localStorage
-  const loadTools = () => {
-    if (typeof window !== 'undefined') {
-      const savedTools = localStorage.getItem('ztool_tools');
-      if (savedTools) {
-        setToolsList(JSON.parse(savedTools));
-      } else {
-        const defaultTools = [
-          {
-            id: 1,
-            name: 'AUTO FARM F17',
-            image: '/logo.jpg',
-            description: 'Tự động chạy nhanh, bấm E nghề công trường F17 City',
-            priceDay: 5000,
-            priceWeek: 20000,
-            priceMonth: 50000,
-            priceLifetime: 100000,
-            status: 'Hoạt động tốt',
-            buyDay: 1,
-            buyWeek: 0,
-            buyMonth: 0,
-            buyLifetime: 0,
-            buyCount: 1,
-          },
-          {
-            id: 2,
-            name: 'AUTO CÂU CÁ LŨ QUỶ',
-            image: '/logo.jpg',
-            description: 'Tự quăng cần câu, giải minigame mũi tên, tự ngồi lên thuyền...',
-            priceDay: 20000,
-            priceWeek: 50000,
-            priceMonth: 150000,
-            priceLifetime: 300000,
-            status: 'Hoạt động tốt',
-            buyDay: 0,
-            buyWeek: 0,
-            buyMonth: 0,
-            buyLifetime: 0,
-            buyCount: 0,
-          },
-        ];
-        setToolsList(defaultTools);
-        localStorage.setItem('ztool_tools', JSON.stringify(defaultTools));
+  // Tải danh sách Tool được cấu hình từ trang Admin
+  useEffect(() => {
+    loadToolsData();
+  }, []);
+
+  const loadToolsData = () => {
+    const savedTools = localStorage.getItem('ztool_tools');
+    if (savedTools) {
+      try {
+        setTools(JSON.parse(savedTools));
+      } catch (e) {
+        setTools([]);
       }
+    } else {
+      // Dữ liệu mẫu ban đầu nếu Admin chưa thêm tool nào
+      const defaultTools = [
+        {
+          id: 1,
+          name: 'Tool Auto FiveM VIP',
+          image: '',
+          priceDay: '20.000',
+          priceWeek: '100.000',
+          priceMonth: '300.000',
+          priceLifetime: '1.000.000',
+          description: 'Hỗ trợ tự động bypass, tính năng mượt mà, chống ban 100% cho mọi server FiveM.',
+          downloadLink: 'https://example.com/download'
+        }
+      ];
+      setTools(defaultTools);
     }
   };
 
-  useEffect(() => {
-    loadTools();
-  }, []);
-
-  // Xử lý xác nhận mua hàng theo từng gói
-  const handleConfirmPurchase = () => {
+  // Xử lý khi khách hàng bấm nút "Mua Tool"
+  const handleBuyTool = () => {
+    setPurchaseMsg(null);
     if (!selectedTool) return;
 
-    const updatedList = toolsList.map((t) => {
-      if (t.id === selectedTool.id) {
-        const buyDay = (t.buyDay || 0) + (selectedPlan === 'day' ? 1 : 0);
-        const buyWeek = (t.buyWeek || 0) + (selectedPlan === 'week' ? 1 : 0);
-        const buyMonth = (t.buyMonth || 0) + (selectedPlan === 'month' ? 1 : 0);
-        const buyLifetime = (t.buyLifetime || 0) + (selectedPlan === 'lifetime' ? 1 : 0);
-        const buyCount = buyDay + buyWeek + buyMonth + buyLifetime;
+    // Lấy thông tin user hiện tại
+    const currentUsername = localStorage.getItem('ztool_current_user');
+    if (!currentUsername) {
+      setPurchaseMsg({ type: 'error', text: 'Vui lòng đăng nhập tài khoản để thực hiện giao dịch!' });
+      return;
+    }
 
-        return { ...t, buyDay, buyWeek, buyMonth, buyLifetime, buyCount };
-      }
-      return t;
+    // Lấy danh sách users từ localStorage
+    const savedUsers = JSON.parse(localStorage.getItem('ztool_users') || '[]');
+    const userIndex = savedUsers.findIndex((u: any) => u.username === currentUsername);
+
+    if (userIndex === -1) {
+      setPurchaseMsg({ type: 'error', text: 'Không tìm thấy thông tin tài khoản!' });
+      return;
+    }
+
+    const user = savedUsers[userIndex];
+
+    // Xác định giá tiền tương ứng với gói đã chọn
+    let priceStr = '0';
+    if (selectedDuration === 'day') priceStr = selectedTool.priceDay;
+    if (selectedDuration === 'week') priceStr = selectedTool.priceWeek;
+    if (selectedDuration === 'month') priceStr = selectedTool.priceMonth;
+    if (selectedDuration === 'lifetime') priceStr = selectedTool.priceLifetime;
+
+    // Chuyển đổi chuỗi giá thành số
+    const priceNum = Number(priceStr.replace(/[^0-9]/g, '')) || 0;
+
+    if (user.balance < priceNum) {
+      setPurchaseMsg({
+        type: 'error',
+        text: `Số dư ví không đủ! Cần ${priceNum.toLocaleString('vi-VN')} VNĐ nhưng số dư hiện tại là ${(user.balance || 0).toLocaleString('vi-VN')} VNĐ. Vui lòng nạp thêm tiền.`
+      });
+      return;
+    }
+
+    // Trừ tiền tài khoản
+    user.balance -= priceNum;
+    savedUsers[userIndex] = user;
+    localStorage.setItem('ztool_users', JSON.stringify(savedUsers));
+
+    // Phát Key tự động từ kho Key (nếu có)
+    const savedKeys = JSON.parse(localStorage.getItem('ztool_keys') || '[]');
+    const availableKeyIndex = savedKeys.findIndex((k: any) => k.toolName === selectedTool.name && !k.isUsed);
+
+    let deliveredKey = 'ZTOOL-' + Math.random().toString(36).substring(2, 9).toUpperCase();
+
+    if (availableKeyIndex !== -1) {
+      deliveredKey = savedKeys[availableKeyIndex].keyString;
+      savedKeys[availableKeyIndex].isUsed = true;
+      localStorage.setItem('ztool_keys', JSON.stringify(savedKeys));
+    }
+
+    setPurchaseMsg({
+      type: 'success',
+      text: `Thanh toán thành công! Mã Key kích hoạt của bạn: ${deliveredKey}`
     });
-
-    setToolsList(updatedList);
-    localStorage.setItem('ztool_tools', JSON.stringify(updatedList));
-
-    setPurchaseSuccess(true);
-    setTimeout(() => {
-      setPurchaseSuccess(false);
-      setSelectedTool(null);
-    }, 1500);
   };
 
   return (
-    <main className="min-h-screen bg-[#080B10] text-white pb-20 font-sans">
+    <main className="min-h-screen bg-[#080B10] text-white font-sans pb-20">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-[#1A2332] pb-6">
-          <div>
-            <div className="inline-flex items-center gap-2 bg-neonBlue/10 border border-neonBlue/30 px-3 py-1 rounded-full text-xs font-semibold text-cyanGlow mb-2">
-              <Flame className="w-3.5 h-3.5" /> DANH MỤC DỊCH VỤ
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white">
-              TẤT CẢ <span className="bg-gradient-to-r from-cyanGlow to-neonBlue bg-clip-text text-transparent">TOOL AUTO FIVEM</span>
-            </h1>
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+        {/* Header Trang */}
+        <div className="text-center space-y-3 border-b border-[#1A2332] pb-8">
+          <div className="inline-flex items-center gap-2 bg-neonBlue/10 border border-neonBlue/30 px-4 py-1.5 rounded-full text-xs font-bold text-cyanGlow">
+            <Sparkles className="w-4 h-4" /> BẢNG HÃNG TOOL AUTO HIGH-QUALITY
           </div>
-          <div className="text-xs text-gray-400 bg-[#0F141C] border border-[#1A2332] px-4 py-2.5 rounded-xl self-start">
-            Hiện có: <b className="text-cyanGlow">{toolsList.length}</b> sản phẩm
-          </div>
+          <h1 className="text-3xl font-black text-white tracking-wide">DANH SÁCH SẢN PHẨM TOOL AUTO</h1>
+          <p className="text-xs text-gray-400 max-w-xl mx-auto">
+            Cập nhật liên tục các bản hack/tool tự động mới nhất. Đảm bảo an toàn, tối ưu hiệu năng và cập nhật tự động.
+          </p>
         </div>
 
-        {/* Lưới sản phẩm Tool */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {toolsList.map((tool) => (
-            <div key={tool.id} className="bg-[#0F141C] border border-[#1A2332] hover:border-neonBlue/50 rounded-2xl overflow-hidden shadow-xl transition duration-300 flex flex-col group">
-              <div className="relative h-48 bg-gradient-to-b from-cyan-950/20 to-[#080B10] p-4 flex items-center justify-center border-b border-[#1A2332]">
-                <div className="relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-neonBlue shadow-lg shadow-neonBlue/20 group-hover:scale-105 transition">
-                  <Image src={tool.image || '/logo.jpg'} alt={tool.name} fill className="object-cover" />
-                </div>
-              </div>
-
-              <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                <div>
-                  <h3 className="font-extrabold text-base text-white group-hover:text-cyanGlow transition">{tool.name}</h3>
-                  <p className="text-xs text-gray-400 mt-2 leading-relaxed">{tool.description}</p>
-                </div>
-
-                {/* Bảng giá 4 gói */}
-                <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-xl space-y-1.5 text-xs">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400">Gói 1 Ngày:</span>
-                    <span className="font-bold text-cyanGlow">{tool.priceDay?.toLocaleString('vi-VN')} VNĐ</span>
+        {/* Danh Sách Tool */}
+        {tools.length === 0 ? (
+          <div className="text-center py-16 bg-[#0F141C] border border-[#1A2332] rounded-3xl">
+            <Wrench className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+            <p className="text-sm text-gray-400 font-semibold">Hiện chưa có sản phẩm Tool nào được mở bán.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {tools.map((tool) => (
+              <div key={tool.id} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-xl hover:border-neonBlue/50 transition duration-300">
+                <div className="space-y-4">
+                  {/* Ảnh Tool */}
+                  <div className="w-full h-44 bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden flex items-center justify-center relative">
+                    {tool.image ? (
+                      <img src={tool.image} alt={tool.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <Wrench className="w-12 h-12 text-cyanGlow/40" />
+                    )}
+                    <span className="absolute top-3 right-3 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-extrabold px-2.5 py-1 rounded-lg">
+                      ONLINE 24/7
+                    </span>
                   </div>
-                  {tool.priceWeek && (
-                    <div className="flex justify-between items-center border-t border-[#1A2332] pt-1">
-                      <span className="text-gray-400">Gói 7 Ngày:</span>
-                      <span className="font-bold text-cyanGlow">{tool.priceWeek?.toLocaleString('vi-VN')} VNĐ</span>
+
+                  {/* Tên & Mô tả */}
+                  <div>
+                    <h3 className="text-lg font-bold text-white">{tool.name}</h3>
+                    <p className="text-xs text-gray-400 mt-1 line-clamp-2">{tool.description || 'Chưa có mô tả sản phẩm.'}</p>
+                  </div>
+
+                  {/* Bảng Giá Đồng Bộ Từ Admin */}
+                  <div className="bg-[#080B10] border border-[#1A2332] p-3.5 rounded-2xl space-y-2 text-xs">
+                    <div className="flex justify-between items-center text-gray-300">
+                      <span>Theo Ngày:</span>
+                      <b className="text-emerald-400 font-bold">{tool.priceDay ? `${tool.priceDay} VNĐ` : '---'}</b>
                     </div>
-                  )}
-                  {tool.priceMonth && (
-                    <div className="flex justify-between items-center border-t border-[#1A2332] pt-1">
-                      <span className="text-gray-400">Gói 30 Ngày:</span>
-                      <span className="font-bold text-emerald-400">{tool.priceMonth?.toLocaleString('vi-VN')} VNĐ</span>
+                    <div className="flex justify-between items-center text-gray-300">
+                      <span>Theo Tuần:</span>
+                      <b className="text-emerald-400 font-bold">{tool.priceWeek ? `${tool.priceWeek} VNĐ` : '---'}</b>
                     </div>
-                  )}
-                  {tool.priceLifetime && (
-                    <div className="flex justify-between items-center border-t border-[#1A2332] pt-1">
-                      <span className="text-gray-400">Vĩnh Viễn:</span>
-                      <span className="font-extrabold text-amber-400">{tool.priceLifetime?.toLocaleString('vi-VN')} VNĐ</span>
+                    <div className="flex justify-between items-center text-gray-300">
+                      <span>Theo Tháng:</span>
+                      <b className="text-emerald-400 font-bold">{tool.priceMonth ? `${tool.priceMonth} VNĐ` : '---'}</b>
                     </div>
-                  )}
+                    <div className="flex justify-between items-center text-gray-300 border-t border-[#1A2332] pt-1.5">
+                      <span className="font-semibold text-white">Vĩnh Viễn:</span>
+                      <b className="text-cyanGlow font-black">{tool.priceLifetime ? `${tool.priceLifetime} VNĐ` : '---'}</b>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Nút MUA TOOL NGAY (Đã bỏ đếm số) */}
-                <button
-                  onClick={() => { setSelectedTool(tool); setSelectedPlan('day'); }}
-                  className="w-full bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold text-xs py-3 rounded-xl shadow-lg shadow-neonBlue/20 hover:opacity-90 transition flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <ShoppingCart className="w-4 h-4" /> MUA TOOL NGAY
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* MODAL CHỌN GÓI MUA */}
-      {selectedTool && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0F141C] border border-neonBlue/40 rounded-3xl w-full max-w-md p-6 relative shadow-2xl">
-            <button
-              onClick={() => setSelectedTool(null)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white bg-[#080B10] border border-[#1A2332] p-1.5 rounded-xl transition cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <h3 className="text-lg font-black text-white mb-1">MUA TOOL: <span className="text-cyanGlow">{selectedTool.name}</span></h3>
-            <p className="text-xs text-gray-400 mb-5">Chọn thời hạn gói bạn muốn thanh toán:</p>
-
-            {purchaseSuccess ? (
-              <div className="bg-emerald-500/10 border border-emerald-500/40 text-emerald-400 p-6 rounded-2xl text-center space-y-2 my-4">
-                <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto animate-bounce" />
-                <p className="font-bold text-sm">Đã ghi nhận lượt mua mới thành công!</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <button
-                  onClick={() => setSelectedPlan('day')}
-                  className={`w-full p-3.5 rounded-xl border text-left text-xs font-bold flex justify-between items-center transition cursor-pointer ${
-                    selectedPlan === 'day' ? 'bg-neonBlue/20 border-neonBlue text-cyanGlow' : 'bg-[#080B10] border-[#1A2332] text-gray-300'
-                  }`}
-                >
-                  <span>Gói 1 Ngày</span>
-                  <span>{selectedTool.priceDay?.toLocaleString('vi-VN')} VNĐ</span>
-                </button>
-
-                {selectedTool.priceWeek && (
+                {/* Các nút Thao tác */}
+                <div className="grid grid-cols-2 gap-3 pt-2">
                   <button
-                    onClick={() => setSelectedPlan('week')}
-                    className={`w-full p-3.5 rounded-xl border text-left text-xs font-bold flex justify-between items-center transition cursor-pointer ${
-                      selectedPlan === 'week' ? 'bg-neonBlue/20 border-neonBlue text-cyanGlow' : 'bg-[#080B10] border-[#1A2332] text-gray-300'
-                    }`}
+                    onClick={() => { setSelectedTool(tool); setPurchaseMsg(null); }}
+                    className="bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 hover:opacity-90 transition cursor-pointer"
                   >
-                    <span>Gói 7 Ngày</span>
-                    <span>{selectedTool.priceWeek?.toLocaleString('vi-VN')} VNĐ</span>
+                    <ShoppingBag className="w-4 h-4" /> Mua Ngay
                   </button>
-                )}
 
-                {selectedTool.priceMonth && (
-                  <button
-                    onClick={() => setSelectedPlan('month')}
-                    className={`w-full p-3.5 rounded-xl border text-left text-xs font-bold flex justify-between items-center transition cursor-pointer ${
-                      selectedPlan === 'month' ? 'bg-neonBlue/20 border-neonBlue text-cyanGlow' : 'bg-[#080B10] border-[#1A2332] text-gray-300'
-                    }`}
-                  >
-                    <span>Gói 30 Ngày</span>
-                    <span className="text-emerald-400">{selectedTool.priceMonth?.toLocaleString('vi-VN')} VNĐ</span>
-                  </button>
-                )}
-
-                {selectedTool.priceLifetime && (
-                  <button
-                    onClick={() => setSelectedPlan('lifetime')}
-                    className={`w-full p-3.5 rounded-xl border text-left text-xs font-bold flex justify-between items-center transition cursor-pointer ${
-                      selectedPlan === 'lifetime' ? 'bg-neonBlue/20 border-neonBlue text-cyanGlow' : 'bg-[#080B10] border-[#1A2332] text-gray-300'
-                    }`}
-                  >
-                    <span>Gói Vĩnh Viễn</span>
-                    <span className="text-amber-400">{selectedTool.priceLifetime?.toLocaleString('vi-VN')} VNĐ</span>
-                  </button>
-                )}
-
-                <button
-                  onClick={handleConfirmPurchase}
-                  className="w-full bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold text-xs py-3.5 rounded-xl mt-4 shadow-lg shadow-neonBlue/20 hover:opacity-90 transition cursor-pointer"
-                >
-                  XÁC NHẬN MUA
-                </button>
+                  {tool.downloadLink ? (
+                    <a
+                      href={tool.downloadLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="bg-[#080B10] border border-[#1A2332] hover:border-gray-500 text-gray-300 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 text-center transition"
+                    >
+                      <Download className="w-4 h-4 text-cyanGlow" /> Tải File
+                    </a>
+                  ) : (
+                    <button disabled className="bg-[#080B10] border border-[#1A2332] text-gray-600 font-bold py-2.5 rounded-xl text-xs cursor-not-allowed text-center">
+                      Chưa có Link
+                    </button>
+                  )}
+                </div>
               </div>
-            )}
+            ))}
           </div>
-        </div>
-      )}
+        )}
+
+        {/* MODAL MUA TOOL VÀ CHỌN GÓI */}
+        {selectedTool && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+            <div className="bg-[#0F141C] border border-[#1A2332] w-full max-w-lg rounded-3xl p-6 space-y-6 relative shadow-2xl">
+              <button
+                onClick={() => setSelectedTool(null)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white p-1 rounded-xl bg-[#080B10] border border-[#1A2332]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="space-y-1">
+                <span className="text-xs text-cyanGlow font-bold">XÁC NHẬN MUA SẢN PHẨM</span>
+                <h2 className="text-xl font-black text-white">{selectedTool.name}</h2>
+              </div>
+
+              {purchaseMsg && (
+                <div className={`p-3.5 rounded-xl text-xs font-bold flex items-start gap-2 ${
+                  purchaseMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'
+                }`}>
+                  {purchaseMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                  <span>{purchaseMsg.text}</span>
+                </div>
+              )}
+
+              {/* Chọn Thời Hạn */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-gray-300">Chọn gói thời hạn sử dụng:</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setSelectedDuration('day')}
+                    className={`p-3 rounded-2xl border text-left text-xs space-y-1 transition ${
+                      selectedDuration === 'day' ? 'bg-neonBlue/10 border-neonBlue text-cyanGlow' : 'bg-[#080B10] border-[#1A2332] text-gray-400'
+                    }`}
+                  >
+                    <div className="font-bold">Gói 1 Ngày</div>
+                    <div className="text-emerald-400 font-extrabold">{selectedTool.priceDay || '0'} VNĐ</div>
+                  </button>
+
+                  <button
+                    onClick={() => setSelectedDuration('week')}
+                    className={`p-3 rounded-2xl border text-left text-xs space-y-1 transition ${
+                      selectedDuration === 'week' ? 'bg-neonBlue/10 border-neonBlue text-cyanGlow' : 'bg-[#080B10] border-[#1A2332] text-gray-400'
+                    }`}
+                  >
+                    <div className="font-bold">Gói 7 Ngày</div>
+                    <div className="text-emerald-400 font-extrabold">{selectedTool.priceWeek || '0'} VNĐ</div>
+                  </button>
+
+                  <button
+                    onClick={() => setSelectedDuration('month')}
+                    className={`p-3 rounded-2xl border text-left text-xs space-y-1 transition ${
+                      selectedDuration === 'month' ? 'bg-neonBlue/10 border-neonBlue text-cyanGlow' : 'bg-[#080B10] border-[#1A2332] text-gray-400'
+                    }`}
+                  >
+                    <div className="font-bold">Gói 30 Ngày</div>
+                    <div className="text-emerald-400 font-extrabold">{selectedTool.priceMonth || '0'} VNĐ</div>
+                  </button>
+
+                  <button
+                    onClick={() => setSelectedDuration('lifetime')}
+                    className={`p-3 rounded-2xl border text-left text-xs space-y-1 transition ${
+                      selectedDuration === 'lifetime' ? 'bg-neonBlue/10 border-neonBlue text-cyanGlow' : 'bg-[#080B10] border-[#1A2332] text-gray-400'
+                    }`}
+                  >
+                    <div className="font-bold">Gói Vĩnh Viễn</div>
+                    <div className="text-cyanGlow font-extrabold">{selectedTool.priceLifetime || '0'} VNĐ</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Nút Thanh Toán */}
+              <button
+                onClick={handleBuyTool}
+                className="w-full bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold py-3.5 rounded-2xl text-xs shadow-lg shadow-neonBlue/20 hover:opacity-90 transition cursor-pointer flex items-center justify-center gap-2"
+              >
+                <ShieldCheck className="w-4 h-4" /> XÁC NHẬN THANH TOÁN TỪ VÍ
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </main>
   );
 }
