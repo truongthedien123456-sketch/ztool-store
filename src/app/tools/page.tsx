@@ -2,15 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
-import { Wrench, Download, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles } from 'lucide-react';
+import { 
+  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Download 
+} from 'lucide-react';
 
 export default function ToolsPage() {
   const [tools, setTools] = useState<any[]>([]);
-  const [selectedTool, setSelectedTool] = useState<any | null>(null);
+  
+  // Modal Mua Tool
+  const [selectedToolForBuy, setSelectedToolForBuy] = useState<any | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<'day' | 'week' | 'month' | 'lifetime'>('day');
   const [purchaseMsg, setPurchaseMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Tải danh sách Tool được cấu hình từ trang Admin
+  // Modal Xem Chi Tiết Tool
+  const [selectedToolForDetail, setSelectedToolForDetail] = useState<any | null>(null);
+
   useEffect(() => {
     loadToolsData();
   }, []);
@@ -24,37 +30,44 @@ export default function ToolsPage() {
         setTools([]);
       }
     } else {
-      // Dữ liệu mẫu ban đầu nếu Admin chưa thêm tool nào
-      const defaultTools = [
+      setTools([
         {
           id: 1,
-          name: 'Tool Auto FiveM VIP',
+          name: 'AUTO FARM F17',
+          image: '',
+          priceDay: '5.000',
+          priceWeek: '20.000',
+          priceMonth: '50.000',
+          priceLifetime: '100.000',
+          description: 'Tự động chạy nhanh, bấm E nghề công trường F17 City. Tính năng ẩn giao diện thông minh, chống check file server.',
+          downloadLink: ''
+        },
+        {
+          id: 2,
+          name: 'AUTO CÂU CÁ LŨ QUỶ',
           image: '',
           priceDay: '20.000',
-          priceWeek: '100.000',
-          priceMonth: '300.000',
-          priceLifetime: '1.000.000',
-          description: 'Hỗ trợ tự động bypass, tính năng mượt mà, chống ban 100% cho mọi server FiveM.',
-          downloadLink: 'https://example.com/download'
+          priceWeek: '50.000',
+          priceMonth: '150.000',
+          priceLifetime: '300.000',
+          description: 'Tự quăng cần câu, giải minigame mũi tên, tự ngồi lên thuyền và tự động dọn túi đồ đầy.',
+          downloadLink: ''
         }
-      ];
-      setTools(defaultTools);
+      ]);
     }
   };
 
-  // Xử lý khi khách hàng bấm nút "Mua Tool"
+  // Mua Tool
   const handleBuyTool = () => {
     setPurchaseMsg(null);
-    if (!selectedTool) return;
+    if (!selectedToolForBuy) return;
 
-    // Lấy thông tin user hiện tại
     const currentUsername = localStorage.getItem('ztool_current_user');
     if (!currentUsername) {
       setPurchaseMsg({ type: 'error', text: 'Vui lòng đăng nhập tài khoản để thực hiện giao dịch!' });
       return;
     }
 
-    // Lấy danh sách users từ localStorage
     const savedUsers = JSON.parse(localStorage.getItem('ztool_users') || '[]');
     const userIndex = savedUsers.findIndex((u: any) => u.username === currentUsername);
 
@@ -65,32 +78,28 @@ export default function ToolsPage() {
 
     const user = savedUsers[userIndex];
 
-    // Xác định giá tiền tương ứng với gói đã chọn
     let priceStr = '0';
-    if (selectedDuration === 'day') priceStr = selectedTool.priceDay;
-    if (selectedDuration === 'week') priceStr = selectedTool.priceWeek;
-    if (selectedDuration === 'month') priceStr = selectedTool.priceMonth;
-    if (selectedDuration === 'lifetime') priceStr = selectedTool.priceLifetime;
+    if (selectedDuration === 'day') priceStr = selectedToolForBuy.priceDay;
+    if (selectedDuration === 'week') priceStr = selectedToolForBuy.priceWeek;
+    if (selectedDuration === 'month') priceStr = selectedToolForBuy.priceMonth;
+    if (selectedDuration === 'lifetime') priceStr = selectedToolForBuy.priceLifetime;
 
-    // Chuyển đổi chuỗi giá thành số
     const priceNum = Number(priceStr.replace(/[^0-9]/g, '')) || 0;
 
     if (user.balance < priceNum) {
       setPurchaseMsg({
         type: 'error',
-        text: `Số dư ví không đủ! Cần ${priceNum.toLocaleString('vi-VN')} VNĐ nhưng số dư hiện tại là ${(user.balance || 0).toLocaleString('vi-VN')} VNĐ. Vui lòng nạp thêm tiền.`
+        text: `Số dư ví không đủ! Cần ${priceNum.toLocaleString('vi-VN')} VNĐ nhưng số dư hiện tại là ${(user.balance || 0).toLocaleString('vi-VN')} VNĐ.`
       });
       return;
     }
 
-    // Trừ tiền tài khoản
     user.balance -= priceNum;
     savedUsers[userIndex] = user;
     localStorage.setItem('ztool_users', JSON.stringify(savedUsers));
 
-    // Phát Key tự động từ kho Key (nếu có)
     const savedKeys = JSON.parse(localStorage.getItem('ztool_keys') || '[]');
-    const availableKeyIndex = savedKeys.findIndex((k: any) => k.toolName === selectedTool.name && !k.isUsed);
+    const availableKeyIndex = savedKeys.findIndex((k: any) => k.toolName === selectedToolForBuy.name && !k.isUsed);
 
     let deliveredKey = 'ZTOOL-' + Math.random().toString(36).substring(2, 9).toUpperCase();
 
@@ -145,13 +154,13 @@ export default function ToolsPage() {
                     </span>
                   </div>
 
-                  {/* Tên & Mô tả */}
+                  {/* Tên & Mô tả ngắn */}
                   <div>
                     <h3 className="text-lg font-bold text-white">{tool.name}</h3>
                     <p className="text-xs text-gray-400 mt-1 line-clamp-2">{tool.description || 'Chưa có mô tả sản phẩm.'}</p>
                   </div>
 
-                  {/* Bảng Giá Đồng Bộ Từ Admin */}
+                  {/* Bảng Giá */}
                   <div className="bg-[#080B10] border border-[#1A2332] p-3.5 rounded-2xl space-y-2 text-xs">
                     <div className="flex justify-between items-center text-gray-300">
                       <span>Theo Ngày:</span>
@@ -172,41 +181,111 @@ export default function ToolsPage() {
                   </div>
                 </div>
 
-                {/* Các nút Thao tác */}
+                {/* Các Nút Thao Tác: MUA NGAY & CHI TIẾT */}
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   <button
-                    onClick={() => { setSelectedTool(tool); setPurchaseMsg(null); }}
+                    onClick={() => { setSelectedToolForBuy(tool); setPurchaseMsg(null); }}
                     className="bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 hover:opacity-90 transition cursor-pointer"
                   >
                     <ShoppingBag className="w-4 h-4" /> Mua Ngay
                   </button>
 
-                  {tool.downloadLink ? (
-                    <a
-                      href={tool.downloadLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="bg-[#080B10] border border-[#1A2332] hover:border-gray-500 text-gray-300 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 text-center transition"
-                    >
-                      <Download className="w-4 h-4 text-cyanGlow" /> Tải File
-                    </a>
-                  ) : (
-                    <button disabled className="bg-[#080B10] border border-[#1A2332] text-gray-600 font-bold py-2.5 rounded-xl text-xs cursor-not-allowed text-center">
-                      Chưa có Link
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setSelectedToolForDetail(tool)}
+                    className="bg-[#080B10] border border-[#1A2332] hover:border-gray-500 text-gray-300 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 text-center transition cursor-pointer"
+                  >
+                    <Info className="w-4 h-4 text-cyanGlow" /> Chi tiết
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {/* MODAL MUA TOOL VÀ CHỌN GÓI */}
-        {selectedTool && (
+        {/* 1. MODAL XEM CHI TIẾT TOOL (HIỆN TOÀN BỘ MÔ TẢ & GIAO DIỆN) */}
+        {selectedToolForDetail && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+            <div className="bg-[#0F141C] border border-[#1A2332] w-full max-w-2xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+              <button
+                onClick={() => setSelectedToolForDetail(null)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white p-1.5 rounded-xl bg-[#080B10] border border-[#1A2332]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3 border-b border-[#1A2332] pb-4">
+                <div className="w-12 h-12 rounded-2xl bg-neonBlue/10 border border-neonBlue/30 flex items-center justify-center text-cyanGlow shrink-0">
+                  <Info className="w-6 h-6" />
+                </div>
+                <div>
+                  <span className="text-[10px] text-cyanGlow font-bold uppercase tracking-wider">GIAO DIỆN SẢN PHẨM</span>
+                  <h2 className="text-xl font-black text-white">{selectedToolForDetail.name}</h2>
+                </div>
+              </div>
+
+              {/* Ảnh Phóng To */}
+              <div className="w-full h-64 bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden flex items-center justify-center">
+                {selectedToolForDetail.image ? (
+                  <img src={selectedToolForDetail.image} alt={selectedToolForDetail.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-gray-500">
+                    <Wrench className="w-16 h-16 text-cyanGlow/40 mb-2" />
+                    <span className="text-xs">Chưa có hình ảnh mô phỏng</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Toàn bộ Mô tả sản phẩm */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Mô tả tính năng chi tiết:</h4>
+                <p className="text-xs text-gray-300 bg-[#080B10] border border-[#1A2332] p-4 rounded-2xl leading-relaxed whitespace-pre-line">
+                  {selectedToolForDetail.description || 'Chưa có nội dung mô tả chi tiết cho sản phẩm này.'}
+                </p>
+              </div>
+
+              {/* Bảng Giá */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center">
+                  <span className="text-[10px] text-gray-400 block">Ngày</span>
+                  <b className="text-xs text-emerald-400">{selectedToolForDetail.priceDay || '---'}đ</b>
+                </div>
+                <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center">
+                  <span className="text-[10px] text-gray-400 block">Tuần</span>
+                  <b className="text-xs text-emerald-400">{selectedToolForDetail.priceWeek || '---'}đ</b>
+                </div>
+                <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center">
+                  <span className="text-[10px] text-gray-400 block">Tháng</span>
+                  <b className="text-xs text-emerald-400">{selectedToolForDetail.priceMonth || '---'}đ</b>
+                </div>
+                <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center">
+                  <span className="text-[10px] text-gray-400 block">Vĩnh Viễn</span>
+                  <b className="text-xs text-cyanGlow">{selectedToolForDetail.priceLifetime || '---'}đ</b>
+                </div>
+              </div>
+
+              {/* Nút hành động */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    const tool = selectedToolForDetail;
+                    setSelectedToolForDetail(null);
+                    setSelectedToolForBuy(tool);
+                  }}
+                  className="w-full bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <ShoppingBag className="w-4 h-4" /> MUA SẢN PHẨM NÀY NGAY
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 2. MODAL MUA TOOL VÀ CHỌN GÓI */}
+        {selectedToolForBuy && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
             <div className="bg-[#0F141C] border border-[#1A2332] w-full max-w-lg rounded-3xl p-6 space-y-6 relative shadow-2xl">
               <button
-                onClick={() => setSelectedTool(null)}
+                onClick={() => setSelectedToolForBuy(null)}
                 className="absolute top-4 right-4 text-gray-400 hover:text-white p-1 rounded-xl bg-[#080B10] border border-[#1A2332]"
               >
                 <X className="w-5 h-5" />
@@ -214,7 +293,7 @@ export default function ToolsPage() {
 
               <div className="space-y-1">
                 <span className="text-xs text-cyanGlow font-bold">XÁC NHẬN MUA SẢN PHẨM</span>
-                <h2 className="text-xl font-black text-white">{selectedTool.name}</h2>
+                <h2 className="text-xl font-black text-white">{selectedToolForBuy.name}</h2>
               </div>
 
               {purchaseMsg && (
@@ -226,7 +305,6 @@ export default function ToolsPage() {
                 </div>
               )}
 
-              {/* Chọn Thời Hạn */}
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-gray-300">Chọn gói thời hạn sử dụng:</label>
                 <div className="grid grid-cols-2 gap-3">
@@ -237,7 +315,7 @@ export default function ToolsPage() {
                     }`}
                   >
                     <div className="font-bold">Gói 1 Ngày</div>
-                    <div className="text-emerald-400 font-extrabold">{selectedTool.priceDay || '0'} VNĐ</div>
+                    <div className="text-emerald-400 font-extrabold">{selectedToolForBuy.priceDay || '0'} VNĐ</div>
                   </button>
 
                   <button
@@ -247,7 +325,7 @@ export default function ToolsPage() {
                     }`}
                   >
                     <div className="font-bold">Gói 7 Ngày</div>
-                    <div className="text-emerald-400 font-extrabold">{selectedTool.priceWeek || '0'} VNĐ</div>
+                    <div className="text-emerald-400 font-extrabold">{selectedToolForBuy.priceWeek || '0'} VNĐ</div>
                   </button>
 
                   <button
@@ -257,7 +335,7 @@ export default function ToolsPage() {
                     }`}
                   >
                     <div className="font-bold">Gói 30 Ngày</div>
-                    <div className="text-emerald-400 font-extrabold">{selectedTool.priceMonth || '0'} VNĐ</div>
+                    <div className="text-emerald-400 font-extrabold">{selectedToolForBuy.priceMonth || '0'} VNĐ</div>
                   </button>
 
                   <button
@@ -267,12 +345,11 @@ export default function ToolsPage() {
                     }`}
                   >
                     <div className="font-bold">Gói Vĩnh Viễn</div>
-                    <div className="text-cyanGlow font-extrabold">{selectedTool.priceLifetime || '0'} VNĐ</div>
+                    <div className="text-cyanGlow font-extrabold">{selectedToolForBuy.priceLifetime || '0'} VNĐ</div>
                   </button>
                 </div>
               </div>
 
-              {/* Nút Thanh Toán */}
               <button
                 onClick={handleBuyTool}
                 className="w-full bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold py-3.5 rounded-2xl text-xs shadow-lg shadow-neonBlue/20 hover:opacity-90 transition cursor-pointer flex items-center justify-center gap-2"

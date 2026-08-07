@@ -4,17 +4,14 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { 
-  Wrench, ShieldCheck, Zap, Key, ArrowRight, Wallet, 
-  Sparkles, CheckCircle2, ShoppingBag, FolderKanban 
+  Wrench, ShieldCheck, Zap, Key, ArrowRight, 
+  Sparkles, ShoppingBag 
 } from 'lucide-react';
 
 export default function HomePage() {
   const [tools, setTools] = useState<any[]>([]);
-  const [projects, setProjects] = useState<any[]>([]);
 
-  // Đọc dữ liệu Tool & Dự án do Admin cấu hình từ localStorage
   useEffect(() => {
-    // Lấy danh sách Tools
     const savedTools = localStorage.getItem('ztool_tools');
     if (savedTools) {
       try {
@@ -26,24 +23,17 @@ export default function HomePage() {
       setTools([
         {
           id: 1,
-          name: 'Tool Auto FiveM VIP',
-          priceDay: '20.000',
-          priceLifetime: '1.000.000',
-          description: 'Cung cấp đầy đủ các bản Tool Farm cho mọi server FiveM/Launcher. Key hoạt động tự động 24/7.'
+          name: 'AUTO FARM F17',
+          image: '',
+          priceDay: '5.000',
+          priceLifetime: '100.000',
+          description: 'Tự động chạy nhanh, bấm E nghề công trường F17 City'
         }
       ]);
     }
-
-    // Lấy danh sách Dự án
-    const savedProjects = localStorage.getItem('ztool_projects');
-    if (savedProjects) {
-      try {
-        setProjects(JSON.parse(savedProjects));
-      } catch (e) {
-        setProjects([]);
-      }
-    }
   }, []);
+
+  const featuredTool = tools[0];
 
   return (
     <main className="min-h-screen bg-[#080B10] text-white font-sans pb-20">
@@ -82,7 +72,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Khối Highlight Tool Nổi Bật */}
+          {/* KHỐI HIGHLIGHT TOOL NỔI BẬT CÓ HIỂN THỊ ẢNH */}
           <div className="lg:col-span-5 bg-[#080B10] border border-[#1A2332] rounded-3xl p-6 space-y-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-[#1A2332] pb-3">
               <span className="text-xs font-bold text-cyanGlow flex items-center gap-1.5">
@@ -93,12 +83,29 @@ export default function HomePage() {
               </span>
             </div>
 
-            {tools.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="text-lg font-black text-white">{tools[0].name}</h3>
-                <p className="text-xs text-gray-400 leading-relaxed">{tools[0].description}</p>
+            {featuredTool && (
+              <div className="space-y-4">
+                {/* Ảnh Tool Nổi Bật */}
+                <div className="w-full h-44 bg-[#0F141C] border border-[#1A2332] rounded-2xl overflow-hidden flex items-center justify-center relative">
+                  {featuredTool.image ? (
+                    <img src={featuredTool.image} alt={featuredTool.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-gray-500">
+                      <Wrench className="w-10 h-10 mb-1 text-cyanGlow/40" />
+                      <span className="text-[10px]">ZTOOL SYSTEM</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-base font-black text-white">{featuredTool.name}</h3>
+                  <p className="text-xs text-gray-400 leading-relaxed line-clamp-2">{featuredTool.description}</p>
+                </div>
+
                 <div className="pt-2 flex items-center justify-between border-t border-[#1A2332]">
-                  <span className="text-xs text-gray-400">Giá chỉ từ: <b className="text-emerald-400 font-extrabold">{tools[0].priceDay || '20.000'} VNĐ</b></span>
+                  <span className="text-xs text-gray-400">
+                    Giá chỉ từ: <b className="text-emerald-400 font-extrabold">{featuredTool.priceDay || '5.000'} VNĐ</b>
+                  </span>
                   <Link href="/tools" className="text-xs text-cyanGlow font-bold flex items-center gap-1 hover:underline">
                     Xem chi tiết <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
@@ -108,7 +115,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* DANH SÁCH SẢN PHẨM TOOL XEM NHANH */}
+        {/* DANH SÁCH TOOL XEM NHANH TRANG CHỦ */}
         <div className="space-y-6">
           <div className="flex items-center justify-between border-b border-[#1A2332] pb-4">
             <div>
@@ -126,23 +133,20 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {tools.map((tool) => (
               <div key={tool.id} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 space-y-4 shadow-xl">
+                <div className="w-full h-36 bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden flex items-center justify-center">
+                  {tool.image ? (
+                    <img src={tool.image} alt={tool.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Wrench className="w-8 h-8 text-cyanGlow/30" />
+                  )}
+                </div>
                 <h3 className="text-base font-bold text-white">{tool.name}</h3>
                 <p className="text-xs text-gray-400 line-clamp-2">{tool.description}</p>
-                <div className="bg-[#080B10] p-3 rounded-2xl text-xs space-y-1">
-                  <div className="flex justify-between text-gray-300">
-                    <span>Giá theo Ngày:</span>
-                    <b className="text-emerald-400">{tool.priceDay ? `${tool.priceDay} VNĐ` : '---'}</b>
-                  </div>
-                  <div className="flex justify-between text-gray-300">
-                    <span>Gói Vĩnh Viễn:</span>
-                    <b className="text-cyanGlow">{tool.priceLifetime ? `${tool.priceLifetime} VNĐ` : '---'}</b>
-                  </div>
-                </div>
                 <Link
                   href="/tools"
                   className="block text-center bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold py-2.5 rounded-xl text-xs"
                 >
-                  MUA NGAY
+                  XEM SẢN PHẨM
                 </Link>
               </div>
             ))}
