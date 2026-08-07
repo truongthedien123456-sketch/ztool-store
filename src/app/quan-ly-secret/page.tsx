@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Navbar from '@/components/Navbar';
 import { 
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
-  Ban, CheckCircle, CreditCard, KeyRound, Search, DollarSign, ShieldAlert
+  Ban, CheckCircle, CreditCard, KeyRound, Search, DollarSign, Activity, Settings
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -14,10 +13,10 @@ export default function AdminPage() {
   const [passwordInput, setPasswordInput] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  // Tab điều hướng
+  // Tab điều hướng Dashboard
   const [activeTab, setActiveTab] = useState<'users' | 'tools' | 'projects' | 'keys' | 'sepay' | 'feedback'>('users');
 
-  // --- DỮ LIỆU ĐỒNG BỘ TRANG BÁN HÀNG ---
+  // --- DỮ LIỆU ĐỒNG BỘ STORE ---
   const [users, setUsers] = useState<any[]>([]);
   const [tools, setTools] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
@@ -25,13 +24,13 @@ export default function AdminPage() {
   const [keysList, setKeysList] = useState<any[]>([]);
   const [sepayLogs, setSepayLogs] = useState<any[]>([]);
 
-  // States thao tác Người dùng
+  // States Người dùng
   const [userSearch, setUserSearch] = useState('');
   const [newUserForm, setNewUserForm] = useState({ username: '', password: '', balance: 0 });
   const [editUserPass, setEditUserPass] = useState<{ username: string; newPass: string } | null>(null);
   const [adjustBal, setAdjustBal] = useState<{ username: string; amount: number; isAdd: boolean } | null>(null);
 
-  // States thao tác Tool Auto
+  // States Tool Auto
   const [toolForm, setToolForm] = useState({
     id: 0,
     name: '',
@@ -45,7 +44,7 @@ export default function AdminPage() {
   });
   const [isEditingTool, setIsEditingTool] = useState(false);
 
-  // States thao tác Dự án
+  // States Dự án
   const [projectForm, setProjectForm] = useState({
     id: 0,
     title: '',
@@ -53,9 +52,8 @@ export default function AdminPage() {
     description: '',
     status: 'Hoạt động tốt'
   });
-  const [isEditingProject, setIsEditingProject] = useState(false);
 
-  // States thao tác Key
+  // States Key
   const [newKeyForm, setNewKeyForm] = useState({ toolName: '', keyString: '', duration: '1 Ngày' });
 
   useEffect(() => {
@@ -66,7 +64,6 @@ export default function AdminPage() {
     }
   }, []);
 
-  // Tải & Đồng bộ toàn bộ dữ liệu với Storefront
   const loadAllSyncData = () => {
     const savedUsers = localStorage.getItem('ztool_users');
     if (savedUsers) setUsers(JSON.parse(savedUsers));
@@ -87,7 +84,6 @@ export default function AdminPage() {
     if (savedSepay) setSepayLogs(JSON.parse(savedSepay));
   };
 
-  // Đăng nhập Admin
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (usernameInput.trim() === 'mienprovip' && passwordInput === 'Vietduc123456@') {
@@ -105,22 +101,21 @@ export default function AdminPage() {
     setIsAuthenticated(false);
   };
 
-  // Helper lưu dữ liệu đồng bộ
   const syncStorage = (key: string, data: any) => {
     localStorage.setItem(key, JSON.stringify(data));
   };
 
-  // ================= 1. XỬ LÝ QUẢN LÝ NGƯỜI DÙNG =================
+  // --- QUẢN LÝ NGƯỜI DÙNG ---
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUserForm.username || !newUserForm.password) return alert('Nhập đủ username/password!');
+    if (!newUserForm.username || !newUserForm.password) return alert('Nhập đủ thông tin!');
     if (users.some(u => u.username === newUserForm.username)) return alert('Tài khoản đã tồn tại!');
     
     const updated = [...users, { ...newUserForm, balance: Number(newUserForm.balance) || 0, isBanned: false, createdAt: new Date().toLocaleString('vi-VN') }];
     setUsers(updated);
     syncStorage('ztool_users', updated);
     setNewUserForm({ username: '', password: '', balance: 0 });
-    alert('Tạo người dùng thành công!');
+    alert('Tạo tài khoản thành công!');
   };
 
   const handleToggleBanUser = (username: string) => {
@@ -161,27 +156,17 @@ export default function AdminPage() {
     alert('Cập nhật số dư thành công!');
   };
 
-  // ================= 2. XỬ LÝ TOOL AUTO =================
+  // --- TOOL AUTO ---
   const handleSaveTool = (e: React.FormEvent) => {
     e.preventDefault();
     if (!toolForm.name) return alert('Nhập tên Tool!');
-    
-    let updated;
-    if (isEditingTool) {
-      updated = tools.map(t => t.id === toolForm.id ? toolForm : t);
-    } else {
-      updated = [...tools, { ...toolForm, id: Date.now() }];
-    }
+    let updated = isEditingTool 
+      ? tools.map(t => t.id === toolForm.id ? toolForm : t)
+      : [...tools, { ...toolForm, id: Date.now() }];
     setTools(updated);
     syncStorage('ztool_tools', updated);
     setToolForm({ id: 0, name: '', image: '', priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '' });
     setIsEditingTool(false);
-    alert('Đã lưu thông tin Tool!');
-  };
-
-  const handleEditTool = (tool: any) => {
-    setToolForm(tool);
-    setIsEditingTool(true);
   };
 
   const handleDeleteTool = (id: number) => {
@@ -191,32 +176,23 @@ export default function AdminPage() {
     syncStorage('ztool_tools', updated);
   };
 
-  // ================= 3. XỬ LÝ DỰ ÁN =================
+  // --- DỰ ÁN ---
   const handleSaveProject = (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectForm.title) return alert('Nhập tên dự án!');
-
-    let updated;
-    if (isEditingProject) {
-      updated = projects.map(p => p.id === projectForm.id ? projectForm : p);
-    } else {
-      updated = [...projects, { ...projectForm, id: Date.now() }];
-    }
+    const updated = [...projects, { ...projectForm, id: Date.now() }];
     setProjects(updated);
     syncStorage('ztool_projects', updated);
     setProjectForm({ id: 0, title: '', image: '', description: '', status: 'Hoạt động tốt' });
-    setIsEditingProject(false);
-    alert('Đã lưu Dự án!');
   };
 
   const handleDeleteProject = (id: number) => {
-    if (!confirm('Xóa Dự án này?')) return;
     const updated = projects.filter(p => p.id !== id);
     setProjects(updated);
     syncStorage('ztool_projects', updated);
   };
 
-  // ================= 4. XỬ LÝ KEY & ĐÓNG GÓP =================
+  // --- KEY & ĐÓNG GÓP ---
   const handleAddKey = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newKeyForm.keyString) return alert('Nhập chuỗi Key!');
@@ -224,7 +200,6 @@ export default function AdminPage() {
     setKeysList(updated);
     syncStorage('ztool_keys', updated);
     setNewKeyForm({ toolName: '', keyString: '', duration: '1 Ngày' });
-    alert('Thêm Key thành công!');
   };
 
   const handleDeleteKey = (id: number) => {
@@ -239,61 +214,61 @@ export default function AdminPage() {
     syncStorage('ztool_feedbacks', updated);
   };
 
-  // MÀN HÌNH ĐĂNG NHẬP ADMIN BẢO BỆ
+  // MÀN HÌNH ĐĂNG NHẬP ADMIN BẢO VỆ
   if (!isAuthenticated) {
     return (
-      <main className="min-h-screen bg-[#080B10] text-white font-sans flex flex-col justify-center items-center px-4">
-        <div className="max-w-md w-full bg-[#0F141C] border border-[#1A2332] rounded-3xl p-8 shadow-2xl relative">
+      <main className="min-h-screen bg-[#06090E] text-white font-sans flex flex-col justify-center items-center px-4">
+        <div className="max-w-md w-full bg-[#0D121D] border border-[#1C2638] rounded-3xl p-8 shadow-2xl">
           <div className="text-center space-y-2 mb-8">
-            <div className="w-14 h-14 bg-neonBlue/10 border border-neonBlue/30 rounded-2xl flex items-center justify-center mx-auto text-cyanGlow">
+            <div className="w-14 h-14 bg-cyan-500/10 border border-cyan-500/30 rounded-2xl flex items-center justify-center mx-auto text-cyan-400">
               <Lock className="w-7 h-7" />
             </div>
-            <h1 className="text-xl font-black text-white tracking-wide">TRANG QUẢN TRỊ ZTOOL</h1>
-            <p className="text-xs text-gray-400">Vui lòng đăng nhập tài khoản Admin để truy cập hệ thống</p>
+            <h1 className="text-xl font-bold tracking-wider text-white">HỆ THỐNG QUẢN TRỊ</h1>
+            <p className="text-xs text-slate-400">Đăng nhập tài khoản Quản trị viên để truy cập</p>
           </div>
 
           {loginError && (
-            <div className="mb-6 p-3.5 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs text-center font-bold">
+            <div className="mb-6 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs text-center font-bold">
               {loginError}
             </div>
           )}
 
           <form onSubmit={handleAdminLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-300 mb-1.5">Tài khoản Quản trị</label>
+              <label className="block text-xs text-slate-300 mb-1 font-medium">Tài khoản Quản trị</label>
               <div className="relative">
-                <User className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" />
+                <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
                 <input
                   type="text"
                   required
                   placeholder="Nhập username..."
                   value={usernameInput}
                   onChange={(e) => setUsernameInput(e.target.value)}
-                  className="w-full bg-[#080B10] border border-[#1A2332] focus:border-neonBlue rounded-xl pl-10 pr-4 py-3 text-xs text-white focus:outline-none"
+                  className="w-full bg-[#06090E] border border-[#1C2638] focus:border-cyan-500 rounded-xl pl-10 pr-4 py-3 text-xs text-white focus:outline-none transition"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-300 mb-1.5">Mật khẩu Bảo mật</label>
+              <label className="block text-xs text-slate-300 mb-1 font-medium">Mật khẩu Bảo mật</label>
               <div className="relative">
-                <Key className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" />
+                <Key className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
                 <input
                   type="password"
                   required
                   placeholder="Nhập mật khẩu..."
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
-                  className="w-full bg-[#080B10] border border-[#1A2332] focus:border-neonBlue rounded-xl pl-10 pr-4 py-3 text-xs text-white focus:outline-none"
+                  className="w-full bg-[#06090E] border border-[#1C2638] focus:border-cyan-500 rounded-xl pl-10 pr-4 py-3 text-xs text-white focus:outline-none transition"
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold text-xs py-3.5 rounded-xl shadow-lg shadow-neonBlue/20 hover:opacity-90 transition cursor-pointer flex items-center justify-center gap-2"
+              className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold text-xs py-3.5 rounded-xl shadow-lg shadow-cyan-500/20 transition flex items-center justify-center gap-2 cursor-pointer mt-2"
             >
-              <ShieldCheck className="w-4 h-4" /> ĐĂNG NHẬP HỆ THỐNG
+              <ShieldCheck className="w-4 h-4" /> XÁC THỰC VÀ ĐĂNG NHẬP
             </button>
           </form>
         </div>
@@ -301,160 +276,154 @@ export default function AdminPage() {
     );
   }
 
-  // MÀN HÌNH QUẢN TRỊ TOÀN DIỆN
+  // MÀN HÌNH DASHBOARD QUẢN TRỊ RIÊNG BIỆT (KHÔNG CÓ NAVBAR BÁN HÀNG)
   return (
-    <main className="min-h-screen bg-[#080B10] text-white pb-20 font-sans">
-      <Navbar />
-
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-        
-        {/* Header Admin */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#1A2332] pb-6">
-          <div>
-            <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-semibold text-emerald-400 mb-2">
-              <ShieldCheck className="w-3.5 h-3.5" /> BẢNG QUẢN TRỊ BẢO MẬT & ĐỒNG BỘ STORE
-            </div>
-            <h1 className="text-2xl font-black text-white">QUẢN LÝ HỆ THỐNG ZTOOL</h1>
+    <main className="min-h-screen bg-[#06090E] text-slate-200 font-sans flex flex-col">
+      
+      {/* Top Header Chuyên Nghiệp Dành Cho Admin */}
+      <header className="bg-[#0D121D] border-b border-[#1C2638] px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+            <Settings className="w-5 h-5" />
           </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={loadAllSyncData}
-              className="bg-[#0F141C] border border-[#1A2332] hover:border-gray-600 text-gray-300 text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <RefreshCw className="w-3.5 h-3.5" /> Đồng bộ lại
-            </button>
-
-            <button
-              onClick={handleAdminLogout}
-              className="bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" /> Đăng xuất
-            </button>
+          <div>
+            <h1 className="text-sm font-black text-white tracking-wide">CONTROL PANEL DASHBOARD</h1>
+            <p className="text-[11px] text-slate-400">Hệ thống quản lý trung tâm</p>
           </div>
         </div>
 
-        {/* Menu Các Tab Chức Năng */}
-        <div className="flex flex-wrap items-center gap-3 border-b border-[#1A2332] pb-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={loadAllSyncData}
+            className="bg-[#141C2B] border border-[#1C2638] hover:border-slate-600 text-slate-300 text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-cyan-400" /> Tải lại dữ liệu
+          </button>
+
+          <button
+            onClick={handleAdminLogout}
+            className="bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-400 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5" /> Đăng xuất
+          </button>
+        </div>
+      </header>
+
+      {/* Nội dung chính Dashboard */}
+      <div className="max-w-7xl w-full mx-auto px-4 py-8 space-y-8 flex-1">
+        
+        {/* Thanh Menu Chức Năng Bảng Điều Khiển */}
+        <div className="flex flex-wrap items-center gap-2 bg-[#0D121D] p-2 rounded-2xl border border-[#1C2638]">
           <button
             onClick={() => setActiveTab('users')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'users' ? 'bg-gradient-to-r from-neonBlue to-cyanGlow text-black shadow-lg' : 'bg-[#0F141C] border border-[#1A2332] text-gray-400'
+              activeTab === 'users' ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
             }`}
           >
-            <Users className="w-4 h-4" /> NGƯỜI DÙNG ({users.length})
+            <Users className="w-4 h-4" /> QUẢN LÝ NGƯỜI DÙNG ({users.length})
           </button>
 
           <button
             onClick={() => setActiveTab('tools')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'tools' ? 'bg-gradient-to-r from-neonBlue to-cyanGlow text-black shadow-lg' : 'bg-[#0F141C] border border-[#1A2332] text-gray-400'
+              activeTab === 'tools' ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
             }`}
           >
-            <Wrench className="w-4 h-4" /> TOOL AUTO ({tools.length})
+            <Wrench className="w-4 h-4" /> SẢN PHẨM TOOL ({tools.length})
           </button>
 
           <button
             onClick={() => setActiveTab('projects')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'projects' ? 'bg-gradient-to-r from-neonBlue to-cyanGlow text-black shadow-lg' : 'bg-[#0F141C] border border-[#1A2332] text-gray-400'
+              activeTab === 'projects' ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
             }`}
           >
-            <FolderKanban className="w-4 h-4" /> DỰ ÁN ({projects.length})
+            <FolderKanban className="w-4 h-4" /> DỰ ÁN CỦA SHOP ({projects.length})
           </button>
 
           <button
             onClick={() => setActiveTab('keys')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'keys' ? 'bg-gradient-to-r from-neonBlue to-cyanGlow text-black shadow-lg' : 'bg-[#0F141C] border border-[#1A2332] text-gray-400'
+              activeTab === 'keys' ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
             }`}
           >
-            <KeyRound className="w-4 h-4" /> QUẢN LÝ KEY ({keysList.length})
+            <KeyRound className="w-4 h-4" /> KHO KEY PHÁT TỰ ĐỘNG ({keysList.length})
           </button>
 
           <button
             onClick={() => setActiveTab('sepay')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'sepay' ? 'bg-gradient-to-r from-neonBlue to-cyanGlow text-black shadow-lg' : 'bg-[#0F141C] border border-[#1A2332] text-gray-400'
+              activeTab === 'sepay' ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
             }`}
           >
-            <CreditCard className="w-4 h-4" /> NẠP SEPAY ({sepayLogs.length})
+            <CreditCard className="w-4 h-4" /> LỊCH SỬ SEPAY ({sepayLogs.length})
           </button>
 
           <button
             onClick={() => setActiveTab('feedback')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'feedback' ? 'bg-gradient-to-r from-neonBlue to-cyanGlow text-black shadow-lg' : 'bg-[#0F141C] border border-[#1A2332] text-gray-400'
+              activeTab === 'feedback' ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
             }`}
           >
-            <MessageSquare className="w-4 h-4" /> ĐÓNG GÓP ({feedbacks.length})
+            <MessageSquare className="w-4 h-4" /> ĐÓNG GÓP TỪ KHÁCH ({feedbacks.length})
           </button>
         </div>
 
         {/* ================= 1. TAB NGƯỜI DÙNG ================= */}
         {activeTab === 'users' && (
           <div className="space-y-6">
-            {/* Form tạo người dùng mới */}
-            <form onSubmit={handleCreateUser} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 space-y-4">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#1A2332] pb-3">
-                <Plus className="w-4 h-4 text-cyanGlow" /> TẠO TÀI KHOẢN NGƯỜI DÙNG MỚI
+            <form onSubmit={handleCreateUser} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
+              <h3 className="text-xs font-extrabold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase tracking-wider">
+                <Plus className="w-4 h-4 text-cyan-400" /> Tạo tài khoản người dùng
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <input type="text" placeholder="Tên tài khoản..." value={newUserForm.username} onChange={e => setNewUserForm({ ...newUserForm, username: e.target.value })} className="bg-[#080B10] border border-[#1A2332] rounded-xl px-3 py-2 text-xs text-white" />
-                <input type="text" placeholder="Mật khẩu..." value={newUserForm.password} onChange={e => setNewUserForm({ ...newUserForm, password: e.target.value })} className="bg-[#080B10] border border-[#1A2332] rounded-xl px-3 py-2 text-xs text-white" />
-                <input type="number" placeholder="Số dư ban đầu (VNĐ)..." value={newUserForm.balance || ''} onChange={e => setNewUserForm({ ...newUserForm, balance: Number(e.target.value) })} className="bg-[#080B10] border border-[#1A2332] rounded-xl px-3 py-2 text-xs text-white" />
+                <input type="text" placeholder="Tên tài khoản..." value={newUserForm.username} onChange={e => setNewUserForm({ ...newUserForm, username: e.target.value })} className="bg-[#06090E] border border-[#1C2638] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500" />
+                <input type="text" placeholder="Mật khẩu..." value={newUserForm.password} onChange={e => setNewUserForm({ ...newUserForm, password: e.target.value })} className="bg-[#06090E] border border-[#1C2638] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500" />
+                <input type="number" placeholder="Số dư ban đầu (VNĐ)..." value={newUserForm.balance || ''} onChange={e => setNewUserForm({ ...newUserForm, balance: Number(e.target.value) })} className="bg-[#06090E] border border-[#1C2638] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500" />
               </div>
-              <button type="submit" className="bg-neonBlue/20 border border-neonBlue/40 text-cyanGlow px-5 py-2 rounded-xl text-xs font-bold hover:bg-neonBlue/30 transition">TẠO NGƯỜI DÙNG</button>
+              <button type="submit" className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 px-5 py-2 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer">Thêm người dùng mới</button>
             </form>
 
-            {/* Bảng Danh Sách Người Dùng */}
-            <div className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 shadow-xl space-y-4">
-              <div className="flex items-center justify-between border-b border-[#1A2332] pb-3">
-                <h2 className="text-base font-bold text-white flex items-center gap-2">
-                  <Users className="w-5 h-5 text-cyanGlow" /> DANH SÁCH NGƯỜI DÙNG
+            <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-[#1C2638] pb-3">
+                <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Users className="w-4 h-4 text-cyan-400" /> DANH SÁCH KHÁCH HÀNG
                 </h2>
                 <div className="relative w-64">
-                  <Search className="w-3.5 h-3.5 text-gray-500 absolute left-3 top-2.5" />
-                  <input type="text" placeholder="Tìm tên..." value={userSearch} onChange={e => setUserSearch(e.target.value)} className="w-full bg-[#080B10] border border-[#1A2332] rounded-xl pl-8 pr-3 py-1.5 text-xs text-white" />
+                  <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
+                  <input type="text" placeholder="Tìm tên..." value={userSearch} onChange={e => setUserSearch(e.target.value)} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500" />
                 </div>
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-gray-300">
-                  <thead className="bg-[#080B10] border-b border-[#1A2332] text-gray-400 uppercase text-[10px]">
+                <table className="w-full text-left text-xs text-slate-300">
+                  <thead className="bg-[#06090E] border-b border-[#1C2638] text-slate-400 uppercase text-[10px]">
                     <tr>
                       <th className="p-3">Tài khoản</th>
-                      <th className="p-3">Số dư</th>
+                      <th className="p-3">Số dư ví</th>
                       <th className="p-3">Trạng thái</th>
                       <th className="p-3 text-right">Hành động</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#1A2332]">
+                  <tbody className="divide-y divide-[#1C2638]">
                     {users.filter(u => u.username?.toLowerCase().includes(userSearch.toLowerCase())).map((u, i) => (
-                      <tr key={i} className="hover:bg-[#080B10]/50 transition">
+                      <tr key={i} className="hover:bg-[#06090E]/50 transition">
                         <td className="p-3 font-bold text-white">{u.username}</td>
                         <td className="p-3 font-bold text-emerald-400">{(u.balance || 0).toLocaleString('vi-VN')} VNĐ</td>
                         <td className="p-3">
                           {u.isBanned ? (
-                            <span className="text-red-400 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">Bị BAN</span>
+                            <span className="text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">Bị BAN</span>
                           ) : (
                             <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Hoạt động</span>
                           )}
                         </td>
                         <td className="p-3 text-right space-x-2">
-                          {/* Nút Cộng/Trừ Tiền */}
                           <button onClick={() => setAdjustBal({ username: u.username, amount: 0, isAdd: true })} className="bg-emerald-500/10 text-emerald-400 p-1.5 rounded-lg border border-emerald-500/20 hover:bg-emerald-500/20" title="Cộng/Trừ tiền"><DollarSign className="w-3.5 h-3.5" /></button>
-                          
-                          {/* Nút Đổi Mật Khẩu */}
-                          <button onClick={() => setEditUserPass({ username: u.username, newPass: '' })} className="bg-neonBlue/10 text-cyanGlow p-1.5 rounded-lg border border-neonBlue/20 hover:bg-neonBlue/20" title="Đổi mật khẩu"><Key className="w-3.5 h-3.5" /></button>
-
-                          {/* Nút Ban/Unban */}
+                          <button onClick={() => setEditUserPass({ username: u.username, newPass: '' })} className="bg-cyan-500/10 text-cyan-400 p-1.5 rounded-lg border border-cyan-500/20 hover:bg-cyan-500/20" title="Đổi mật khẩu"><Key className="w-3.5 h-3.5" /></button>
                           <button onClick={() => handleToggleBanUser(u.username)} className={`p-1.5 rounded-lg border ${u.isBanned ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`} title={u.isBanned ? 'Mở khóa' : 'Khóa tài khoản'}>
                             {u.isBanned ? <CheckCircle className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
                           </button>
-
-                          {/* Nút Xóa */}
-                          <button onClick={() => handleDeleteUser(u.username)} className="bg-red-500/10 text-red-400 p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/20" title="Xóa"><Trash2 className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => handleDeleteUser(u.username)} className="bg-rose-500/10 text-rose-400 p-1.5 rounded-lg border border-rose-500/20 hover:bg-rose-500/20" title="Xóa"><Trash2 className="w-3.5 h-3.5" /></button>
                         </td>
                       </tr>
                     ))}
@@ -462,27 +431,25 @@ export default function AdminPage() {
                 </table>
               </div>
 
-              {/* Modal Pop-up Đổi mật khẩu */}
               {editUserPass && (
-                <div className="bg-[#080B10] border border-[#1A2332] p-4 rounded-2xl space-y-3 mt-4">
+                <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl space-y-3 mt-4">
                   <h4 className="text-xs font-bold text-white">Đổi mật khẩu cho: {editUserPass.username}</h4>
                   <div className="flex gap-2">
-                    <input type="text" placeholder="Nhập mật khẩu mới..." value={editUserPass.newPass} onChange={e => setEditUserPass({ ...editUserPass, newPass: e.target.value })} className="bg-[#0F141C] border border-[#1A2332] px-3 py-1.5 text-xs text-white rounded-lg flex-1" />
+                    <input type="text" placeholder="Nhập mật khẩu mới..." value={editUserPass.newPass} onChange={e => setEditUserPass({ ...editUserPass, newPass: e.target.value })} className="bg-[#0D121D] border border-[#1C2638] px-3 py-1.5 text-xs text-white rounded-lg flex-1 focus:outline-none" />
                     <button onClick={() => handleSaveUserPassword(editUserPass.username)} className="bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-lg text-xs font-bold">Lưu</button>
-                    <button onClick={() => setEditUserPass(null)} className="text-gray-400 text-xs px-2">Hủy</button>
+                    <button onClick={() => setEditUserPass(null)} className="text-slate-400 text-xs px-2">Hủy</button>
                   </div>
                 </div>
               )}
 
-              {/* Modal Pop-up Điều chỉnh số dư */}
               {adjustBal && (
-                <div className="bg-[#080B10] border border-[#1A2332] p-4 rounded-2xl space-y-3 mt-4">
-                  <h4 className="text-xs font-bold text-white">Điều chỉnh số dư cho: {adjustBal.username}</h4>
+                <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl space-y-3 mt-4">
+                  <h4 className="text-xs font-bold text-white">Điều chỉnh số dư ví cho: {adjustBal.username}</h4>
                   <div className="flex gap-2 items-center">
-                    <input type="number" placeholder="Nhập số tiền..." value={adjustBal.amount || ''} onChange={e => setAdjustBal({ ...adjustBal, amount: Number(e.target.value) })} className="bg-[#0F141C] border border-[#1A2332] px-3 py-1.5 text-xs text-white rounded-lg flex-1" />
-                    <button onClick={() => { setAdjustBal({ ...adjustBal, isAdd: true }); handleExecAdjustBalance(adjustBal.username); }} className="bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-lg text-xs font-bold">+ Cộng</button>
-                    <button onClick={() => { setAdjustBal({ ...adjustBal, isAdd: false }); handleExecAdjustBalance(adjustBal.username); }} className="bg-red-500/20 text-red-400 px-3 py-1.5 rounded-lg text-xs font-bold">- Trừ</button>
-                    <button onClick={() => setAdjustBal(null)} className="text-gray-400 text-xs px-2">Hủy</button>
+                    <input type="number" placeholder="Nhập số tiền..." value={adjustBal.amount || ''} onChange={e => setAdjustBal({ ...adjustBal, amount: Number(e.target.value) })} className="bg-[#0D121D] border border-[#1C2638] px-3 py-1.5 text-xs text-white rounded-lg flex-1 focus:outline-none" />
+                    <button onClick={() => { setAdjustBal({ ...adjustBal, isAdd: true }); handleExecAdjustBalance(adjustBal.username); }} className="bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-lg text-xs font-bold">+ Cộng tiền</button>
+                    <button onClick={() => { setAdjustBal({ ...adjustBal, isAdd: false }); handleExecAdjustBalance(adjustBal.username); }} className="bg-rose-500/20 text-rose-400 px-3 py-1.5 rounded-lg text-xs font-bold">- Trừ tiền</button>
+                    <button onClick={() => setAdjustBal(null)} className="text-slate-400 text-xs px-2">Hủy</button>
                   </div>
                 </div>
               )}
@@ -493,60 +460,60 @@ export default function AdminPage() {
         {/* ================= 2. TAB TOOL AUTO ================= */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <form onSubmit={handleSaveTool} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 space-y-4 h-fit">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#1A2332] pb-3">
-                <Plus className="w-4 h-4 text-cyanGlow" /> {isEditingTool ? 'CHỈNH SỬA TOOL' : 'THÊM TOOL AUTO MỚI'}
+            <form onSubmit={handleSaveTool} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
+              <h3 className="text-xs font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
+                <Plus className="w-4 h-4 text-cyan-400" /> {isEditingTool ? 'Cập nhật Tool' : 'Thêm Tool mới'}
               </h3>
               <div>
-                <label className="block text-[11px] text-gray-400 mb-1">Tên Tool</label>
-                <input type="text" required value={toolForm.name} onChange={e => setToolForm({ ...toolForm, name: e.target.value })} className="w-full bg-[#080B10] border border-[#1A2332] rounded-xl p-2 text-xs text-white" placeholder="vd: Tool Auto FiveM" />
+                <label className="block text-[11px] text-slate-400 mb-1">Tên Tool</label>
+                <input type="text" required value={toolForm.name} onChange={e => setToolForm({ ...toolForm, name: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="vd: Tool Auto FiveM" />
               </div>
               <div>
-                <label className="block text-[11px] text-gray-400 mb-1">Link Ảnh Minh Họa</label>
-                <input type="text" value={toolForm.image} onChange={e => setToolForm({ ...toolForm, image: e.target.value })} className="w-full bg-[#080B10] border border-[#1A2332] rounded-xl p-2 text-xs text-white" placeholder="https://..." />
+                <label className="block text-[11px] text-slate-400 mb-1">Link Ảnh Minh Họa</label>
+                <input type="text" value={toolForm.image} onChange={e => setToolForm({ ...toolForm, image: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="https://..." />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] text-gray-400">Giá Ngày (VNĐ)</label>
-                  <input type="text" value={toolForm.priceDay} onChange={e => setToolForm({ ...toolForm, priceDay: e.target.value })} className="w-full bg-[#080B10] border border-[#1A2332] rounded-xl p-2 text-xs text-white" placeholder="20.000" />
+                  <label className="block text-[10px] text-slate-400">Giá Ngày (VNĐ)</label>
+                  <input type="text" value={toolForm.priceDay} onChange={e => setToolForm({ ...toolForm, priceDay: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="20.000" />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-gray-400">Giá Tuần (VNĐ)</label>
-                  <input type="text" value={toolForm.priceWeek} onChange={e => setToolForm({ ...toolForm, priceWeek: e.target.value })} className="w-full bg-[#080B10] border border-[#1A2332] rounded-xl p-2 text-xs text-white" placeholder="100.000" />
+                  <label className="block text-[10px] text-slate-400">Giá Tuần (VNĐ)</label>
+                  <input type="text" value={toolForm.priceWeek} onChange={e => setToolForm({ ...toolForm, priceWeek: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="100.000" />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-gray-400">Giá Tháng (VNĐ)</label>
-                  <input type="text" value={toolForm.priceMonth} onChange={e => setToolForm({ ...toolForm, priceMonth: e.target.value })} className="w-full bg-[#080B10] border border-[#1A2332] rounded-xl p-2 text-xs text-white" placeholder="300.000" />
+                  <label className="block text-[10px] text-slate-400">Giá Tháng (VNĐ)</label>
+                  <input type="text" value={toolForm.priceMonth} onChange={e => setToolForm({ ...toolForm, priceMonth: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="300.000" />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-gray-400">Giá Vĩnh Viễn (VNĐ)</label>
-                  <input type="text" value={toolForm.priceLifetime} onChange={e => setToolForm({ ...toolForm, priceLifetime: e.target.value })} className="w-full bg-[#080B10] border border-[#1A2332] rounded-xl p-2 text-xs text-white" placeholder="1.000.000" />
+                  <label className="block text-[10px] text-slate-400">Giá Vĩnh Viễn (VNĐ)</label>
+                  <input type="text" value={toolForm.priceLifetime} onChange={e => setToolForm({ ...toolForm, priceLifetime: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="1.000.000" />
                 </div>
               </div>
               <div>
-                <label className="block text-[11px] text-gray-400 mb-1">Mô tả sản phẩm</label>
-                <textarea value={toolForm.description} onChange={e => setToolForm({ ...toolForm, description: e.target.value })} className="w-full bg-[#080B10] border border-[#1A2332] rounded-xl p-2 text-xs text-white" placeholder="Chi tiết tính năng..." />
+                <label className="block text-[11px] text-slate-400 mb-1">Mô tả sản phẩm</label>
+                <textarea value={toolForm.description} onChange={e => setToolForm({ ...toolForm, description: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="Chi tiết tính năng..." />
               </div>
               <div>
-                <label className="block text-[11px] text-gray-400 mb-1">Link Tải File Tool</label>
-                <input type="text" value={toolForm.downloadLink} onChange={e => setToolForm({ ...toolForm, downloadLink: e.target.value })} className="w-full bg-[#080B10] border border-[#1A2332] rounded-xl p-2 text-xs text-white" placeholder="https://..." />
+                <label className="block text-[11px] text-slate-400 mb-1">Link Tải Tool</label>
+                <input type="text" value={toolForm.downloadLink} onChange={e => setToolForm({ ...toolForm, downloadLink: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="https://..." />
               </div>
-              <button type="submit" className="w-full bg-neonBlue/20 border border-neonBlue/40 text-cyanGlow py-2.5 rounded-xl text-xs font-bold hover:bg-neonBlue/30 transition">LƯU THÔNG TIN TOOL</button>
+              <button type="submit" className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer">LƯU CẤU HÌNH TOOL</button>
             </form>
 
-            <div className="lg:col-span-2 bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 space-y-4">
-              <h3 className="text-sm font-bold text-white border-b border-[#1A2332] pb-3">DANH SÁCH TOOL AUTO ĐỒNG BỘ STORE</h3>
+            <div className="lg:col-span-2 bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
+              <h3 className="text-xs font-bold text-white border-b border-[#1C2638] pb-3 uppercase">DANH SÁCH TOOL AUTO ĐANG BÁN</h3>
               <div className="space-y-3">
-                {tools.length === 0 ? <p className="text-xs text-gray-500">Chưa có Tool nào</p> : tools.map((t) => (
-                  <div key={t.id} className="bg-[#080B10] border border-[#1A2332] p-4 rounded-2xl flex items-center justify-between gap-4">
+                {tools.length === 0 ? <p className="text-xs text-slate-500">Chưa có dữ liệu Tool</p> : tools.map((t) => (
+                  <div key={t.id} className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl flex items-center justify-between gap-4">
                     <div className="space-y-1">
                       <h4 className="font-bold text-white text-xs">{t.name}</h4>
-                      <p className="text-[10px] text-emerald-400">Ngày: {t.priceDay || 'N/A'} | Tuần: {t.priceWeek || 'N/A'} | Tháng: {t.priceMonth || 'N/A'} | VV: {t.priceLifetime || 'N/A'}</p>
-                      <p className="text-[11px] text-gray-400">{t.description}</p>
+                      <p className="text-[10px] text-emerald-400 font-medium">Giá: Ngày {t.priceDay || 0}đ | Tuần {t.priceWeek || 0}đ | Tháng {t.priceMonth || 0}đ | VV {t.priceLifetime || 0}đ</p>
+                      <p className="text-[11px] text-slate-400">{t.description}</p>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => handleEditTool(t)} className="text-cyanGlow p-2 hover:bg-neonBlue/10 rounded-lg"><Edit className="w-4 h-4" /></button>
-                      <button onClick={() => handleDeleteTool(t.id)} className="text-red-400 p-2 hover:bg-red-500/10 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => { setToolForm(t); setIsEditingTool(true); }} className="text-cyan-400 p-2 hover:bg-cyan-500/10 rounded-lg"><Edit className="w-4 h-4" /></button>
+                      <button onClick={() => handleDeleteTool(t.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
                 ))}
@@ -558,44 +525,44 @@ export default function AdminPage() {
         {/* ================= 3. TAB DỰ ÁN ================= */}
         {activeTab === 'projects' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <form onSubmit={handleSaveProject} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 space-y-4 h-fit">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#1A2332] pb-3">
-                <Plus className="w-4 h-4 text-cyanGlow" /> THÊM / SỬA DỰ ÁN
+            <form onSubmit={handleSaveProject} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
+              <h3 className="text-xs font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
+                <Plus className="w-4 h-4 text-cyan-400" /> Thêm dự án
               </h3>
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Tên Dự Án</label>
-                <input type="text" required value={projectForm.title} onChange={e => setProjectForm({ ...projectForm, title: e.target.value })} className="w-full bg-[#080B10] border border-[#1A2332] rounded-xl p-2.5 text-xs text-white" placeholder="Tên dự án..." />
+                <label className="block text-xs text-slate-400 mb-1">Tên Dự Án</label>
+                <input type="text" required value={projectForm.title} onChange={e => setProjectForm({ ...projectForm, title: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none" placeholder="Tên dự án..." />
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Link Ảnh Minh Họa</label>
-                <input type="text" value={projectForm.image} onChange={e => setProjectForm({ ...projectForm, image: e.target.value })} className="w-full bg-[#080B10] border border-[#1A2332] rounded-xl p-2.5 text-xs text-white" placeholder="https://..." />
+                <label className="block text-xs text-slate-400 mb-1">Link Ảnh Minh Họa</label>
+                <input type="text" value={projectForm.image} onChange={e => setProjectForm({ ...projectForm, image: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none" placeholder="https://..." />
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Tình trạng Tool/Dự án</label>
-                <select value={projectForm.status} onChange={e => setProjectForm({ ...projectForm, status: e.target.value })} className="w-full bg-[#080B10] border border-[#1A2332] rounded-xl p-2.5 text-xs text-white">
+                <label className="block text-xs text-slate-400 mb-1">Tình trạng Tool/Dự án</label>
+                <select value={projectForm.status} onChange={e => setProjectForm({ ...projectForm, status: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none">
                   <option value="Hoạt động tốt">Hoạt động tốt</option>
                   <option value="Đang bảo trì">Đang bảo trì</option>
                   <option value="Sắp cập nhật">Sắp cập nhật</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Mô tả dự án</label>
-                <textarea value={projectForm.description} onChange={e => setProjectForm({ ...projectForm, description: e.target.value })} className="w-full bg-[#080B10] border border-[#1A2332] rounded-xl p-2.5 text-xs text-white" placeholder="Chi tiết dự án..." />
+                <label className="block text-xs text-slate-400 mb-1">Mô tả dự án</label>
+                <textarea value={projectForm.description} onChange={e => setProjectForm({ ...projectForm, description: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none" placeholder="Chi tiết..." />
               </div>
-              <button type="submit" className="w-full bg-neonBlue/20 border border-neonBlue/40 text-cyanGlow py-2.5 rounded-xl text-xs font-bold hover:bg-neonBlue/30 transition">LƯU DỰ ÁN</button>
+              <button type="submit" className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer">LƯU DỰ ÁN</button>
             </form>
 
-            <div className="lg:col-span-2 bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 space-y-4">
-              <h3 className="text-sm font-bold text-white border-b border-[#1A2332] pb-3">DANH SÁCH DỰ ÁN CỦA SHOP</h3>
+            <div className="lg:col-span-2 bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
+              <h3 className="text-xs font-bold text-white border-b border-[#1C2638] pb-3 uppercase">DANH SÁCH DỰ ÁN CỦA SHOP</h3>
               <div className="space-y-3">
                 {projects.map((p) => (
-                  <div key={p.id} className="bg-[#080B10] border border-[#1A2332] p-4 rounded-2xl flex items-center justify-between gap-4">
+                  <div key={p.id} className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl flex items-center justify-between gap-4">
                     <div>
                       <h4 className="font-bold text-white text-xs">{p.title}</h4>
-                      <span className="text-[10px] text-cyanGlow bg-neonBlue/10 px-2 py-0.5 rounded border border-neonBlue/20">{p.status}</span>
-                      <p className="text-[11px] text-gray-400 mt-1">{p.description}</p>
+                      <span className="text-[10px] text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 font-bold">{p.status}</span>
+                      <p className="text-[11px] text-slate-400 mt-1">{p.description}</p>
                     </div>
-                    <button onClick={() => handleDeleteProject(p.id)} className="text-red-400 p-2 hover:bg-red-500/10 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleDeleteProject(p.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 ))}
               </div>
@@ -603,43 +570,43 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= 4. TAB QUẢN LÝ KEY ================= */}
+        {/* ================= 4. TAB KEY AUTO ================= */}
         {activeTab === 'keys' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <form onSubmit={handleAddKey} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 space-y-4 h-fit">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#1A2332] pb-3">
-                <Plus className="w-4 h-4 text-cyanGlow" /> KHỞI TẠO KEY BÁN HÀNG
+            <form onSubmit={handleAddKey} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
+              <h3 className="text-xs font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
+                <Plus className="w-4 h-4 text-cyan-400" /> Khởi tạo Key phát tự động
               </h3>
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Tên Tool áp dụng</label>
-                <input type="text" required placeholder="vd: Tool Auto FiveM" value={newKeyForm.toolName} onChange={e => setNewKeyForm({ ...newKeyForm, toolName: e.target.value })} className="w-full bg-[#080B10] border border-[#1A2332] rounded-xl p-2.5 text-xs text-white" />
+                <label className="block text-xs text-slate-400 mb-1">Tên Tool áp dụng</label>
+                <input type="text" required placeholder="vd: Tool Auto FiveM" value={newKeyForm.toolName} onChange={e => setNewKeyForm({ ...newKeyForm, toolName: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none" />
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Mã Key (Chuỗi bí mật)</label>
-                <input type="text" required placeholder="ZTOOL-XXXX-YYYY" value={newKeyForm.keyString} onChange={e => setNewKeyForm({ ...newKeyForm, keyString: e.target.value })} className="w-full bg-[#080B10] border border-[#1A2332] rounded-xl p-2.5 text-xs text-white" />
+                <label className="block text-xs text-slate-400 mb-1">Chuỗi Key kích hoạt</label>
+                <input type="text" required placeholder="ZTOOL-XXXX-YYYY" value={newKeyForm.keyString} onChange={e => setNewKeyForm({ ...newKeyForm, keyString: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none" />
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Thời hạn Key</label>
-                <select value={newKeyForm.duration} onChange={e => setNewKeyForm({ ...newKeyForm, duration: e.target.value })} className="w-full bg-[#080B10] border border-[#1A2332] rounded-xl p-2.5 text-xs text-white">
+                <label className="block text-xs text-slate-400 mb-1">Thời hạn</label>
+                <select value={newKeyForm.duration} onChange={e => setNewKeyForm({ ...newKeyForm, duration: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none">
                   <option value="1 Ngày">1 Ngày</option>
                   <option value="7 Ngày">7 Ngày</option>
                   <option value="30 Ngày">30 Ngày</option>
                   <option value="Vĩnh Viễn">Vĩnh Viễn</option>
                 </select>
               </div>
-              <button type="submit" className="w-full bg-neonBlue/20 border border-neonBlue/40 text-cyanGlow py-2.5 rounded-xl text-xs font-bold hover:bg-neonBlue/30 transition">LƯU KEY TỰ ĐỘNG</button>
+              <button type="submit" className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer">LƯU VÀO KHO KEY</button>
             </form>
 
-            <div className="lg:col-span-2 bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 space-y-4">
-              <h3 className="text-sm font-bold text-white border-b border-[#1A2332] pb-3">KHO KEY ĐÃ KHỞI TẠO</h3>
+            <div className="lg:col-span-2 bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
+              <h3 className="text-xs font-bold text-white border-b border-[#1C2638] pb-3 uppercase">DANH SÁCH KEY TRONG KHO</h3>
               <div className="space-y-3">
-                {keysList.length === 0 ? <p className="text-xs text-gray-500">Chưa có Key nào trong kho</p> : keysList.map((k) => (
-                  <div key={k.id} className="bg-[#080B10] border border-[#1A2332] p-4 rounded-2xl flex items-center justify-between gap-4">
+                {keysList.map((k) => (
+                  <div key={k.id} className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl flex items-center justify-between gap-4">
                     <div>
                       <span className="text-xs font-bold text-white font-mono">{k.keyString}</span>
-                      <p className="text-[10px] text-gray-400">Tool: {k.toolName} | Thời hạn: {k.duration}</p>
+                      <p className="text-[10px] text-slate-400">Tool: {k.toolName} | Thời hạn: {k.duration}</p>
                     </div>
-                    <button onClick={() => handleDeleteKey(k.id)} className="text-red-400 p-2 hover:bg-red-500/10 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleDeleteKey(k.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 ))}
               </div>
@@ -649,28 +616,28 @@ export default function AdminPage() {
 
         {/* ================= 5. TAB SEPAY NẠP TIỀN ================= */}
         {activeTab === 'sepay' && (
-          <div className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 shadow-xl space-y-4">
-            <h2 className="text-base font-bold text-white flex items-center gap-2 border-b border-[#1A2332] pb-3">
-              <CreditCard className="w-5 h-5 text-cyanGlow" /> LỊCH SỬ NẠP TIỀN TỰ ĐỘNG SEPAY
+          <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
+            <h2 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
+              <CreditCard className="w-4 h-4 text-cyan-400" /> LỊCH SỬ BIẾN ĐỘNG NẠP TIỀN SEPAY
             </h2>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-gray-300">
-                <thead className="bg-[#080B10] border-b border-[#1A2332] text-gray-400 uppercase text-[10px]">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-[#06090E] border-b border-[#1C2638] text-slate-400 uppercase text-[10px]">
                   <tr>
-                    <th className="p-3">Mã GD / Nội dung</th>
+                    <th className="p-3">Nội dung / Mã giao dịch</th>
                     <th className="p-3">Số tiền</th>
-                    <th className="p-3">Thời gian</th>
+                    <th className="p-3">Thời gian ghi nhận</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1A2332]">
+                <tbody className="divide-y divide-[#1C2638]">
                   {sepayLogs.length === 0 ? (
-                    <tr><td colSpan={3} className="p-4 text-center text-gray-500">Chưa có lịch sử giao dịch SePay</td></tr>
+                    <tr><td colSpan={3} className="p-4 text-center text-slate-500">Chưa có giao dịch SePay</td></tr>
                   ) : (
                     sepayLogs.map((s, i) => (
-                      <tr key={i} className="hover:bg-[#080B10]/50 transition">
+                      <tr key={i} className="hover:bg-[#06090E]/50 transition">
                         <td className="p-3 font-bold text-white">{s.content || s.username}</td>
                         <td className="p-3 font-bold text-emerald-400">+{(s.amount || 0).toLocaleString('vi-VN')} VNĐ</td>
-                        <td className="p-3 text-gray-400">{s.date || 'Gần đây'}</td>
+                        <td className="p-3 text-slate-400">{s.date || 'Gần đây'}</td>
                       </tr>
                     ))
                   )}
@@ -680,23 +647,23 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= 6. TAB ĐÓNG GÓP ================= */}
+        {/* ================= 6. TAB ĐÓNG GÓP KHÁCH HÀNG ================= */}
         {activeTab === 'feedback' && (
-          <div className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 shadow-xl space-y-4">
-            <h2 className="text-base font-bold text-white flex items-center gap-2 border-b border-[#1A2332] pb-3">
-              <MessageSquare className="w-5 h-5 text-cyanGlow" /> ĐÓNG GÓP CỦA KHÁCH HÀNG
+          <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
+            <h2 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
+              <MessageSquare className="w-4 h-4 text-cyan-400" /> PHẢN HỒI VÀ Ý KIẾN KHÁCH HÀNG
             </h2>
             <div className="space-y-3">
               {feedbacks.length === 0 ? (
-                <p className="text-xs text-gray-500 text-center py-6">Chưa có đóng góp nào</p>
+                <p className="text-xs text-slate-500 text-center py-6">Chưa có đóng góp nào từ khách hàng</p>
               ) : (
                 feedbacks.map((f) => (
-                  <div key={f.id} className="bg-[#080B10] border border-[#1A2332] p-4 rounded-2xl flex items-start justify-between gap-4">
+                  <div key={f.id} className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl flex items-start justify-between gap-4">
                     <div>
-                      <span className="text-xs font-bold text-cyanGlow">{f.username || 'Khách'}</span>
-                      <p className="text-xs text-gray-300 mt-1">{f.content}</p>
+                      <span className="text-xs font-bold text-cyan-400">{f.username || 'Khách ẩn danh'}</span>
+                      <p className="text-xs text-slate-300 mt-1">{f.content}</p>
                     </div>
-                    <button onClick={() => handleDeleteFeedback(f.id)} className="text-red-400 p-1.5 hover:bg-red-500/10 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleDeleteFeedback(f.id)} className="text-rose-400 p-1.5 hover:bg-rose-500/10 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 ))
               )}
