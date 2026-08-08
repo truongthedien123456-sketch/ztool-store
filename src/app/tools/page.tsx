@@ -75,10 +75,11 @@ export default function ToolsPage() {
     }
 
     let priceStr = '0';
-    if (selectedDuration === 'day') priceStr = selectedToolForBuy.priceDay || '0';
-    if (selectedDuration === 'week') priceStr = selectedToolForBuy.priceWeek || '0';
-    if (selectedDuration === 'month') priceStr = selectedToolForBuy.priceMonth || '0';
-    if (selectedDuration === 'lifetime') priceStr = selectedToolForBuy.priceLifetime || '0';
+    let durationText = '1 Ngày';
+    if (selectedDuration === 'day') { priceStr = selectedToolForBuy.priceDay || '0'; durationText = '1 Ngày'; }
+    if (selectedDuration === 'week') { priceStr = selectedToolForBuy.priceWeek || '0'; durationText = '7 Ngày'; }
+    if (selectedDuration === 'month') { priceStr = selectedToolForBuy.priceMonth || '0'; durationText = '30 Ngày'; }
+    if (selectedDuration === 'lifetime') { priceStr = selectedToolForBuy.priceLifetime || '0'; durationText = 'Vĩnh Viễn'; }
 
     const priceNum = Number(String(priceStr).replace(/[^0-9]/g, '')) || 0;
 
@@ -90,9 +91,11 @@ export default function ToolsPage() {
       return;
     }
 
+    // 1. Trừ số dư ví tài khoản
     const newBalance = userData.balance - priceNum;
     await supabase.from('users').update({ balance: newBalance }).eq('id', userData.id);
 
+    // 2. Lấy key từ kho local hoặc tạo key ngẫu nhiên
     const savedKeys = JSON.parse(localStorage.getItem('ztool_keys') || '[]');
     const availableKeyIndex = savedKeys.findIndex((k: any) => k.toolName === selectedToolForBuy.name && !k.isUsed);
 
@@ -102,6 +105,22 @@ export default function ToolsPage() {
       deliveredKey = savedKeys[availableKeyIndex].keyString;
       savedKeys[availableKeyIndex].isUsed = true;
       localStorage.setItem('ztool_keys', JSON.stringify(savedKeys));
+    }
+
+    // 3. GHI NHẬT KÝ MUA TOOL LÊN SUPABASE CLOUD
+    const { error: logError } = await supabase.from('transactions').insert([
+      {
+        username: currentUsername,
+        type: 'BUY',
+        title: `Mua Key ${selectedToolForBuy.name} (${durationText})`,
+        amount: -priceNum,
+        key_code: deliveredKey,
+        status: 'Thành công'
+      }
+    ]);
+
+    if (logError) {
+      console.error('Lỗi ghi lịch sử giao dịch Cloud:', logError.message);
     }
 
     setPurchaseMsg({

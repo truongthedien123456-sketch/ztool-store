@@ -193,6 +193,7 @@ export default function AdminPage() {
     }
   };
 
+  // HÀM XỬ LÝ CỘNG / TRỪ TIỀN VÀ GHI TỰ ĐỘNG VÀO BẢNG TRANSACTIONS LÊN CLOUD
   const handleExecAdjustBalance = async (u: any, isAddMode: boolean) => {
     if (!adjustBal || !adjustBal.amount) return alert('Vui lòng nhập số tiền hợp lệ!');
     
@@ -200,13 +201,29 @@ export default function AdminPage() {
     const changeAmt = Number(adjustBal.amount);
     const next = isAddMode ? cur + changeAmt : Math.max(0, cur - changeAmt);
     
-    const { error } = await supabase.from('users').update({ balance: next }).eq('id', u.id);
+    // 1. Cập nhật số dư mới vào bảng users
+    const { error: updateError } = await supabase.from('users').update({ balance: next }).eq('id', u.id);
     
-    if (error) {
-      alert('Lỗi cập nhật số dư: ' + error.message);
+    if (updateError) {
+      alert('Lỗi cập nhật số dư: ' + updateError.message);
     } else {
+      // 2. Ghi nhật ký biến động số dư vào bảng transactions trên Cloud
+      const { error: logError } = await supabase.from('transactions').insert([
+        {
+          username: u.username,
+          type: isAddMode ? 'ADMIN_ADD' : 'ADMIN_SUB',
+          title: isAddMode ? 'Admin cộng tiền vào ví' : 'Admin trừ tiền khỏi ví',
+          amount: isAddMode ? changeAmt : -changeAmt,
+          status: 'Thành công'
+        }
+      ]);
+
+      if (logError) {
+        console.error('Lỗi ghi nhật ký Cloud:', logError.message);
+      }
+
       setAdjustBal(null);
-      alert(`${isAddMode ? 'Cộng' : 'Trừ'} tiền thành công! Số dư mới: ${next.toLocaleString('vi-VN')} VNĐ`);
+      alert(`${isAddMode ? 'Cộng' : 'Trừ'} tiền thành công cho ${u.username}! Số dư mới: ${next.toLocaleString('vi-VN')} VNĐ`);
       loadAllSyncData();
     }
   };
@@ -633,7 +650,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 2. TAB TOOL AUTO (ĐÃ THÊM Ô CHỌN TRẠNG THÁI TOOL) */}
+        {/* 2. TAB TOOL AUTO */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
@@ -646,7 +663,6 @@ export default function AdminPage() {
                 <input type="text" required value={toolForm.name} onChange={e => setToolForm({ ...toolForm, name: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="vd: AUTO FARM F17" />
               </div>
 
-              {/* Ô Chọn Trạng Thái Tool */}
               <div>
                 <label className="block text-[11px] text-slate-400 mb-1">Trạng Thái Hoạt Động</label>
                 <select 

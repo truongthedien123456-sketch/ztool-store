@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { 
   User, Lock, LogIn, UserPlus, LogOut, Wallet, X, AlertCircle, CheckCircle2,
-  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft
+  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -35,8 +35,9 @@ export default function Navbar() {
   const [rechargeAmount, setRechargeAmount] = useState('50000');
   const [copied, setCopied] = useState(false);
 
-  // Danh sách nhật ký giao dịch
+  // Danh sách nhật ký giao dịch tải từ Supabase Cloud
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   useEffect(() => {
     checkLoggedInUser();
@@ -61,15 +62,27 @@ export default function Navbar() {
           return;
         }
         setCurrentUser(data);
-        loadUserTransactions(data.username);
+      } else {
+        localStorage.removeItem('ztool_current_user');
       }
     }
   };
 
-  // Tải tổng hợp nhật ký mua key, nạp tiền và biến động số dư
-  const loadUserTransactions = (username: string) => {
-    const allLogs = JSON.parse(localStorage.getItem('ztool_user_logs_' + username) || '[]');
-    setUserTransactions(allLogs);
+  // HÀM TẢI LỊCH SỬ GIAO DỊCH TỰ ĐỘNG TỪ BẢNG TRANSACTIONS TRÊN CLOUD
+  const loadUserTransactionsFromCloud = async (username: string) => {
+    setLoadingHistory(true);
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('username', username)
+      .order('id', { ascending: false });
+
+    setLoadingHistory(false);
+    if (!error && data) {
+      setUserTransactions(data);
+    } else {
+      console.error('Lỗi tải lịch sử Cloud:', error?.message);
+    }
   };
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -122,17 +135,17 @@ export default function Navbar() {
       } else {
         localStorage.setItem('ztool_current_user', newUser.username);
         setCurrentUser(newUser);
-        
-        // Ghi log khởi tạo
-        const initLogs = [{
-          id: Date.now(),
-          type: 'INIT',
-          title: 'Khởi tạo tài khoản thành công',
-          amount: 0,
-          time: new Date().toLocaleString('vi-VN')
-        }];
-        localStorage.setItem('ztool_user_logs_' + newUser.username, JSON.stringify(initLogs));
-        setUserTransactions(initLogs);
+
+        // Ghi nhật ký khởi tạo tài khoản lên bảng transactions trên Cloud
+        await supabase.from('transactions').insert([
+          {
+            username: newUser.username,
+            type: 'INIT',
+            title: 'Khởi tạo tài khoản thành công',
+            amount: 0,
+            status: 'Thành công'
+          }
+        ]);
 
         setAuthMsg({ type: 'success', text: 'Đăng ký tài khoản thành công!' });
         setTimeout(() => {
@@ -162,7 +175,6 @@ export default function Navbar() {
 
       localStorage.setItem('ztool_current_user', user.username);
       setCurrentUser(user);
-      loadUserTransactions(user.username);
 
       setAuthMsg({ type: 'success', text: 'Đăng nhập thành công!' });
       setTimeout(() => {
@@ -271,7 +283,7 @@ export default function Navbar() {
 
                     <button
                       onClick={() => { 
-                        if (currentUser) loadUserTransactions(currentUser.username);
+                        if (currentUser) loadUserTransactionsFromCloud(currentUser.username);
                         setShowHistoryModal(true); 
                         setShowUserDropdown(false); 
                       }}
@@ -375,7 +387,7 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* MODAL LỊCH SỬ GIAO DỊCH HIỂN THỊ ĐẦY ĐỦ 3 LOẠI CỘNG/TRỪ/MUA TOOL */}
+      {/* MODAL LỊCH SỬ GIAO DỊCH TẢI TỪ DATABASE CLOUD */}
       {showHistoryModal && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
           <div className="bg-[#0D121D] border border-[#1C2638] w-full max-w-lg rounded-3xl p-6 space-y-5 relative shadow-2xl">
@@ -392,53 +404,60 @@ export default function Navbar() {
               </div>
               <div>
                 <h3 className="text-base font-black text-white">LỊCH SỬ GIAO DỊCH TÀI KHOẢN</h3>
-                <p className="text-xs text-slate-400">Nhật ký nạp tiền, biến động số dư & mua Key của {currentUser.username}</p>
+                <p className="text-xs text-slate-400">Đồng bộ Cloud theo thời gian thực của {currentUser.username}</p>
               </div>
             </div>
 
-            <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-              {userTransactions.length === 0 ? (
-                <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-2xl text-center text-slate-500 text-xs">
-                  Chưa có lịch sử mua tool hay biến động số dư nào.
-                </div>
-              ) : (
-                userTransactions.map((log: any, idx: number) => (
-                  <div key={idx} className="bg-[#06090E] border border-[#1C2638] p-3.5 rounded-2xl flex items-center justify-between text-xs gap-3">
-                    <div className="space-y-1 flex-1">
-                      <div className="flex items-center gap-2">
-                        {log.type === 'BUY' && <ArrowDownLeft className="w-4 h-4 text-rose-400 shrink-0" />}
-                        {log.type === 'RECHARGE' && <ArrowUpRight className="w-4 h-4 text-emerald-400 shrink-0" />}
-                        {log.type === 'ADMIN_ADD' && <ArrowUpRight className="w-4 h-4 text-emerald-400 shrink-0" />}
-                        {log.type === 'ADMIN_SUB' && <ArrowDownLeft className="w-4 h-4 text-rose-400 shrink-0" />}
-                        {log.type === 'INIT' && <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />}
-                        
-                        <span className="font-bold text-white leading-snug">{log.title}</span>
+            {loadingHistory ? (
+              <div className="flex items-center justify-center gap-2 py-10 text-xs text-slate-400">
+                <Loader2 className="w-4 h-4 animate-spin text-cyan-400" /> Đang tải lịch sử giao dịch từ Cloud...
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                {userTransactions.length === 0 ? (
+                  <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-2xl text-center text-slate-500 text-xs">
+                    Chưa có lịch sử mua tool hay biến động số dư nào trên Cloud.
+                  </div>
+                ) : (
+                  userTransactions.map((log: any, idx: number) => (
+                    <div key={idx} className="bg-[#06090E] border border-[#1C2638] p-3.5 rounded-2xl flex items-center justify-between text-xs gap-3">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          {log.type === 'BUY' && <ArrowDownLeft className="w-4 h-4 text-rose-400 shrink-0" />}
+                          {(log.type === 'RECHARGE' || log.type === 'ADMIN_ADD') && <ArrowUpRight className="w-4 h-4 text-emerald-400 shrink-0" />}
+                          {log.type === 'ADMIN_SUB' && <ArrowDownLeft className="w-4 h-4 text-rose-400 shrink-0" />}
+                          {log.type === 'INIT' && <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />}
+                          
+                          <span className="font-bold text-white leading-snug">{log.title}</span>
+                        </div>
+
+                        {log.key_code && (
+                          <div className="bg-[#0D121D] border border-[#1C2638] px-2.5 py-1 rounded-lg text-[11px] text-cyan-400 font-mono w-fit">
+                            Key: {log.key_code}
+                          </div>
+                        )}
+
+                        <span className="text-[10px] text-slate-500 block">
+                          {log.created_at ? new Date(log.created_at).toLocaleString('vi-VN') : log.time || 'Gần đây'}
+                        </span>
                       </div>
 
-                      {log.key && (
-                        <div className="bg-[#0D121D] border border-[#1C2638] px-2.5 py-1 rounded-lg text-[11px] text-cyan-400 font-mono w-fit">
-                          Key: {log.key}
-                        </div>
+                      {log.amount > 0 ? (
+                        <span className="text-emerald-400 font-black text-xs shrink-0">
+                          +{(log.amount).toLocaleString('vi-VN')}đ
+                        </span>
+                      ) : log.amount < 0 ? (
+                        <span className="text-rose-400 font-black text-xs shrink-0">
+                          {(log.amount).toLocaleString('vi-VN')}đ
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 font-bold text-xs shrink-0">0đ</span>
                       )}
-
-                      <span className="text-[10px] text-slate-500 block">{log.time}</span>
                     </div>
-
-                    {log.amount > 0 ? (
-                      <span className="text-emerald-400 font-black text-xs shrink-0">
-                        +{(log.amount).toLocaleString('vi-VN')}đ
-                      </span>
-                    ) : log.amount < 0 ? (
-                      <span className="text-rose-400 font-black text-xs shrink-0">
-                        {(log.amount).toLocaleString('vi-VN')}đ
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 font-bold text-xs shrink-0">0đ</span>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
