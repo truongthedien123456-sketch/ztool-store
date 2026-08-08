@@ -453,7 +453,7 @@ export default function ToolsPage() {
                 {loadingBuy ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
-                    <span>ĐANG ĐĂNG KÝ TÀI KHOẢN GIST...</span>
+                    <span>ĐANG KHỞI TẠO TÀI KHOẢN</span>
                   </>
                 ) : (
                   <>
