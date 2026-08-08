@@ -39,7 +39,7 @@ export default function ToolsPage() {
       setTools([
         {
           id: 1,
-          name: 'AUTO FARM F17',
+          name: 'AUTO FARM CÔNG TRƯỜNG F17',
           image: 'https://i.ibb.co/8L2gsmQ0/logo.jpg',
           status: 'Đang hoạt động',
           priceDay: '5000',
@@ -53,7 +53,6 @@ export default function ToolsPage() {
     }
   };
 
-  // HÀM MUA TOOL: TỰ ĐỘNG TẠO/GIA HẠN TÀI KHOẢN TRÊN GITHUB GIST (ACCOUNTS.JSON)
   const handleBuyTool = async () => {
     setPurchaseMsg(null);
     if (!selectedToolForBuy) return;
@@ -71,7 +70,6 @@ export default function ToolsPage() {
 
     setLoadingBuy(true);
 
-    // 1. Tải thông tin user từ Supabase Cloud
     const { data: userData } = await supabase.from('users').select('*').eq('username', currentUsername).single();
 
     if (!userData) {
@@ -102,12 +100,11 @@ export default function ToolsPage() {
     if (selectedDuration === 'lifetime') { 
       priceStr = selectedToolForBuy.priceLifetime || '0'; 
       durationText = 'Vĩnh Viễn'; 
-      durationDays = 0; // 0 quy ước là Vĩnh Viễn
+      durationDays = 0;
     }
 
     const priceNum = Number(String(priceStr).replace(/[^0-9]/g, '')) || 0;
 
-    // 2. Kiểm tra số dư ví
     if ((userData.balance || 0) < priceNum) {
       setLoadingBuy(false);
       setPurchaseMsg({
@@ -118,7 +115,6 @@ export default function ToolsPage() {
     }
 
     try {
-      // 3. GỌI API ĐỂ CẬP NHẬT TÀI KHOẢN, MẬT KHẨU VÀ EXPIRATION TIMESTAMP VÀO FILE ACCOUNTS.JSON TRÊN GITHUB GIST
       const gistRes = await fetch('/api/gist-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -140,11 +136,9 @@ export default function ToolsPage() {
         return;
       }
 
-      // 4. Trừ số dư ví tài khoản khách trên Supabase Cloud
       const newBalance = userData.balance - priceNum;
       await supabase.from('users').update({ balance: newBalance }).eq('id', userData.id);
 
-      // 5. Ghi nhật ký lịch sử mua hàng lên Supabase Cloud
       const { error: logError } = await supabase.from('transactions').insert([
         {
           username: currentUsername,
@@ -165,7 +159,6 @@ export default function ToolsPage() {
         text: `Kích hoạt thành công! Tài khoản "${userData.username}" đã được cấp quyền sử dụng Tool (${durationText}) trên ứng dụng.`
       });
 
-      // Tự động tải lại trang sau 2.5 giây để cập nhật số dư hiển thị mới
       setTimeout(() => {
         window.location.reload();
       }, 2500);
@@ -185,27 +178,30 @@ export default function ToolsPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
         <div className="text-center space-y-3 border-b border-[#1A2332] pb-8">
-          <div className="inline-flex items-center gap-2 bg-neonBlue/10 border border-neonBlue/30 px-4 py-1.5 rounded-full text-xs font-bold text-cyanGlow">
+          <div className="inline-flex items-center gap-2 bg-[#06090E] border border-cyan-500/30 px-4 py-1.5 rounded-full text-xs font-bold text-cyan-400">
             <Sparkles className="w-4 h-4" /> BẢNG HÃNG TOOL AUTO HIGH-QUALITY
           </div>
           <h1 className="text-3xl font-black text-white tracking-wide">DANH SÁCH SẢN PHẨM TOOL AUTO</h1>
-          <p className="text-xs text-gray-400 max-w-xl mx-auto">
+          <p className="text-xs text-slate-400 max-w-xl mx-auto">
             Cập nhật liên tục các bản hack/tool tự động mới nhất. Đảm bảo an toàn, tối ưu hiệu năng và cập nhật tự động.
           </p>
         </div>
 
+        {/* DANH SÁCH TOOL AUTO VỚI HIỆU ỨNG HOVER GLOW CYAN VÀ LÊN NHẸ */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {tools.map((tool) => (
-            <div key={tool.id} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-xl hover:border-neonBlue/50 transition duration-300">
+            <div 
+              key={tool.id} 
+              className="group bg-[#0F141C] border-2 border-[#1C2638] hover:border-cyan-400 rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-xl hover:shadow-2xl hover:shadow-cyan-500/30 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer"
+            >
               <div className="space-y-4">
                 <div className="w-full aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
                   <img 
                     src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
                     alt={tool.name} 
-                    className="w-full h-full object-cover" 
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
                   />
                   
-                  {/* HUY HIỆU TRẠNG THÁI */}
                   <span className={`absolute top-3 right-3 text-[10px] font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md border ${
                     tool.status === 'Tạm ngưng' 
                       ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' 
@@ -216,28 +212,28 @@ export default function ToolsPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-bold text-white">{tool.name}</h3>
-                  <p className="text-xs text-gray-400 mt-1 line-clamp-1 truncate" title={tool.description}>
+                  <h3 className="text-lg font-black text-white group-hover:text-cyan-400 transition">{tool.name}</h3>
+                  <p className="text-xs text-slate-400 mt-1 line-clamp-1 truncate" title={tool.description}>
                     {tool.description || 'Chưa có mô tả sản phẩm.'}
                   </p>
                 </div>
 
                 <div className="bg-[#080B10] border border-[#1A2332] p-3.5 rounded-2xl space-y-2 text-xs">
-                  <div className="flex justify-between items-center text-gray-300">
+                  <div className="flex justify-between items-center text-slate-300">
                     <span>Theo Ngày:</span>
                     <b className="text-emerald-400 font-bold">{formatPrice(tool.priceDay)} VNĐ</b>
                   </div>
-                  <div className="flex justify-between items-center text-gray-300">
+                  <div className="flex justify-between items-center text-slate-300">
                     <span>Theo Tuần:</span>
                     <b className="text-emerald-400 font-bold">{formatPrice(tool.priceWeek)} VNĐ</b>
                   </div>
-                  <div className="flex justify-between items-center text-gray-300">
+                  <div className="flex justify-between items-center text-slate-300">
                     <span>Theo Tháng:</span>
                     <b className="text-emerald-400 font-bold">{formatPrice(tool.priceMonth)} VNĐ</b>
                   </div>
-                  <div className="flex justify-between items-center text-gray-300 border-t border-[#1A2332] pt-1.5">
+                  <div className="flex justify-between items-center text-slate-300 border-t border-[#1A2332] pt-1.5">
                     <span className="font-semibold text-white">Vĩnh Viễn:</span>
-                    <b className="text-cyanGlow font-black">{formatPrice(tool.priceLifetime)} VNĐ</b>
+                    <b className="text-cyan-400 font-black">{formatPrice(tool.priceLifetime)} VNĐ</b>
                   </div>
                 </div>
               </div>
@@ -246,10 +242,10 @@ export default function ToolsPage() {
                 <button
                   disabled={tool.status === 'Tạm ngưng'}
                   onClick={() => { setSelectedToolForBuy(tool); setPurchaseMsg(null); }}
-                  className={`font-extrabold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  className={`font-black py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-md ${
                     tool.status === 'Tạm ngưng' 
-                      ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700' 
-                      : 'bg-gradient-to-r from-neonBlue to-cyanGlow text-black hover:opacity-90'
+                      ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' 
+                      : 'bg-cyan-500 text-slate-950 hover:bg-cyan-400 shadow-cyan-500/20'
                   }`}
                 >
                   <ShoppingBag className="w-4 h-4" /> {tool.status === 'Tạm ngưng' ? 'Tạm Ngưng' : 'Mua Ngay'}
@@ -257,9 +253,9 @@ export default function ToolsPage() {
 
                 <button
                   onClick={() => setSelectedToolForDetail(tool)}
-                  className="bg-[#080B10] border border-[#1A2332] hover:border-gray-500 text-gray-300 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 text-center transition cursor-pointer"
+                  className="bg-[#080B10] border border-[#1A2332] hover:border-slate-500 text-slate-300 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 text-center transition cursor-pointer"
                 >
-                  <Info className="w-4 h-4 text-cyanGlow" /> Chi tiết
+                  <Info className="w-4 h-4 text-cyan-400" /> Chi tiết
                 </button>
               </div>
             </div>
@@ -272,17 +268,17 @@ export default function ToolsPage() {
             <div className="bg-[#0F141C] border border-[#1A2332] w-full max-w-xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-2xl max-h-[90vh] overflow-y-auto">
               <button
                 onClick={() => setSelectedToolForDetail(null)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-white p-1.5 rounded-xl bg-[#080B10] border border-[#1A2332]"
+                className="absolute top-4 right-4 text-slate-400 hover:text-white p-1.5 rounded-xl bg-[#080B10] border border-[#1A2332]"
               >
                 <X className="w-5 h-5" />
               </button>
 
               <div className="flex items-center gap-3 border-b border-[#1A2332] pb-4">
-                <div className="w-12 h-12 rounded-2xl bg-neonBlue/10 border border-neonBlue/30 flex items-center justify-center text-cyanGlow shrink-0">
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
                   <Info className="w-6 h-6" />
                 </div>
                 <div>
-                  <span className="text-[10px] text-cyanGlow font-bold uppercase tracking-wider">THÔNG TIN CHI TIẾT SẢN PHẨM</span>
+                  <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">THÔNG TIN CHI TIẾT SẢN PHẨM</span>
                   <h2 className="text-xl font-black text-white">{selectedToolForDetail.name}</h2>
                 </div>
               </div>
@@ -296,28 +292,28 @@ export default function ToolsPage() {
               </div>
 
               <div className="space-y-2">
-                <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Mô tả tính năng đầy đủ:</h4>
-                <p className="text-xs text-gray-300 bg-[#080B10] border border-[#1A2332] p-4 rounded-2xl leading-relaxed whitespace-pre-line">
+                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Mô tả tính năng đầy đủ:</h4>
+                <p className="text-xs text-slate-300 bg-[#080B10] border border-[#1A2332] p-4 rounded-2xl leading-relaxed whitespace-pre-line">
                   {selectedToolForDetail.description || 'Chưa có nội dung mô tả chi tiết cho sản phẩm này.'}
                 </p>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center">
-                  <span className="text-[10px] text-gray-400 block">Ngày</span>
+                  <span className="text-[10px] text-slate-400 block">Ngày</span>
                   <b className="text-xs text-emerald-400">{formatPrice(selectedToolForDetail.priceDay)}đ</b>
                 </div>
                 <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center">
-                  <span className="text-[10px] text-gray-400 block">Tuần</span>
+                  <span className="text-[10px] text-slate-400 block">Tuần</span>
                   <b className="text-xs text-emerald-400">{formatPrice(selectedToolForDetail.priceWeek)}đ</b>
                 </div>
                 <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center">
-                  <span className="text-[10px] text-gray-400 block">Tháng</span>
+                  <span className="text-[10px] text-slate-400 block">Tháng</span>
                   <b className="text-xs text-emerald-400">{formatPrice(selectedToolForDetail.priceMonth)}đ</b>
                 </div>
                 <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center">
-                  <span className="text-[10px] text-gray-400 block">Vĩnh Viễn</span>
-                  <b className="text-xs text-cyanGlow">{formatPrice(selectedToolForDetail.priceLifetime)}đ</b>
+                  <span className="text-[10px] text-slate-400 block">Vĩnh Viễn</span>
+                  <b className="text-xs text-cyan-400">{formatPrice(selectedToolForDetail.priceLifetime)}đ</b>
                 </div>
               </div>
 
@@ -329,10 +325,10 @@ export default function ToolsPage() {
                     setSelectedToolForDetail(null);
                     setSelectedToolForBuy(tool);
                   }}
-                  className={`w-full font-extrabold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 cursor-pointer ${
+                  className={`w-full font-black py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 cursor-pointer ${
                     selectedToolForDetail.status === 'Tạm ngưng'
-                      ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
-                      : 'bg-gradient-to-r from-neonBlue to-cyanGlow text-black hover:opacity-90'
+                      ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                      : 'bg-cyan-500 text-slate-950 hover:bg-cyan-400'
                   }`}
                 >
                   <ShoppingBag className="w-4 h-4" /> {selectedToolForDetail.status === 'Tạm ngưng' ? 'SẢN PHẨM TẠM NGƯNG' : 'MUA SẢN PHẨM NÀY NGAY'}
@@ -348,19 +344,19 @@ export default function ToolsPage() {
             <div className="bg-[#0F141C] border border-[#1A2332] w-full max-w-lg rounded-3xl p-6 space-y-6 relative shadow-2xl">
               <button
                 onClick={() => setSelectedToolForBuy(null)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-white p-1 rounded-xl bg-[#080B10] border border-[#1A2332]"
+                className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#080B10] border border-[#1A2332]"
               >
                 <X className="w-5 h-5" />
               </button>
 
               <div className="space-y-1">
-                <span className="text-xs text-cyanGlow font-bold">XÁC NHẬN MUA SẢN PHẨM</span>
+                <span className="text-xs text-cyan-400 font-bold">XÁC NHẬN MUA SẢN PHẨM</span>
                 <h2 className="text-xl font-black text-white">{selectedToolForBuy.name}</h2>
               </div>
 
               {purchaseMsg && (
                 <div className={`p-3.5 rounded-xl text-xs font-bold flex items-start gap-2 ${
-                  purchaseMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'
+                  purchaseMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'
                 }`}>
                   {purchaseMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
                   <span>{purchaseMsg.text}</span>
@@ -368,12 +364,12 @@ export default function ToolsPage() {
               )}
 
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-gray-300">Chọn gói thời hạn sử dụng:</label>
+                <label className="block text-xs font-bold text-slate-300">Chọn gói thời hạn sử dụng:</label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setSelectedDuration('day')}
                     className={`p-3 rounded-2xl border text-left text-xs space-y-1 transition ${
-                      selectedDuration === 'day' ? 'bg-neonBlue/10 border-neonBlue text-cyanGlow' : 'bg-[#080B10] border-[#1A2332] text-gray-400'
+                      selectedDuration === 'day' ? 'bg-cyan-500/10 border-cyan-400 text-cyan-400' : 'bg-[#080B10] border-[#1A2332] text-slate-400'
                     }`}
                   >
                     <div className="font-bold">Gói 1 Ngày</div>
@@ -383,7 +379,7 @@ export default function ToolsPage() {
                   <button
                     onClick={() => setSelectedDuration('week')}
                     className={`p-3 rounded-2xl border text-left text-xs space-y-1 transition ${
-                      selectedDuration === 'week' ? 'bg-neonBlue/10 border-neonBlue text-cyanGlow' : 'bg-[#080B10] border-[#1A2332] text-gray-400'
+                      selectedDuration === 'week' ? 'bg-cyan-500/10 border-cyan-400 text-cyan-400' : 'bg-[#080B10] border-[#1A2332] text-slate-400'
                     }`}
                   >
                     <div className="font-bold">Gói 7 Ngày</div>
@@ -393,7 +389,7 @@ export default function ToolsPage() {
                   <button
                     onClick={() => setSelectedDuration('month')}
                     className={`p-3 rounded-2xl border text-left text-xs space-y-1 transition ${
-                      selectedDuration === 'month' ? 'bg-neonBlue/10 border-neonBlue text-cyanGlow' : 'bg-[#080B10] border-[#1A2332] text-gray-400'
+                      selectedDuration === 'month' ? 'bg-cyan-500/10 border-cyan-400 text-cyan-400' : 'bg-[#080B10] border-[#1A2332] text-slate-400'
                     }`}
                   >
                     <div className="font-bold">Gói 30 Ngày</div>
@@ -403,11 +399,11 @@ export default function ToolsPage() {
                   <button
                     onClick={() => setSelectedDuration('lifetime')}
                     className={`p-3 rounded-2xl border text-left text-xs space-y-1 transition ${
-                      selectedDuration === 'lifetime' ? 'bg-neonBlue/10 border-neonBlue text-cyanGlow' : 'bg-[#080B10] border-[#1A2332] text-gray-400'
+                      selectedDuration === 'lifetime' ? 'bg-cyan-500/10 border-cyan-400 text-cyan-400' : 'bg-[#080B10] border-[#1A2332] text-slate-400'
                     }`}
                   >
                     <div className="font-bold">Gói Vĩnh Viễn</div>
-                    <div className="text-cyanGlow font-extrabold">{formatPrice(selectedToolForBuy.priceLifetime)} VNĐ</div>
+                    <div className="text-cyan-400 font-extrabold">{formatPrice(selectedToolForBuy.priceLifetime)} VNĐ</div>
                   </button>
                 </div>
               </div>
@@ -415,11 +411,11 @@ export default function ToolsPage() {
               <button
                 disabled={loadingBuy}
                 onClick={handleBuyTool}
-                className="w-full bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold py-3.5 rounded-2xl text-xs shadow-lg shadow-neonBlue/20 hover:opacity-90 transition cursor-pointer flex items-center justify-center gap-2"
+                className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black py-3.5 rounded-2xl text-xs shadow-lg shadow-cyan-500/20 transition cursor-pointer flex items-center justify-center gap-2"
               >
                 {loadingBuy ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin text-black" />
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
                     <span>ĐANG ĐĂNG KÝ TÀI KHOẢN GIST...</span>
                   </>
                 ) : (

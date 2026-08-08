@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { supabase } from '@/lib/supabase';
 import { 
-  Sparkles, Wrench, ShieldCheck, Zap, ArrowRight, ShoppingBag, FolderKanban
+  Sparkles, Wrench, ShieldCheck, Zap, ArrowRight, ShoppingBag, FolderKanban, ChevronRight
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -16,7 +16,6 @@ export default function HomePage() {
     loadHomeSyncData();
   }, []);
 
-  // Hàm định dạng số tiền dạng 1,000 VNĐ
   const formatPrice = (price: string | number) => {
     if (!price) return '---';
     const num = Number(String(price).replace(/[^0-9]/g, ''));
@@ -25,7 +24,6 @@ export default function HomePage() {
   };
 
   const loadHomeSyncData = async () => {
-    // 1. Tải danh sách Tool mới nhất từ Supabase Cloud
     const { data: toolData } = await supabase
       .from('tools')
       .select('*')
@@ -46,7 +44,6 @@ export default function HomePage() {
       setTools(mappedTools);
     }
 
-    // 2. Tải danh sách Dự án mới nhất từ Supabase Cloud
     const { data: projectData } = await supabase
       .from('projects')
       .select('*')
@@ -57,7 +54,6 @@ export default function HomePage() {
     }
   };
 
-  // LOGIC CHỌN TOOL NỔI BẬT: Chỉ lấy tool ĐANG HOẠT ĐỘNG (Bỏ qua tool Tạm ngưng)
   const activeTools = tools.filter(t => t.status !== 'Tạm ngưng');
   const featuredTool = activeTools.length > 0 ? activeTools[0] : null;
 
@@ -93,9 +89,9 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Khung Tool Nổi Bật (Chỉ hiển thị khi có Tool ĐANG HOẠT ĐỘNG) */}
+          {/* Khung Tool Nổi Bật VỚI HIỆU ỨNG HOVER GLOW CYAN */}
           {featuredTool && (
-            <div className="bg-[#06090E] border-2 border-cyan-500/40 hover:border-cyan-400 rounded-3xl p-5 space-y-4 shadow-xl shadow-cyan-500/10 transition relative z-10">
+            <div className="group bg-[#06090E] border-2 border-cyan-500/40 hover:border-cyan-400 rounded-3xl p-5 space-y-4 shadow-xl hover:shadow-2xl hover:shadow-cyan-500/30 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer relative z-10">
               <div className="flex justify-between items-center border-b border-[#1C2638] pb-3">
                 <span className="text-xs font-extrabold text-cyan-400 flex items-center gap-1.5 uppercase tracking-wider">
                   <Wrench className="w-4 h-4" /> TOOL NỔI BẬT
@@ -110,12 +106,12 @@ export default function HomePage() {
                 <img 
                   src={featuredTool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
                   alt={featuredTool.name} 
-                  className="w-full h-full object-cover" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
                 />
               </div>
 
               <div className="space-y-1">
-                <h3 className="font-bold text-white text-base">{featuredTool.name}</h3>
+                <h3 className="font-bold text-white text-base group-hover:text-cyan-400 transition">{featuredTool.name}</h3>
                 <p className="text-xs text-slate-400 line-clamp-1">{featuredTool.description}</p>
               </div>
 
@@ -143,12 +139,12 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* Grid Danh Sách Sản Phẩm Tool Auto */}
+          {/* Grid Danh Sách Sản Phẩm Tool Auto VỚI HIỆU ỨNG HOVER GLOW CYAN */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {tools.slice(0, 3).map((tool) => (
               <div 
                 key={tool.id} 
-                className="bg-[#0D121D] border-2 border-[#1C2638] hover:border-cyan-500/60 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-xl hover:shadow-2xl hover:shadow-cyan-500/10 hover:-translate-y-1 transition duration-300 group"
+                className="bg-[#0D121D] border-2 border-[#1C2638] hover:border-cyan-400 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-xl hover:shadow-2xl hover:shadow-cyan-500/30 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer group"
               >
                 <div className="space-y-3">
                   <div className="w-full aspect-square bg-[#06090E] border border-[#1C2638] rounded-2xl overflow-hidden relative">
