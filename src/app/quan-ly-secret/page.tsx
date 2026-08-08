@@ -6,7 +6,7 @@ import {
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
   Ban, CheckCircle, CreditCard, KeyRound, Search, DollarSign, Settings,
-  Upload, Loader2
+  Upload, Loader2, Eye, EyeOff
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -30,6 +30,9 @@ export default function AdminPage() {
   const [newUserForm, setNewUserForm] = useState({ username: '', password: '', balance: 0 });
   const [editUserPass, setEditUserPass] = useState<{ username: string; newPass: string } | null>(null);
   const [adjustBal, setAdjustBal] = useState<{ username: string; amount: number; isAdd: boolean } | null>(null);
+  
+  // State Ẩn / Hiện mật khẩu trong danh sách Admin
+  const [showPasswords, setShowPasswords] = useState<{ [key: string]: boolean }>({});
 
   // States Tool Auto & Chọn File Ảnh
   const [toolForm, setToolForm] = useState({
@@ -124,6 +127,10 @@ export default function AdminPage() {
     setIsAuthenticated(false);
   };
 
+  const handleToggleShowPass = (username: string) => {
+    setShowPasswords(prev => ({ ...prev, [username]: !prev[username] }));
+  };
+
   // Chọn file ảnh Tool
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -186,14 +193,12 @@ export default function AdminPage() {
     }
   };
 
-  // XỬ LÝ CỘNG / TRỪ TIỀN CHUẨN XÁC
+  // XỬ LÝ CỘNG / TRỪ TIỀN
   const handleExecAdjustBalance = async (u: any, isAddMode: boolean) => {
     if (!adjustBal || !adjustBal.amount) return alert('Vui lòng nhập số tiền hợp lệ!');
     
     const cur = Number(u.balance) || 0;
     const changeAmt = Number(adjustBal.amount);
-    
-    // Nếu isAddMode = true -> Cộng tiền, ngược lại -> Trừ tiền
     const next = isAddMode ? cur + changeAmt : Math.max(0, cur - changeAmt);
     
     const { error } = await supabase.from('users').update({ balance: next }).eq('id', u.id);
@@ -274,7 +279,7 @@ export default function AdminPage() {
     if (!error) loadAllSyncData();
   };
 
-  // QUẢN LÝ DỰ ÁN SHOP
+  // QUẢN LÝ DỰ ÁN
   const handleSaveProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectForm.title) return alert('Nhập tên dự án!');
@@ -500,7 +505,7 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* 1. TAB USER */}
+        {/* 1. TAB USER (ĐÃ BỔ SUNG CỘT MẬT KHẨU CÓ NÚT XEM/ẨN) */}
         {activeTab === 'users' && (
           <div className="space-y-6">
             <form onSubmit={handleCreateUser} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
@@ -531,6 +536,7 @@ export default function AdminPage() {
                   <thead className="bg-[#06090E] border-b border-[#1C2638] text-slate-400 uppercase text-[10px]">
                     <tr>
                       <th className="p-3">Tài khoản</th>
+                      <th className="p-3">Mật khẩu</th>
                       <th className="p-3">Số dư ví</th>
                       <th className="p-3">Trạng thái</th>
                       <th className="p-3 text-right">Hành động</th>
@@ -540,6 +546,23 @@ export default function AdminPage() {
                     {users.filter(u => u.username?.toLowerCase().includes(userSearch.toLowerCase())).map((u, i) => (
                       <tr key={i} className="hover:bg-[#06090E]/50 transition">
                         <td className="p-3 font-bold text-white">{u.username}</td>
+                        
+                        {/* Cột Mật khẩu mới bổ sung */}
+                        <td className="p-3 font-mono">
+                          <div className="flex items-center gap-2">
+                            <span className="text-cyan-400">
+                              {showPasswords[u.username] ? u.password || '---' : '••••••••'}
+                            </span>
+                            <button 
+                              onClick={() => handleToggleShowPass(u.username)}
+                              className="text-slate-500 hover:text-white transition cursor-pointer"
+                              title={showPasswords[u.username] ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                            >
+                              {showPasswords[u.username] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        </td>
+
                         <td className="p-3 font-bold text-emerald-400">{(u.balance || 0).toLocaleString('vi-VN')} VNĐ</td>
                         <td className="p-3">
                           {u.isBanned ? (
@@ -573,7 +596,7 @@ export default function AdminPage() {
                 </div>
               )}
 
-              {/* Ô ĐIỀU CHỈNH SỐ DƯ TÀI KHOẢN (ĐÃ FIX CHUẨN CỘNG / TRỪ) */}
+              {/* Ô ĐIỀU CHỈNH SỐ DƯ TÀI KHOẢN */}
               {adjustBal && (
                 <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl space-y-3 mt-4">
                   <h4 className="text-xs font-bold text-white">Điều chỉnh số dư ví cho: {adjustBal.username}</h4>
@@ -586,7 +609,6 @@ export default function AdminPage() {
                       className="bg-[#0D121D] border border-[#1C2638] px-3 py-1.5 text-xs text-white rounded-lg flex-1 focus:outline-none" 
                     />
                     
-                    {/* Nút Cộng tiền */}
                     <button 
                       onClick={() => { 
                         const user = users.find(u => u.username === adjustBal.username); 
@@ -597,7 +619,6 @@ export default function AdminPage() {
                       + Cộng tiền
                     </button>
 
-                    {/* Nút Trừ tiền */}
                     <button 
                       onClick={() => { 
                         const user = users.find(u => u.username === adjustBal.username); 
