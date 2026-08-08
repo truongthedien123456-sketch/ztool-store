@@ -323,7 +323,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* MODAL NẠP TIỀN ĐÃ ĐỌC CHÍNH XÁC NGÂN HÀNG BIDV & SỐ TÀI KHOẢN SEPAY */}
+      {/* MODAL NẠP TIỀN ĐÃ CẬP NHẬT THEO PHƯƠNG ÁN 2 (TÀI KHOẢN ẢO BIDV SEPAY 95247JFG2G) */}
       {showRechargeModal && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
           <div className="bg-[#0D121D] border border-[#1C2638] w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-2xl">
@@ -361,10 +361,10 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* MÃ QR SEPAY VỚI THÔNG TIN BIDV VÀ SỐ TÀI KHOẢN 1490055207 CHUẨN XÁC */}
+            {/* MÃ QR ĐÃ ĐỔI SANG MÃ VIRTUAL ACCOUNT 95247JFG2G CỦA SEPAY */}
             <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-2xl flex flex-col items-center space-y-3 text-center">
               <img
-                src={`https://qr.sepay.vn/img?bank=BIDV&acc=1490055207&template=compact&amount=${rechargeAmount}&des=${encodeURIComponent(`NAP ${currentUser.username}`)}`}
+                src={`https://qr.sepay.vn/img?bank=BIDV&acc=95247JFG2G&template=compact&amount=${rechargeAmount}&des=${encodeURIComponent(`NAP ${currentUser.username}`)}`}
                 alt="QR SePay"
                 className="w-48 h-48 rounded-xl bg-white p-2 shadow-lg"
               />
