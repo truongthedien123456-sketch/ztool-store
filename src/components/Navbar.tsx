@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { 
   User, Lock, LogIn, UserPlus, LogOut, Wallet, X, AlertCircle, CheckCircle2,
-  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw
+  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -37,7 +37,7 @@ export default function Navbar() {
   const [rechargeAmount, setRechargeAmount] = useState('50000');
   const [copied, setCopied] = useState(false);
 
-  // Dữ liệu Gist, Tools và Lịch sử
+  // Dữ liệu Gist và Lịch sử
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [userGistData, setUserGistData] = useState<any[] | null>(null);
@@ -154,6 +154,7 @@ export default function Navbar() {
               accountName: k,
               toolCode: tCode,
               toolName: foundTool ? foundTool.name : (tCode ? `AUTO ${tCode.toUpperCase()}` : 'TOOL AUTO CHUNG'),
+              downloadLink: foundTool ? (foundTool.downloadLink || foundTool.download_link || '') : '',
               ...parsed[k]
             };
           });
@@ -528,6 +529,7 @@ export default function Navbar() {
                 ) : (
                   userGistData.map((toolAcc: any, idx: number) => {
                     const isLifetime = toolAcc.expire_timestamp === 0;
+                    const hasDownloadLink = toolAcc.downloadLink && toolAcc.downloadLink.trim() !== '' && toolAcc.downloadLink !== 'EMPTY';
 
                     return (
                       <div key={idx} className="bg-[#06090E] border border-[#1C2638] p-5 rounded-2xl space-y-4 shadow-lg">
@@ -543,8 +545,8 @@ export default function Navbar() {
                           </div>
                         </div>
 
-                        {/* Khung Tài khoản & Mật khẩu tool */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-[#0D121D] p-3.5 rounded-xl border border-[#1C2638]">
+                        {/* Khung Tài khoản, Mật khẩu tool & Nút Tải Tool */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-[#0D121D] p-3.5 rounded-xl border border-[#1C2638] items-center">
                           <div className="flex flex-col">
                             <span className="text-[10px] text-slate-400 font-bold mb-0.5">TÀI KHOẢN TOOL:</span>
                             <span className="font-mono font-bold text-cyan-300">{toolAcc.accountName}</span>
@@ -553,9 +555,28 @@ export default function Navbar() {
                             <span className="text-[10px] text-slate-400 font-bold mb-0.5">MẬT KHẨU TOOL:</span>
                             <span className="font-mono font-bold text-emerald-400">{toolAcc.password || '---'}</span>
                           </div>
+                          <div className="flex flex-col sm:items-end">
+                            {hasDownloadLink ? (
+                              <a 
+                                href={toolAcc.downloadLink} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black py-2 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20 transition-all duration-300 hover:scale-105 active:scale-95 w-full sm:w-auto"
+                              >
+                                <Download className="w-3.5 h-3.5" /> Tải Tool
+                              </a>
+                            ) : (
+                              <button 
+                                disabled 
+                                className="bg-slate-800 border border-slate-700 text-slate-500 font-bold py-2 px-4 rounded-xl text-xs cursor-not-allowed w-full sm:w-auto text-center"
+                              >
+                                Chưa có link
+                              </button>
+                            )}
+                          </div>
                         </div>
 
-                        {/* CHỈ HIỆN NÚT GIA HẠN KHI CHƯA PHẢI VĨNH VIỄN - KHI BẤM SẼ MỞ TRỰC TIẾP MODAL MUA TƯƠNG ỨNG */}
+                        {/* CHỈ HIỆN NÚT GIA HẠN KHI CHƯA PHẢI VĨNH VIỄN */}
                         {!isLifetime ? (
                           <div className="space-y-2 pt-1">
                             <div className="flex items-center justify-between pt-1">
