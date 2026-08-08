@@ -250,11 +250,11 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="bg-[#080B10]/95 backdrop-blur-md border-b-2 border-[#1C2638] sticky top-0 z-40 px-4 lg:px-8 py-3.5 flex items-center justify-between">
+      <nav className="bg-[#080B10]/95 backdrop-blur-md border-b-2 border-cyan-400/50 sticky top-0 z-40 px-4 lg:px-8 py-3.5 flex items-center justify-between shadow-lg shadow-cyan-500/15">
         
-        {/* 1. KHU VỰC LOGO ZTOOL */}
+        {/* 1. KHU VỰC LOGO ZTOOL SIÊU SÁNG */}
         <Link href="/" className="flex items-center gap-3.5 group">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#06090E] p-1 border-2 border-cyan-400 shadow-xl shadow-cyan-500/30 group-hover:scale-105 group-hover:border-cyan-300 transition duration-300 overflow-hidden shrink-0">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#06090E] p-1 border-2 border-cyan-400 shadow-xl shadow-cyan-400/60 group-hover:scale-105 group-hover:border-cyan-300 transition duration-300 overflow-hidden shrink-0">
             <img 
               src="/logo.jpg" 
               alt="ZTool Logo" 
@@ -262,19 +262,19 @@ export default function Navbar() {
             />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-wider leading-none group-hover:text-cyan-400 transition">ZTOOL</h1>
-            <span className="text-xs font-bold text-cyan-400 tracking-wide block mt-1">Chuyên Cung Cấp Tool FiveM</span>
+            <h1 className="text-xl sm:text-2xl font-black text-white tracking-wider leading-none group-hover:text-cyan-300 transition drop-shadow-[0_0_12px_rgba(6,182,212,0.8)]">ZTOOL</h1>
+            <span className="text-xs font-bold text-cyan-300 tracking-wide block mt-1">Chuyên Cung Cấp Tool FiveM</span>
           </div>
         </Link>
 
-        {/* 2. MENU ĐIỀU HƯỚNG: ĐÃ ĐƯỢC TÍCH HỢP HIỆU ỨNG CẢ KHUNG VIỀN PHÁT SÁNG & NHÍCH LÊN KHI TRỎ CHUỘT (HOVER) */}
-        <div className="hidden md:flex items-center gap-2.5 bg-[#06090E] p-2 rounded-2xl border-2 border-[#1C2638] shadow-2xl">
+        {/* 2. MENU ĐIỀU HƯỚNG VỚI HIỆU ỨNG VIỀN SÁNG RỰC RỠ & HOVER NỔI BẬT */}
+        <div className="hidden md:flex items-center gap-2.5 bg-[#06090E] p-2 rounded-2xl border-2 border-cyan-400/50 shadow-2xl shadow-cyan-500/25">
           <Link 
             href="/" 
             className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 border-2 cursor-pointer ${
               pathname === '/' 
-                ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-lg shadow-cyan-500/40 -translate-y-0.5' 
-                : 'text-slate-200 border-transparent hover:border-cyan-400 hover:text-cyan-400 hover:bg-[#0D121D] hover:shadow-lg hover:shadow-cyan-500/30 hover:-translate-y-1'
+                ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-lg shadow-cyan-400/70 -translate-y-0.5' 
+                : 'text-slate-100 border-cyan-500/40 hover:border-cyan-300 hover:text-cyan-300 hover:bg-[#0D121D] hover:shadow-lg hover:shadow-cyan-400/50 hover:-translate-y-1'
             }`}
           >
             Trang chủ
@@ -284,8 +284,8 @@ export default function Navbar() {
             href="/tools" 
             className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 border-2 cursor-pointer ${
               pathname === '/tools' 
-                ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-lg shadow-cyan-500/40 -translate-y-0.5' 
-                : 'text-slate-200 border-transparent hover:border-cyan-400 hover:text-cyan-400 hover:bg-[#0D121D] hover:shadow-lg hover:shadow-cyan-500/30 hover:-translate-y-1'
+                ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-lg shadow-cyan-400/70 -translate-y-0.5' 
+                : 'text-slate-100 border-cyan-500/40 hover:border-cyan-300 hover:text-cyan-300 hover:bg-[#0D121D] hover:shadow-lg hover:shadow-cyan-400/50 hover:-translate-y-1'
             }`}
           >
             TOOL AUTO
@@ -295,21 +295,21 @@ export default function Navbar() {
             href="/projects" 
             className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 border-2 cursor-pointer ${
               pathname === '/projects' 
-                ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-lg shadow-cyan-500/40 -translate-y-0.5' 
-                : 'text-slate-200 border-transparent hover:border-cyan-400 hover:text-cyan-400 hover:bg-[#0D121D] hover:shadow-lg hover:shadow-cyan-500/30 hover:-translate-y-1'
+                ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-lg shadow-cyan-400/70 -translate-y-0.5' 
+                : 'text-slate-100 border-cyan-500/40 hover:border-cyan-300 hover:text-cyan-300 hover:bg-[#0D121D] hover:shadow-lg hover:shadow-cyan-400/50 hover:-translate-y-1'
             }`}
           >
             Dự án
           </Link>
         </div>
 
-        {/* 3. MỤC NẠP TIỀN VÀ TÀI KHOẢN VÍ TIỀN */}
+        {/* 3. NẠP TIỀN & VÍ TIỀN PHÁT SÁNG NỔI BẬT */}
         <div className="flex items-center gap-3.5">
           {currentUser ? (
             <div className="flex items-center gap-3.5">
               <button
                 onClick={() => setShowRechargeModal(true)}
-                className="bg-gradient-to-r from-emerald-400 to-teal-400 hover:brightness-110 text-slate-950 font-black px-5 py-3 rounded-2xl text-sm flex items-center gap-2 shadow-xl shadow-emerald-500/30 transition cursor-pointer hover:scale-105 border-2 border-emerald-300"
+                className="bg-gradient-to-r from-emerald-400 to-teal-300 hover:brightness-110 text-slate-950 font-black px-5 py-3 rounded-2xl text-sm flex items-center gap-2 shadow-xl shadow-emerald-400/50 transition cursor-pointer hover:scale-105 border-2 border-emerald-200"
               >
                 <PlusCircle className="w-5 h-5 text-slate-950 stroke-[2.5]" /> Nạp tiền
               </button>
@@ -317,25 +317,25 @@ export default function Navbar() {
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setShowUserDropdown(!showUserDropdown)}
-                  className="flex items-center gap-4 bg-[#06090E] border-2 border-emerald-500/60 hover:border-emerald-400 p-2.5 pl-4 rounded-2xl transition cursor-pointer shadow-xl shadow-emerald-500/15 group hover:-translate-y-0.5"
+                  className="flex items-center gap-4 bg-[#06090E] border-2 border-emerald-400 hover:border-emerald-300 p-2.5 pl-4 rounded-2xl transition cursor-pointer shadow-xl shadow-emerald-400/30 group hover:-translate-y-0.5"
                 >
                   <div className="text-right leading-tight">
-                    <span className="text-base font-black text-white block group-hover:text-cyan-400 transition">{currentUser.username}</span>
-                    <span className="text-xs font-black text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-lg border-2 border-emerald-500/40 inline-block mt-1 shadow-inner">
+                    <span className="text-base font-black text-white block group-hover:text-cyan-300 transition">{currentUser.username}</span>
+                    <span className="text-xs font-black text-emerald-300 bg-emerald-500/20 px-3 py-1 rounded-lg border-2 border-emerald-400 inline-block mt-1 shadow-inner">
                       {(currentUser.balance || 0).toLocaleString('vi-VN')} VNĐ
                     </span>
                   </div>
 
-                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 border-2 border-cyan-400 flex items-center justify-center text-cyan-400 font-black text-lg shrink-0 relative shadow-md">
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-500/30 to-emerald-500/30 border-2 border-cyan-300 flex items-center justify-center text-cyan-300 font-black text-lg shrink-0 relative shadow-md shadow-cyan-400/50">
                     {currentUser.username.substring(0, 1).toUpperCase()}
                     <span className="w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-[#06090E] absolute -bottom-0.5 -right-0.5 animate-pulse"></span>
                   </div>
 
-                  <ChevronDown className={`w-4 h-4 text-slate-400 transition duration-200 mr-1 ${showUserDropdown ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 text-slate-300 transition duration-200 mr-1 ${showUserDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
                 {showUserDropdown && (
-                  <div className="absolute right-0 mt-2 w-64 bg-[#0D121D] border-2 border-[#1C2638] rounded-2xl p-2.5 shadow-2xl space-y-1 z-50">
+                  <div className="absolute right-0 mt-2 w-64 bg-[#0D121D] border-2 border-cyan-400 rounded-2xl p-2.5 shadow-2xl shadow-cyan-500/30 space-y-1 z-50">
                     <button
                       onClick={() => { setShowAccountInfoModal(true); setShowUserDropdown(false); }}
                       className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-[#141C2B] transition cursor-pointer"
@@ -370,13 +370,13 @@ export default function Navbar() {
             <div className="flex items-center gap-2.5">
               <button
                 onClick={() => { setAuthModalMode('login'); resetForm(); setShowAuthModal(true); }}
-                className="bg-[#06090E] border-2 border-[#1C2638] hover:border-slate-400 text-slate-200 text-xs font-black px-5 py-3 rounded-2xl transition cursor-pointer flex items-center gap-2 hover:-translate-y-0.5"
+                className="bg-[#06090E] border-2 border-cyan-500/60 hover:border-cyan-400 text-slate-100 text-xs font-black px-5 py-3 rounded-2xl transition cursor-pointer flex items-center gap-2 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-cyan-400/40"
               >
                 <LogIn className="w-4 h-4 text-cyan-400" /> ĐĂNG NHẬP
               </button>
               <button
                 onClick={() => { setAuthModalMode('register'); resetForm(); setShowAuthModal(true); }}
-                className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black px-5 py-3 rounded-2xl transition cursor-pointer flex items-center gap-2 shadow-lg shadow-cyan-500/25 hover:-translate-y-0.5"
+                className="bg-cyan-400 hover:bg-cyan-300 text-slate-950 text-xs font-black px-5 py-3 rounded-2xl transition cursor-pointer flex items-center gap-2 shadow-lg shadow-cyan-400/50 hover:-translate-y-0.5"
               >
                 <UserPlus className="w-4 h-4" /> ĐĂNG KÝ
               </button>
@@ -388,7 +388,7 @@ export default function Navbar() {
       {/* MODAL NẠP TIỀN */}
       {showRechargeModal && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0D121D] border-2 border-[#1C2638] w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-2xl">
+          <div className="bg-[#0D121D] border-2 border-cyan-400 w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-2xl shadow-cyan-500/30">
             <button
               onClick={() => setShowRechargeModal(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-[#1C2638] cursor-pointer"
@@ -452,7 +452,7 @@ export default function Navbar() {
       {/* MODAL LỊCH SỬ GIAO DỊCH */}
       {showHistoryModal && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0D121D] border-2 border-[#1C2638] w-full max-w-lg rounded-3xl p-6 space-y-5 relative shadow-2xl">
+          <div className="bg-[#0D121D] border-2 border-cyan-400 w-full max-w-lg rounded-3xl p-6 space-y-5 relative shadow-2xl shadow-cyan-500/35">
             <button
               onClick={() => setShowHistoryModal(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-[#1C2638] cursor-pointer"
@@ -527,7 +527,7 @@ export default function Navbar() {
       {/* MODAL THÔNG TIN TÀI KHOẢN */}
       {showAccountInfoModal && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0D121D] border-2 border-[#1C2638] w-full max-w-sm rounded-3xl p-6 space-y-5 relative shadow-2xl">
+          <div className="bg-[#0D121D] border-2 border-cyan-400 w-full max-w-sm rounded-3xl p-6 space-y-5 relative shadow-2xl shadow-cyan-500/35">
             <button
               onClick={() => setShowAccountInfoModal(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-[#1C2638] cursor-pointer"
@@ -536,7 +536,7 @@ export default function Navbar() {
             </button>
 
             <div className="text-center space-y-2">
-              <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border-2 border-cyan-500/40 flex items-center justify-center text-cyan-400 mx-auto text-2xl font-black shadow-lg">
+              <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border-2 border-cyan-400 flex items-center justify-center text-cyan-300 mx-auto text-2xl font-black shadow-lg shadow-cyan-400/40">
                 {currentUser.username.substring(0, 1).toUpperCase()}
               </div>
               <h3 className="text-lg font-black text-white">{currentUser.username}</h3>
@@ -565,7 +565,7 @@ export default function Navbar() {
       {/* MODAL AUTH */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0D121D] border-2 border-[#1C2638] w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-2xl">
+          <div className="bg-[#0D121D] border-2 border-cyan-400 w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-2xl shadow-cyan-500/35">
             <button
               onClick={() => setShowAuthModal(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-[#1C2638] cursor-pointer"
