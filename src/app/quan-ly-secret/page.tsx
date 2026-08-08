@@ -198,7 +198,8 @@ export default function AdminPage() {
         username: newUserForm.username.trim(),
         password: newUserForm.password,
         balance: Number(newUserForm.balance) || 0,
-        isBanned: false
+        isBanned: false,
+        is_online: false
       }
     ]);
 
@@ -572,7 +573,7 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* 1. TAB USER */}
+        {/* 1. TAB USER (HIỂN THỊ TRẠNG THÁI ONLINE / OFFLINE TÁCH BIỆT) */}
         {activeTab === 'users' && (
           <div className="space-y-6">
             <form onSubmit={handleCreateUser} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
@@ -605,54 +606,76 @@ export default function AdminPage() {
                       <th className="p-3">Tài khoản</th>
                       <th className="p-3">Mật khẩu</th>
                       <th className="p-3">Số dư ví</th>
-                      <th className="p-3">Trạng thái</th>
+                      <th className="p-3">Trạng thái Online</th>
+                      <th className="p-3">Trạng thái Khóa</th>
                       <th className="p-3 text-right">Hành động</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#1C2638]">
-                    {users.filter(u => u.username?.toLowerCase().includes(userSearch.toLowerCase())).map((u, i) => (
-                      <tr key={i} className="hover:bg-[#06090E]/50 transition">
-                        <td className="p-3 font-bold text-white">{u.username}</td>
-                        <td className="p-3 font-mono">
-                          <div className="flex items-center gap-2">
-                            <span className="text-cyan-400">
-                              {showPasswords[u.username] ? u.password || '---' : '••••••••'}
-                            </span>
-                            <button 
-                              onClick={() => handleToggleShowPass(u.username)}
-                              className="text-slate-500 hover:text-white transition cursor-pointer"
-                              title={showPasswords[u.username] ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                            >
-                              {showPasswords[u.username] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                            </button>
-                          </div>
-                        </td>
-                        <td className="p-3 font-bold text-emerald-400">{(u.balance || 0).toLocaleString('vi-VN')} VNĐ</td>
-                        <td className="p-3">
-                          {u.isBanned ? (
-                            <span className="text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">Bị BAN</span>
-                          ) : (
-                            <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Hoạt động</span>
-                          )}
-                        </td>
-                        <td className="p-3 text-right space-x-2">
-                          <button 
-                            onClick={() => handleViewUserTransactions(u.username)} 
-                            className="bg-cyan-500/10 text-cyan-400 p-1.5 rounded-lg border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer" 
-                            title="Xem lịch sử giao dịch tài khoản này"
-                          >
-                            <History className="w-3.5 h-3.5" />
-                          </button>
+                    {users.filter(u => u.username?.toLowerCase().includes(userSearch.toLowerCase())).map((u, i) => {
+                      // Tính toán trạng thái Online dựa trên Heartbeat (last_seen trong vòng 30 giây)
+                      const isUserOnline = u.is_online && u.last_seen && (new Date().getTime() - new Date(u.last_seen).getTime() < 30000);
 
-                          <button onClick={() => setAdjustBal({ username: u.username, amount: 0, isAdd: true })} className="bg-emerald-500/10 text-emerald-400 p-1.5 rounded-lg border border-emerald-500/20 cursor-pointer" title="Cộng/Trừ tiền"><DollarSign className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => setEditUserPass({ username: u.username, newPass: '' })} className="bg-cyan-500/10 text-cyan-400 p-1.5 rounded-lg border border-cyan-500/20 cursor-pointer" title="Đổi mật khẩu"><Key className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => handleToggleBanUser(u)} className={`p-1.5 rounded-lg border cursor-pointer ${u.isBanned ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
-                            {u.isBanned ? <CheckCircle className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
-                          </button>
-                          <button onClick={() => handleDeleteUser(u.id, u.username)} className="bg-rose-500/10 text-rose-400 p-1.5 rounded-lg border border-rose-500/20 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
-                        </td>
-                      </tr>
-                    ))}
+                      return (
+                        <tr key={i} className="hover:bg-[#06090E]/50 transition">
+                          <td className="p-3 font-bold text-white">{u.username}</td>
+                          <td className="p-3 font-mono">
+                            <div className="flex items-center gap-2">
+                              <span className="text-cyan-400">
+                                {showPasswords[u.username] ? u.password || '---' : '••••••••'}
+                              </span>
+                              <button 
+                                onClick={() => handleToggleShowPass(u.username)}
+                                className="text-slate-500 hover:text-white transition cursor-pointer"
+                                title={showPasswords[u.username] ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                              >
+                                {showPasswords[u.username] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                          </td>
+                          <td className="p-3 font-bold text-emerald-400">{(u.balance || 0).toLocaleString('vi-VN')} VNĐ</td>
+                          
+                          {/* 1. HIỂN THỊ ONLINE / OFFLINE REALTIME */}
+                          <td className="p-3">
+                            {isUserOnline ? (
+                              <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 text-[10px] inline-flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Online
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 font-medium bg-slate-500/10 px-2 py-0.5 rounded border border-slate-500/20 text-[10px] inline-flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Offline
+                              </span>
+                            )}
+                          </td>
+
+                          {/* 2. HIỂN THỊ TRẠNG THÁI KHÓA/MỞ TÀI KHOẢN */}
+                          <td className="p-3">
+                            {u.isBanned ? (
+                              <span className="text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 text-[10px]">Bị BAN</span>
+                            ) : (
+                              <span className="text-cyan-400 font-bold bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 text-[10px]">Hoạt động</span>
+                            )}
+                          </td>
+
+                          <td className="p-3 text-right space-x-2">
+                            <button 
+                              onClick={() => handleViewUserTransactions(u.username)} 
+                              className="bg-cyan-500/10 text-cyan-400 p-1.5 rounded-lg border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer" 
+                              title="Xem lịch sử giao dịch"
+                            >
+                              <History className="w-3.5 h-3.5" />
+                            </button>
+
+                            <button onClick={() => setAdjustBal({ username: u.username, amount: 0, isAdd: true })} className="bg-emerald-500/10 text-emerald-400 p-1.5 rounded-lg border border-emerald-500/20 cursor-pointer" title="Cộng/Trừ tiền"><DollarSign className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => setEditUserPass({ username: u.username, newPass: '' })} className="bg-cyan-500/10 text-cyan-400 p-1.5 rounded-lg border border-cyan-500/20 cursor-pointer" title="Đổi mật khẩu"><Key className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => handleToggleBanUser(u)} className={`p-1.5 rounded-lg border cursor-pointer ${u.isBanned ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                              {u.isBanned ? <CheckCircle className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
+                            </button>
+                            <button onClick={() => handleDeleteUser(u.id, u.username)} className="bg-rose-500/10 text-rose-400 p-1.5 rounded-lg border border-rose-500/20 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1028,7 +1051,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 5. TAB SEPAY (ĐÃ ĐỒNG BỘ HIỂN THỊ REALTIME TỪ DATABASE CLOUD) */}
+        {/* 5. TAB SEPAY */}
         {activeTab === 'sepay' && (
           <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
             <h2 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">

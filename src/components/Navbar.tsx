@@ -51,6 +51,42 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // CƠ CHẾ HEARTBEAT CẬP NHẬT TRẠNG THÁI ONLINE / OFFLINE REALTIME
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const updateOnlineStatus = async (status: boolean) => {
+      await supabase
+        .from('users')
+        .update({ 
+          is_online: status,
+          last_seen: new Date().toISOString() 
+        })
+        .eq('id', currentUser.id);
+    };
+
+    // 1. Gửi tín hiệu Online ngay khi vào web
+    updateOnlineStatus(true);
+
+    // 2. Định kỳ bắn Heartbeat giữ Online mỗi 15 giây
+    const interval = setInterval(() => {
+      updateOnlineStatus(true);
+    }, 15000);
+
+    // 3. Tự động chuyển Offline khi đóng tab / tắt trình duyệt
+    const handleUnload = () => {
+      updateOnlineStatus(false);
+    };
+
+    window.addEventListener('beforeunload', handleUnload);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('beforeunload', handleUnload);
+      updateOnlineStatus(false);
+    };
+  }, [currentUser]);
+
   const checkLoggedInUser = async () => {
     const savedUser = localStorage.getItem('ztool_current_user');
     if (savedUser) {
@@ -122,7 +158,9 @@ export default function Navbar() {
             username: usernameInput.trim(),
             password: passwordInput,
             balance: 0,
-            isBanned: false
+            isBanned: false,
+            is_online: true,
+            last_seen: new Date().toISOString()
           }
         ])
         .select()
@@ -184,7 +222,10 @@ export default function Navbar() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (currentUser) {
+      await supabase.from('users').update({ is_online: false }).eq('id', currentUser.id);
+    }
     localStorage.removeItem('ztool_current_user');
     setCurrentUser(null);
     setShowUserDropdown(false);
@@ -265,8 +306,9 @@ export default function Navbar() {
                     </span>
                   </div>
 
-                  <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-xs shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-xs shrink-0 relative">
                     {currentUser.username.substring(0, 1).toUpperCase()}
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#06090E] absolute -bottom-0.5 -right-0.5 animate-pulse"></span>
                   </div>
 
                   <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition duration-200 mr-1 ${showUserDropdown ? 'rotate-180' : ''}`} />
@@ -361,7 +403,7 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* MÃ QR ĐÃ ĐỒNG BỘ CHÍNH XÁC VỚI TÀI KHOẢN ẢO 96247JFG2G CỦA SEPAY */}
+            {/* MÃ QR SEPAY VỚI TÀI KHOẢN ẢO 96247JFG2G */}
             <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-2xl flex flex-col items-center space-y-3 text-center">
               <img
                 src={`https://qr.sepay.vn/img?bank=BIDV&acc=96247JFG2G&template=compact&amount=${rechargeAmount}&des=${encodeURIComponent(`NAP ${currentUser.username}`)}`}
