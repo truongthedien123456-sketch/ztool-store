@@ -57,13 +57,21 @@ export async function POST(request: Request) {
       targetAccountKey = `${username}_${cleanToolCode}`;
     }
 
-    // 3. Tính toán expire_timestamp (0 = Vĩnh Viễn)
+    // 3. KIỂM TRA CHẶN NẾU TÀI KHOẢN ĐÃ LÀ VĨNH VIỄN (expire_timestamp === 0)
+    const currentExpire = accountsJson[targetAccountKey]?.expire_timestamp || 0;
+    if (currentExpire === 0 && accountsJson[targetAccountKey]) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Tài khoản này đã sở hữu gói Vĩnh Viễn, không thể gia hạn thêm!' 
+      }, { status: 400 });
+    }
+
+    // 4. Tính toán expire_timestamp (0 = Vĩnh Viễn)
     let expireTimestamp = 0;
     const nowSec = Math.floor(Date.now() / 1000);
 
     if (durationDays && Number(durationDays) > 0) {
       const addedSec = Number(durationDays) * 86400; // 1 ngày = 86400 giây
-      const currentExpire = accountsJson[targetAccountKey]?.expire_timestamp || 0;
 
       if (currentExpire > nowSec) {
         expireTimestamp = currentExpire + addedSec; // Gia hạn nối tiếp nếu chưa hết hạn
@@ -72,7 +80,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // 4. Cập nhật hoặc tạo mới tài khoản vào JSON kèm theo tool_code
+    // 5. Cập nhật hoặc tạo mới tài khoản vào JSON kèm theo tool_code
     accountsJson[targetAccountKey] = {
       password: password,
       role: accountsJson[targetAccountKey]?.role || 'user',
@@ -81,7 +89,7 @@ export async function POST(request: Request) {
       device_id: accountsJson[targetAccountKey]?.device_id || ''
     };
 
-    // 5. Đẩy JSON mới lên GitHub Gist
+    // 6. Đẩy JSON mới lên GitHub Gist
     const patchGistRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
       method: 'PATCH',
       headers: {

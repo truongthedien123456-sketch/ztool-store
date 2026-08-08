@@ -92,6 +92,28 @@ export default function ToolsPage() {
       return;
     }
 
+    // KIỂM TRA TRÊN GIST XEM TOOL NÀY ĐÃ LÀ VĨNH VIỄN CHƯA TRƯỚC KHI CHO PHÉP MUA
+    try {
+      const gistId = '21f0a39cbc434e5033d89f06e2c7d26e';
+      const gistCheckRes = await fetch(`https://api.github.com/gists/${gistId}?timestamp=${Date.now()}`, { cache: 'no-store' });
+      if (gistCheckRes.ok) {
+        const gistJson = await gistCheckRes.json();
+        const accountsParsed = JSON.parse(gistJson.files['accounts.json']?.content || '{}');
+        
+        const tCode = selectedToolForBuy.toolCode || selectedToolForBuy.tool_code || '';
+        const cleanToolCode = tCode ? tCode.replace(/[^a-zA-Z0-9]/g, '_') : 'tool';
+        const targetKey = tCode ? `${userData.username}_${cleanToolCode}` : userData.username;
+
+        if (accountsParsed[targetKey] && accountsParsed[targetKey].expire_timestamp === 0) {
+          setLoadingBuy(false);
+          setPurchaseMsg({ type: 'error', text: 'Bạn đã sở hữu gói Vĩnh Viễn cho tool này rồi, không thể gia hạn hoặc mua tiếp!' });
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('Lỗi kiểm tra vĩnh viễn trên Gist:', e);
+    }
+
     let priceStr = '0';
     let durationText = '1 Ngày';
     let durationDays = 1;
@@ -136,7 +158,7 @@ export default function ToolsPage() {
           username: userData.username,
           password: userData.password,
           durationDays: durationDays,
-          tool_code: selectedToolForBuy.toolCode || selectedToolForBuy.tool_code || '' // ĐÃ TRUYỀN MÃ TOOL VÀO ĐÂY
+          tool_code: selectedToolForBuy.toolCode || selectedToolForBuy.tool_code || ''
         })
       });
 

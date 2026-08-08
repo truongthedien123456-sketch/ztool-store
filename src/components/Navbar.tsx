@@ -37,7 +37,7 @@ export default function Navbar() {
   const [rechargeAmount, setRechargeAmount] = useState('50000');
   const [copied, setCopied] = useState(false);
 
-  // Dữ liệu Gist, Tools và Lịch sử
+  // Dữ liệu Gist và Lịch sử
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [userGistData, setUserGistData] = useState<any[] | null>(null);
@@ -526,57 +526,61 @@ export default function Navbar() {
                     </Link>
                   </div>
                 ) : (
-                  userGistData.map((toolAcc: any, idx: number) => (
-                    <div key={idx} className="bg-[#06090E] border border-[#1C2638] p-5 rounded-2xl space-y-4 shadow-lg">
-                      {/* Tiêu đề Tên tool và Thời gian nổi bật */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#1C2638] pb-3">
-                        <div className="space-y-0.5">
-                          <span className="text-[10px] text-cyan-400 font-extrabold uppercase tracking-widest block">TÊN TOOL SỬ DỤNG</span>
-                          <h4 className="font-black text-white text-base tracking-wide uppercase">{toolAcc.toolName}</h4>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-slate-400 block mb-1 font-bold">THỜI HẠN SỬ DỤNG:</span>
-                          {renderRemainingTime(toolAcc.expire_timestamp)}
-                        </div>
-                      </div>
+                  userGistData.map((toolAcc: any, idx: number) => {
+                    const isLifetime = toolAcc.expire_timestamp === 0;
 
-                      {/* Khung Tài khoản & Mật khẩu tool */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-[#0D121D] p-3.5 rounded-xl border border-[#1C2638]">
-                        <div className="flex flex-col">
-                          <span className="text-[10px] text-slate-400 font-bold mb-0.5">TÀI KHOẢN TOOL:</span>
-                          <span className="font-mono font-bold text-cyan-300">{toolAcc.accountName}</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[10px] text-slate-400 font-bold mb-0.5">MẬT KHẨU TOOL:</span>
-                          <span className="font-mono font-bold text-emerald-400">{toolAcc.password || '---'}</span>
-                        </div>
-                      </div>
-
-                      {/* Nút gia hạn với hiệu ứng hover rực rỡ */}
-                      {toolAcc.expire_timestamp > 0 ? (
-                        <div className="space-y-2 pt-1">
-                          <div className="flex items-center justify-between pt-1">
-                            <span className="text-xs font-bold text-amber-400 flex items-center gap-1">
-                              <RefreshCw className="w-3.5 h-3.5" /> Cần gia hạn thêm thời gian?
-                            </span>
-                            <button 
-                              onClick={() => {
-                                setShowPurchasedToolsModal(false);
-                                router.push('/tools');
-                              }}
-                              className="bg-gradient-to-r from-emerald-400 to-teal-300 text-slate-950 font-black py-2.5 px-6 rounded-xl text-xs shadow-md shadow-emerald-500/20 border-2 border-emerald-200 cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-emerald-400/50 hover:brightness-110 active:scale-95 flex items-center gap-1.5"
-                            >
-                              <RefreshCw className="w-3.5 h-3.5 text-slate-950 stroke-[2.5]" /> GIA HẠN NGAY
-                            </button>
+                    return (
+                      <div key={idx} className="bg-[#06090E] border border-[#1C2638] p-5 rounded-2xl space-y-4 shadow-lg">
+                        {/* Tiêu đề Tên tool và Thời gian nổi bật */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#1C2638] pb-3">
+                          <div className="space-y-0.5">
+                            <span className="text-[10px] text-cyan-400 font-extrabold uppercase tracking-widest block">TÊN TOOL SỬ DỤNG</span>
+                            <h4 className="font-black text-white text-base tracking-wide uppercase">{toolAcc.toolName}</h4>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-400 block mb-1 font-bold">THỜI HẠN SỬ DỤNG:</span>
+                            {renderRemainingTime(toolAcc.expire_timestamp)}
                           </div>
                         </div>
-                      ) : (
-                        <div className="text-center bg-cyan-500/10 border border-cyan-500/30 p-3 rounded-xl text-xs text-cyan-300 font-bold">
-                          🎉 Bạn đang sở hữu gói bản quyền Vĩnh Viễn. Không cần gia hạn!
+
+                        {/* Khung Tài khoản & Mật khẩu tool */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-[#0D121D] p-3.5 rounded-xl border border-[#1C2638]">
+                          <div className="flex flex-col">
+                            <span className="text-[10px] text-slate-400 font-bold mb-0.5">TÀI KHOẢN TOOL:</span>
+                            <span className="font-mono font-bold text-cyan-300">{toolAcc.accountName}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[10px] text-slate-400 font-bold mb-0.5">MẬT KHẨU TOOL:</span>
+                            <span className="font-mono font-bold text-emerald-400">{toolAcc.password || '---'}</span>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  ))
+
+                        {/* CHỈ HIỆN NÚT GIA HẠN KHI CHƯA PHẢI VĨNH VIỄN */}
+                        {!isLifetime ? (
+                          <div className="space-y-2 pt-1">
+                            <div className="flex items-center justify-between pt-1">
+                              <span className="text-xs font-bold text-amber-400 flex items-center gap-1">
+                                <RefreshCw className="w-3.5 h-3.5" /> Cần gia hạn thêm thời gian?
+                              </span>
+                              <button 
+                                onClick={() => {
+                                  setShowPurchasedToolsModal(false);
+                                  router.push('/tools');
+                                }}
+                                className="bg-gradient-to-r from-emerald-400 to-teal-300 text-slate-950 font-black py-2.5 px-6 rounded-xl text-xs shadow-md shadow-emerald-500/20 border-2 border-emerald-200 cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-emerald-400/50 hover:brightness-110 active:scale-95 flex items-center gap-1.5"
+                              >
+                                <RefreshCw className="w-3.5 h-3.5 text-slate-950 stroke-[2.5]" /> GIA HẠN NGAY
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center bg-cyan-500/10 border border-cyan-500/30 p-3 rounded-xl text-xs text-cyan-300 font-bold">
+                            🎉 Bạn đang sở hữu gói bản quyền Vĩnh Viễn. Không cần gia hạn!
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
                 )}
               </div>
             )}
