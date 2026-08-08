@@ -186,15 +186,23 @@ export default function AdminPage() {
     }
   };
 
-  const handleExecAdjustBalance = async (u: any) => {
-    if (!adjustBal || !adjustBal.amount) return;
-    const cur = u.balance || 0;
-    const next = adjustBal.isAdd ? cur + Number(adjustBal.amount) : Math.max(0, cur - Number(adjustBal.amount));
+  // XỬ LÝ CỘNG / TRỪ TIỀN CHUẨN XÁC
+  const handleExecAdjustBalance = async (u: any, isAddMode: boolean) => {
+    if (!adjustBal || !adjustBal.amount) return alert('Vui lòng nhập số tiền hợp lệ!');
+    
+    const cur = Number(u.balance) || 0;
+    const changeAmt = Number(adjustBal.amount);
+    
+    // Nếu isAddMode = true -> Cộng tiền, ngược lại -> Trừ tiền
+    const next = isAddMode ? cur + changeAmt : Math.max(0, cur - changeAmt);
     
     const { error } = await supabase.from('users').update({ balance: next }).eq('id', u.id);
-    if (!error) {
+    
+    if (error) {
+      alert('Lỗi cập nhật số dư: ' + error.message);
+    } else {
       setAdjustBal(null);
-      alert('Cập nhật số dư thành công!');
+      alert(`${isAddMode ? 'Cộng' : 'Trừ'} tiền thành công! Số dư mới: ${next.toLocaleString('vi-VN')} VNĐ`);
       loadAllSyncData();
     }
   };
@@ -266,7 +274,7 @@ export default function AdminPage() {
     if (!error) loadAllSyncData();
   };
 
-  // QUẢN LÝ DỰ ÁN SHOP (CÓ UPLOAD FILE ÁNH TƯƠNG TỰ TOOL AUTO)
+  // QUẢN LÝ DỰ ÁN SHOP
   const handleSaveProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectForm.title) return alert('Nhập tên dự án!');
@@ -541,12 +549,12 @@ export default function AdminPage() {
                           )}
                         </td>
                         <td className="p-3 text-right space-x-2">
-                          <button onClick={() => setAdjustBal({ username: u.username, amount: 0, isAdd: true })} className="bg-emerald-500/10 text-emerald-400 p-1.5 rounded-lg border border-emerald-500/20" title="Cộng/Trừ tiền"><DollarSign className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => setEditUserPass({ username: u.username, newPass: '' })} className="bg-cyan-500/10 text-cyan-400 p-1.5 rounded-lg border border-cyan-500/20" title="Đổi mật khẩu"><Key className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => handleToggleBanUser(u)} className={`p-1.5 rounded-lg border ${u.isBanned ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                          <button onClick={() => setAdjustBal({ username: u.username, amount: 0, isAdd: true })} className="bg-emerald-500/10 text-emerald-400 p-1.5 rounded-lg border border-emerald-500/20 cursor-pointer" title="Cộng/Trừ tiền"><DollarSign className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => setEditUserPass({ username: u.username, newPass: '' })} className="bg-cyan-500/10 text-cyan-400 p-1.5 rounded-lg border border-cyan-500/20 cursor-pointer" title="Đổi mật khẩu"><Key className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => handleToggleBanUser(u)} className={`p-1.5 rounded-lg border cursor-pointer ${u.isBanned ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
                             {u.isBanned ? <CheckCircle className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
                           </button>
-                          <button onClick={() => handleDeleteUser(u.id, u.username)} className="bg-rose-500/10 text-rose-400 p-1.5 rounded-lg border border-rose-500/20"><Trash2 className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => handleDeleteUser(u.id, u.username)} className="bg-rose-500/10 text-rose-400 p-1.5 rounded-lg border border-rose-500/20 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
                         </td>
                       </tr>
                     ))}
@@ -559,20 +567,48 @@ export default function AdminPage() {
                   <h4 className="text-xs font-bold text-white">Đổi mật khẩu cho: {editUserPass.username}</h4>
                   <div className="flex gap-2">
                     <input type="text" placeholder="Nhập mật khẩu mới..." value={editUserPass.newPass} onChange={e => setEditUserPass({ ...editUserPass, newPass: e.target.value })} className="bg-[#0D121D] border border-[#1C2638] px-3 py-1.5 text-xs text-white rounded-lg flex-1" />
-                    <button onClick={() => { const user = users.find(u => u.username === editUserPass.username); if (user) handleSaveUserPassword(user.id); }} className="bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-lg text-xs font-bold">Lưu</button>
-                    <button onClick={() => setEditUserPass(null)} className="text-slate-400 text-xs px-2">Hủy</button>
+                    <button onClick={() => { const user = users.find(u => u.username === editUserPass.username); if (user) handleSaveUserPassword(user.id); }} className="bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer">Lưu</button>
+                    <button onClick={() => setEditUserPass(null)} className="text-slate-400 text-xs px-2 cursor-pointer">Hủy</button>
                   </div>
                 </div>
               )}
 
+              {/* Ô ĐIỀU CHỈNH SỐ DƯ TÀI KHOẢN (ĐÃ FIX CHUẨN CỘNG / TRỪ) */}
               {adjustBal && (
                 <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl space-y-3 mt-4">
                   <h4 className="text-xs font-bold text-white">Điều chỉnh số dư ví cho: {adjustBal.username}</h4>
                   <div className="flex gap-2 items-center">
-                    <input type="number" placeholder="Nhập số tiền..." value={adjustBal.amount || ''} onChange={e => setAdjustBal({ ...adjustBal, amount: Number(e.target.value) })} className="bg-[#0D121D] border border-[#1C2638] px-3 py-1.5 text-xs text-white rounded-lg flex-1" />
-                    <button onClick={() => { const user = users.find(u => u.username === adjustBal.username); if (user) { setAdjustBal({ ...adjustBal, isAdd: true }); handleExecAdjustBalance(user); } }} className="bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-lg text-xs font-bold">+ Cộng tiền</button>
-                    <button onClick={() => { const user = users.find(u => u.username === adjustBal.username); if (user) { setAdjustBal({ ...adjustBal, isAdd: false }); handleExecAdjustBalance(user); } }} className="bg-rose-500/20 text-rose-400 px-3 py-1.5 rounded-lg text-xs font-bold">- Trừ tiền</button>
-                    <button onClick={() => setAdjustBal(null)} className="text-slate-400 text-xs px-2">Hủy</button>
+                    <input 
+                      type="number" 
+                      placeholder="Nhập số tiền..." 
+                      value={adjustBal.amount || ''} 
+                      onChange={e => setAdjustBal({ ...adjustBal, amount: Number(e.target.value) })} 
+                      className="bg-[#0D121D] border border-[#1C2638] px-3 py-1.5 text-xs text-white rounded-lg flex-1 focus:outline-none" 
+                    />
+                    
+                    {/* Nút Cộng tiền */}
+                    <button 
+                      onClick={() => { 
+                        const user = users.find(u => u.username === adjustBal.username); 
+                        if (user) handleExecAdjustBalance(user, true); 
+                      }} 
+                      className="bg-emerald-500/20 text-emerald-400 px-3.5 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-500/30 transition cursor-pointer"
+                    >
+                      + Cộng tiền
+                    </button>
+
+                    {/* Nút Trừ tiền */}
+                    <button 
+                      onClick={() => { 
+                        const user = users.find(u => u.username === adjustBal.username); 
+                        if (user) handleExecAdjustBalance(user, false); 
+                      }} 
+                      className="bg-rose-500/20 text-rose-400 px-3.5 py-1.5 rounded-lg text-xs font-bold hover:bg-rose-500/30 transition cursor-pointer"
+                    >
+                      - Trừ tiền
+                    </button>
+
+                    <button onClick={() => setAdjustBal(null)} className="text-slate-400 text-xs px-2 cursor-pointer">Hủy</button>
                   </div>
                 </div>
               )}
@@ -593,7 +629,6 @@ export default function AdminPage() {
                 <input type="text" required value={toolForm.name} onChange={e => setToolForm({ ...toolForm, name: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="vd: AUTO FARM F17" />
               </div>
 
-              {/* KHUNG CHỌN FILE ẢNH & PREVIEW VUÔNG 1:1 TRỌN VẸN ẢNH */}
               <div className="space-y-2">
                 <label className="block text-[11px] text-slate-400">Ảnh Minh Họa Sản Phẩm</label>
                 
@@ -673,8 +708,8 @@ export default function AdminPage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => { setToolForm(t); setPreviewUrl(t.image); setIsEditingTool(true); }} className="text-cyan-400 p-2 hover:bg-cyan-500/10 rounded-lg"><Edit className="w-4 h-4" /></button>
-                      <button onClick={() => handleDeleteTool(t.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => { setToolForm(t); setPreviewUrl(t.image); setIsEditingTool(true); }} className="text-cyan-400 p-2 hover:bg-cyan-500/10 rounded-lg cursor-pointer"><Edit className="w-4 h-4" /></button>
+                      <button onClick={() => handleDeleteTool(t.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
                 ))}
@@ -683,7 +718,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 3. TAB DỰ ÁN (ĐÃ CẬP NHẬT Ô CHỌN FILE TỪ MÁY) */}
+        {/* 3. TAB DỰ ÁN */}
         {activeTab === 'projects' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveProject} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
@@ -696,7 +731,6 @@ export default function AdminPage() {
                 <input type="text" required value={projectForm.title} onChange={e => setProjectForm({ ...projectForm, title: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none" placeholder="Tên dự án..." />
               </div>
 
-              {/* Ô CHỌN FILE ẢNH CHO DỰ ÁN GIỐNG TRANG TOOL AUTO */}
               <div className="space-y-2">
                 <label className="block text-[11px] text-slate-400">Ảnh Minh Họa Dự Án</label>
                 
@@ -760,7 +794,7 @@ export default function AdminPage() {
                         <p className="text-[11px] text-slate-400 line-clamp-1 mt-1">{p.description}</p>
                       </div>
                     </div>
-                    <button onClick={() => handleDeleteProject(p.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleDeleteProject(p.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 ))}
               </div>
@@ -804,7 +838,7 @@ export default function AdminPage() {
                       <span className="text-xs font-bold text-white font-mono">{k.keyString}</span>
                       <p className="text-[10px] text-slate-400">Tool: {k.toolName} | Thời hạn: {k.duration}</p>
                     </div>
-                    <button onClick={() => handleDeleteKey(k.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleDeleteKey(k.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 ))}
               </div>
@@ -859,10 +893,10 @@ export default function AdminPage() {
                   <div key={f.id} className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl flex items-start justify-between gap-4">
                     <div>
                       <span className="text-xs font-bold text-cyan-400">{f.username || 'Khách ẩn danh'}</span>
-                      <p className="text-xs text-slate-300 mt-1">{f.content}</p>
+                      <p className="text-xs text-slate-300 mt-1 whitespace-pre-line leading-relaxed">{f.content}</p>
                       <span className="text-[10px] text-slate-500 mt-1 block">{f.created_at ? new Date(f.created_at).toLocaleString('vi-VN') : 'Gần đây'}</span>
                     </div>
-                    <button onClick={() => handleDeleteFeedback(f.id)} className="text-rose-400 p-1.5 hover:bg-rose-500/10 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleDeleteFeedback(f.id)} className="text-rose-400 p-1.5 hover:bg-rose-500/10 rounded-lg cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 ))
               )}
