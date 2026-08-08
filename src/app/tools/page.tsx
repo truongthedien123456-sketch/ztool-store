@@ -21,7 +21,24 @@ export default function ToolsPage() {
 
   useEffect(() => {
     loadToolsData();
-  }, []);
+
+    // Lắng nghe sự kiện từ Navbar để mở modal mua/gia hạn tự động khi bấm "Gia hạn ngay"
+    const handleOpenBuyModal = (e: any) => {
+      const toolCodeToBuy = e.detail?.toolCode;
+      if (toolCodeToBuy && tools.length > 0) {
+        const found = tools.find(t => (t.toolCode || t.tool_code || '').trim().toLowerCase() === toolCodeToBuy.trim().toLowerCase());
+        if (found) {
+          setSelectedToolForBuy(found);
+          setPurchaseMsg(null);
+        }
+      }
+    };
+
+    window.addEventListener('open-buy-tool-modal', handleOpenBuyModal);
+    return () => {
+      window.removeEventListener('open-buy-tool-modal', handleOpenBuyModal);
+    };
+  }, [tools]);
 
   const formatPrice = (price: string | number) => {
     if (!price) return '---';
@@ -375,10 +392,10 @@ export default function ToolsPage() {
           </div>
         )}
 
-        {/* Modal Mua */}
+        {/* Modal Mua / Xác nhận gia hạn (CÓ ẢNH VÀ MÔ TẢ PHÍA TRÊN) */}
         {selectedToolForBuy && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-            <div className="bg-[#0F141C] border border-[#1A2332] w-full max-w-lg rounded-3xl p-6 space-y-6 relative shadow-2xl">
+            <div className="bg-[#0F141C] border border-[#1A2332] w-full max-w-lg rounded-3xl p-6 space-y-6 relative shadow-2xl max-h-[90vh] overflow-y-auto">
               <button
                 onClick={() => setSelectedToolForBuy(null)}
                 className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#080B10] border border-[#1A2332]"
@@ -389,6 +406,17 @@ export default function ToolsPage() {
               <div className="space-y-1">
                 <span className="text-xs text-cyan-400 font-bold">XÁC NHẬN MUA SẢN PHẨM</span>
                 <h2 className="text-xl font-black text-white">{selectedToolForBuy.name}</h2>
+              </div>
+
+              {/* ẢNH VÀ MÔ TẢ TOOL Ở PHÍA TRÊN KHUNG GÓI */}
+              <div className="bg-[#080B10] border border-[#1A2332] p-4 rounded-2xl flex gap-4 items-center">
+                <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-[#1A2332]">
+                  <img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover" />
+                </div>
+                <div className="space-y-1 flex-1 min-w-0">
+                  <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider block">Mã Tool: {selectedToolForBuy.toolCode || selectedToolForBuy.tool_code || '---'}</span>
+                  <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">{selectedToolForBuy.description || 'Chưa có mô tả cho sản phẩm này.'}</p>
+                </div>
               </div>
 
               {purchaseMsg && (

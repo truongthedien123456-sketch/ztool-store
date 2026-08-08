@@ -37,7 +37,7 @@ export default function Navbar() {
   const [rechargeAmount, setRechargeAmount] = useState('50000');
   const [copied, setCopied] = useState(false);
 
-  // Dữ liệu Gist và Lịch sử
+  // Dữ liệu Gist, Tools và Lịch sử
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [userGistData, setUserGistData] = useState<any[] | null>(null);
@@ -555,7 +555,7 @@ export default function Navbar() {
                           </div>
                         </div>
 
-                        {/* CHỈ HIỆN NÚT GIA HẠN KHI CHƯA PHẢI VĨNH VIỄN */}
+                        {/* CHỈ HIỆN NÚT GIA HẠN KHI CHƯA PHẢI VĨNH VIỄN - KHI BẤM SẼ MỞ TRỰC TIẾP MODAL MUA TƯƠNG ỨNG */}
                         {!isLifetime ? (
                           <div className="space-y-2 pt-1">
                             <div className="flex items-center justify-between pt-1">
@@ -565,7 +565,14 @@ export default function Navbar() {
                               <button 
                                 onClick={() => {
                                   setShowPurchasedToolsModal(false);
-                                  router.push('/tools');
+                                  if (pathname !== '/tools') {
+                                    router.push('/tools');
+                                    setTimeout(() => {
+                                      window.dispatchEvent(new CustomEvent('open-buy-tool-modal', { detail: { toolCode: toolAcc.toolCode } }));
+                                    }, 500);
+                                  } else {
+                                    window.dispatchEvent(new CustomEvent('open-buy-tool-modal', { detail: { toolCode: toolAcc.toolCode } }));
+                                  }
                                 }}
                                 className="bg-gradient-to-r from-emerald-400 to-teal-300 text-slate-950 font-black py-2.5 px-6 rounded-xl text-xs shadow-md shadow-emerald-500/20 border-2 border-emerald-200 cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-emerald-400/50 hover:brightness-110 active:scale-95 flex items-center gap-1.5"
                               >
