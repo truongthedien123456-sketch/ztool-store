@@ -22,7 +22,6 @@ export default function ToolsPage() {
     loadToolsData();
   }, []);
 
-  // Hàm chuyển đổi chuỗi giá tiền sang dạng có dấu phẩy (vd: "5000" -> "5,000")
   const formatPrice = (price: string | number) => {
     if (!price) return '---';
     const num = Number(String(price).replace(/[^0-9]/g, ''));
@@ -31,7 +30,7 @@ export default function ToolsPage() {
   };
 
   const loadToolsData = async () => {
-    const { data, error } = await supabase.from('tools').select('*').order('id', { ascending: false });
+    const { data } = await supabase.from('tools').select('*').order('id', { ascending: false });
     
     if (data && data.length > 0) {
       setTools(data);
@@ -41,6 +40,7 @@ export default function ToolsPage() {
           id: 1,
           name: 'AUTO FARM F17',
           image: 'https://i.ibb.co/8L2gsmQ0/logo.jpg',
+          status: 'Đang hoạt động',
           priceDay: '5000',
           priceWeek: '20000',
           priceMonth: '50000',
@@ -55,6 +55,11 @@ export default function ToolsPage() {
   const handleBuyTool = async () => {
     setPurchaseMsg(null);
     if (!selectedToolForBuy) return;
+
+    if (selectedToolForBuy.status === 'Tạm ngưng') {
+      setPurchaseMsg({ type: 'error', text: 'Sản phẩm Tool này hiện đang TẠM NGƯNG cung cấp!' });
+      return;
+    }
 
     const currentUsername = localStorage.getItem('ztool_current_user');
     if (!currentUsername) {
@@ -124,15 +129,20 @@ export default function ToolsPage() {
           {tools.map((tool) => (
             <div key={tool.id} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-xl hover:border-neonBlue/50 transition duration-300">
               <div className="space-y-4">
-                {/* Khung ảnh vuông TỈ LỆ 1:1 */}
                 <div className="w-full aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
                   <img 
                     src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
                     alt={tool.name} 
                     className="w-full h-full object-cover" 
                   />
-                  <span className="absolute top-3 right-3 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md">
-                    ONLINE 24/7
+                  
+                  {/* HUY HIỆU TRẠNG THÁI TỰ ĐỘNG THAY ĐỔI THEO ADMIN */}
+                  <span className={`absolute top-3 right-3 text-[10px] font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md border ${
+                    tool.status === 'Tạm ngưng' 
+                      ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' 
+                      : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
+                  }`}>
+                    {tool.status ? tool.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
                   </span>
                 </div>
 
@@ -143,33 +153,37 @@ export default function ToolsPage() {
                   </p>
                 </div>
 
-                {/* Khung Giá Tiền Đã Được Định Dạng 1,000 VNĐ */}
                 <div className="bg-[#080B10] border border-[#1A2332] p-3.5 rounded-2xl space-y-2 text-xs">
                   <div className="flex justify-between items-center text-gray-300">
                     <span>Theo Ngày:</span>
-                    <b className="text-emerald-400 font-bold">{tool.priceDay ? `${formatPrice(tool.priceDay)} VNĐ` : '---'}</b>
+                    <b className="text-emerald-400 font-bold">{formatPrice(tool.priceDay)} VNĐ</b>
                   </div>
                   <div className="flex justify-between items-center text-gray-300">
                     <span>Theo Tuần:</span>
-                    <b className="text-emerald-400 font-bold">{tool.priceWeek ? `${formatPrice(tool.priceWeek)} VNĐ` : '---'}</b>
+                    <b className="text-emerald-400 font-bold">{formatPrice(tool.priceWeek)} VNĐ</b>
                   </div>
                   <div className="flex justify-between items-center text-gray-300">
                     <span>Theo Tháng:</span>
-                    <b className="text-emerald-400 font-bold">{tool.priceMonth ? `${formatPrice(tool.priceMonth)} VNĐ` : '---'}</b>
+                    <b className="text-emerald-400 font-bold">{formatPrice(tool.priceMonth)} VNĐ</b>
                   </div>
                   <div className="flex justify-between items-center text-gray-300 border-t border-[#1A2332] pt-1.5">
                     <span className="font-semibold text-white">Vĩnh Viễn:</span>
-                    <b className="text-cyanGlow font-black">{tool.priceLifetime ? `${formatPrice(tool.priceLifetime)} VNĐ` : '---'}</b>
+                    <b className="text-cyanGlow font-black">{formatPrice(tool.priceLifetime)} VNĐ</b>
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <button
+                  disabled={tool.status === 'Tạm ngưng'}
                   onClick={() => { setSelectedToolForBuy(tool); setPurchaseMsg(null); }}
-                  className="bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 hover:opacity-90 transition cursor-pointer"
+                  className={`font-extrabold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                    tool.status === 'Tạm ngưng' 
+                      ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700' 
+                      : 'bg-gradient-to-r from-neonBlue to-cyanGlow text-black hover:opacity-90'
+                  }`}
                 >
-                  <ShoppingBag className="w-4 h-4" /> Mua Ngay
+                  <ShoppingBag className="w-4 h-4" /> {tool.status === 'Tạm ngưng' ? 'Tạm Ngưng' : 'Mua Ngay'}
                 </button>
 
                 <button
@@ -204,7 +218,7 @@ export default function ToolsPage() {
                 </div>
               </div>
 
-              <div className="w-full max-w-md mx-auto aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden">
+              <div className="w-full max-w-md mx-auto aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
                 <img 
                   src={selectedToolForDetail.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
                   alt={selectedToolForDetail.name} 
@@ -240,14 +254,19 @@ export default function ToolsPage() {
 
               <div className="flex gap-3 pt-2">
                 <button
+                  disabled={selectedToolForDetail.status === 'Tạm ngưng'}
                   onClick={() => {
                     const tool = selectedToolForDetail;
                     setSelectedToolForDetail(null);
                     setSelectedToolForBuy(tool);
                   }}
-                  className="w-full bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 cursor-pointer"
+                  className={`w-full font-extrabold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 cursor-pointer ${
+                    selectedToolForDetail.status === 'Tạm ngưng'
+                      ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
+                      : 'bg-gradient-to-r from-neonBlue to-cyanGlow text-black hover:opacity-90'
+                  }`}
                 >
-                  <ShoppingBag className="w-4 h-4" /> MUA SẢN PHẨM NÀY NGAY
+                  <ShoppingBag className="w-4 h-4" /> {selectedToolForDetail.status === 'Tạm ngưng' ? 'SẢN PHẨM TẠM NGƯNG' : 'MUA SẢN PHẨM NÀY NGAY'}
                 </button>
               </div>
             </div>

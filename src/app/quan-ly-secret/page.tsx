@@ -31,14 +31,15 @@ export default function AdminPage() {
   const [editUserPass, setEditUserPass] = useState<{ username: string; newPass: string } | null>(null);
   const [adjustBal, setAdjustBal] = useState<{ username: string; amount: number; isAdd: boolean } | null>(null);
   
-  // State Ẩn / Hiện mật khẩu trong danh sách Admin
+  // State Ẩn / Hiện mật khẩu
   const [showPasswords, setShowPasswords] = useState<{ [key: string]: boolean }>({});
 
-  // States Tool Auto & Chọn File Ảnh
+  // States Tool Auto (Đã có thêm trường status)
   const [toolForm, setToolForm] = useState({
     id: 0,
     name: '',
     image: '',
+    status: 'Đang hoạt động',
     priceDay: '',
     priceWeek: '',
     priceMonth: '',
@@ -51,7 +52,7 @@ export default function AdminPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isEditingTool, setIsEditingTool] = useState(false);
 
-  // States Dự Án & Chọn File Ảnh Dự Án
+  // States Dự Án
   const [projectForm, setProjectForm] = useState({
     id: 0,
     title: '',
@@ -84,6 +85,7 @@ export default function AdminPage() {
           id: t.id,
           name: t.name,
           image: t.image,
+          status: t.status || 'Đang hoạt động',
           priceDay: t.priceDay || t.price_day || '',
           priceWeek: t.priceWeek || t.price_week || '',
           priceMonth: t.priceMonth || t.price_month || '',
@@ -131,7 +133,6 @@ export default function AdminPage() {
     setShowPasswords(prev => ({ ...prev, [username]: !prev[username] }));
   };
 
-  // Chọn file ảnh Tool
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -140,7 +141,6 @@ export default function AdminPage() {
     }
   };
 
-  // Chọn file ảnh Dự Án
   const handleProjectFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -193,7 +193,6 @@ export default function AdminPage() {
     }
   };
 
-  // XỬ LÝ CỘNG / TRỪ TIỀN
   const handleExecAdjustBalance = async (u: any, isAddMode: boolean) => {
     if (!adjustBal || !adjustBal.amount) return alert('Vui lòng nhập số tiền hợp lệ!');
     
@@ -244,6 +243,7 @@ export default function AdminPage() {
     const payload = {
       name: toolForm.name,
       image: finalImageUrl,
+      status: toolForm.status,
       priceDay: toolForm.priceDay,
       priceWeek: toolForm.priceWeek,
       priceMonth: toolForm.priceMonth,
@@ -266,7 +266,7 @@ export default function AdminPage() {
     } else {
       setImageFile(null);
       setPreviewUrl('');
-      setToolForm({ id: 0, name: '', image: '', priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '' });
+      setToolForm({ id: 0, name: '', image: '', status: 'Đang hoạt động', priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '' });
       setIsEditingTool(false);
       alert('Lưu sản phẩm thành công!');
       loadAllSyncData();
@@ -505,7 +505,7 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* 1. TAB USER (ĐÃ BỔ SUNG CỘT MẬT KHẨU CÓ NÚT XEM/ẨN) */}
+        {/* 1. TAB USER */}
         {activeTab === 'users' && (
           <div className="space-y-6">
             <form onSubmit={handleCreateUser} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
@@ -546,8 +546,6 @@ export default function AdminPage() {
                     {users.filter(u => u.username?.toLowerCase().includes(userSearch.toLowerCase())).map((u, i) => (
                       <tr key={i} className="hover:bg-[#06090E]/50 transition">
                         <td className="p-3 font-bold text-white">{u.username}</td>
-                        
-                        {/* Cột Mật khẩu mới bổ sung */}
                         <td className="p-3 font-mono">
                           <div className="flex items-center gap-2">
                             <span className="text-cyan-400">
@@ -562,7 +560,6 @@ export default function AdminPage() {
                             </button>
                           </div>
                         </td>
-
                         <td className="p-3 font-bold text-emerald-400">{(u.balance || 0).toLocaleString('vi-VN')} VNĐ</td>
                         <td className="p-3">
                           {u.isBanned ? (
@@ -596,7 +593,6 @@ export default function AdminPage() {
                 </div>
               )}
 
-              {/* Ô ĐIỀU CHỈNH SỐ DƯ TÀI KHOẢN */}
               {adjustBal && (
                 <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl space-y-3 mt-4">
                   <h4 className="text-xs font-bold text-white">Điều chỉnh số dư ví cho: {adjustBal.username}</h4>
@@ -637,7 +633,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 2. TAB TOOL AUTO */}
+        {/* 2. TAB TOOL AUTO (ĐÃ THÊM Ô CHỌN TRẠNG THÁI TOOL) */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
@@ -648,6 +644,19 @@ export default function AdminPage() {
               <div>
                 <label className="block text-[11px] text-slate-400 mb-1">Tên Tool</label>
                 <input type="text" required value={toolForm.name} onChange={e => setToolForm({ ...toolForm, name: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="vd: AUTO FARM F17" />
+              </div>
+
+              {/* Ô Chọn Trạng Thái Tool */}
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1">Trạng Thái Hoạt Động</label>
+                <select 
+                  value={toolForm.status} 
+                  onChange={e => setToolForm({ ...toolForm, status: e.target.value })}
+                  className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none"
+                >
+                  <option value="Đang hoạt động">Đang hoạt động</option>
+                  <option value="Tạm ngưng">Tạm ngưng</option>
+                </select>
               </div>
 
               <div className="space-y-2">
@@ -669,19 +678,19 @@ export default function AdminPage() {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-[10px] text-slate-400">Giá Ngày (VNĐ)</label>
-                  <input type="text" value={toolForm.priceDay} onChange={e => setToolForm({ ...toolForm, priceDay: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="5.000" />
+                  <input type="text" value={toolForm.priceDay} onChange={e => setToolForm({ ...toolForm, priceDay: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="5000" />
                 </div>
                 <div>
                   <label className="block text-[10px] text-slate-400">Giá Tuần (VNĐ)</label>
-                  <input type="text" value={toolForm.priceWeek} onChange={e => setToolForm({ ...toolForm, priceWeek: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="20.000" />
+                  <input type="text" value={toolForm.priceWeek} onChange={e => setToolForm({ ...toolForm, priceWeek: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="20000" />
                 </div>
                 <div>
                   <label className="block text-[10px] text-slate-400">Giá Tháng (VNĐ)</label>
-                  <input type="text" value={toolForm.priceMonth} onChange={e => setToolForm({ ...toolForm, priceMonth: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="50.000" />
+                  <input type="text" value={toolForm.priceMonth} onChange={e => setToolForm({ ...toolForm, priceMonth: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="50000" />
                 </div>
                 <div>
                   <label className="block text-[10px] text-slate-400">Giá Vĩnh Viễn (VNĐ)</label>
-                  <input type="text" value={toolForm.priceLifetime} onChange={e => setToolForm({ ...toolForm, priceLifetime: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="100.000" />
+                  <input type="text" value={toolForm.priceLifetime} onChange={e => setToolForm({ ...toolForm, priceLifetime: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="100000" />
                 </div>
               </div>
 
@@ -723,7 +732,14 @@ export default function AdminPage() {
                         </div>
                       )}
                       <div className="space-y-1">
-                        <h4 className="font-bold text-white text-xs">{t.name}</h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-white text-xs">{t.name}</h4>
+                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded border ${
+                            t.status === 'Tạm ngưng' ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                          }`}>
+                            {t.status || 'Đang hoạt động'}
+                          </span>
+                        </div>
                         <p className="text-[10px] text-emerald-400 font-medium">Giá: Ngày {t.priceDay || 0}đ | Tuần {t.priceWeek || 0}đ | Tháng {t.priceMonth || 0}đ | VV {t.priceLifetime || 0}đ</p>
                         <p className="text-[11px] text-slate-400 line-clamp-1">{t.description}</p>
                       </div>
