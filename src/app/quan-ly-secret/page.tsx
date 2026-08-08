@@ -6,7 +6,7 @@ import {
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
   Ban, CheckCircle, CreditCard, KeyRound, Search, DollarSign, Settings,
-  Upload, Image as ImageIcon, Loader2
+  Upload, Loader2
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -17,7 +17,7 @@ export default function AdminPage() {
 
   const [activeTab, setActiveTab] = useState<'users' | 'tools' | 'projects' | 'keys' | 'sepay' | 'feedback'>('users');
 
-  // Dữ liệu Cloud Supabase
+  // Dữ liệu Realtime từ Cloud Supabase
   const [users, setUsers] = useState<any[]>([]);
   const [tools, setTools] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
@@ -31,7 +31,7 @@ export default function AdminPage() {
   const [editUserPass, setEditUserPass] = useState<{ username: string; newPass: string } | null>(null);
   const [adjustBal, setAdjustBal] = useState<{ username: string; amount: number; isAdd: boolean } | null>(null);
 
-  // States Tool Auto & Upload File
+  // States Tool Auto & Chọn File Ảnh
   const [toolForm, setToolForm] = useState({
     id: 0,
     name: '',
@@ -66,14 +66,11 @@ export default function AdminPage() {
     }
   }, []);
 
-  // Tải dữ liệu Realtime trực tiếp từ Supabase Cloud
   const loadAllSyncData = async () => {
     try {
-      // 1. Tải Users
       const { data: userData } = await supabase.from('users').select('*').order('id', { ascending: false });
       if (userData) setUsers(userData);
 
-      // 2. Tải Tools
       const { data: toolData } = await supabase.from('tools').select('*').order('id', { ascending: false });
       if (toolData) {
         const mappedTools = toolData.map((t: any) => ({
@@ -90,15 +87,12 @@ export default function AdminPage() {
         setTools(mappedTools);
       }
 
-      // 3. Tải Projects
       const { data: projectData } = await supabase.from('projects').select('*').order('id', { ascending: false });
       if (projectData) setProjects(projectData);
 
-      // 4. Tải Feedbacks
       const { data: feedbackData } = await supabase.from('feedbacks').select('*').order('id', { ascending: false });
       if (feedbackData) setFeedbacks(feedbackData);
 
-      // Dữ liệu kho Key & Lịch sử
       const savedKeys = localStorage.getItem('ztool_keys');
       if (savedKeys) setKeysList(JSON.parse(savedKeys));
 
@@ -126,7 +120,6 @@ export default function AdminPage() {
     setIsAuthenticated(false);
   };
 
-  // Xử lý chọn File từ máy
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -153,7 +146,7 @@ export default function AdminPage() {
       alert('Lỗi tạo tài khoản: ' + error.message);
     } else {
       setNewUserForm({ username: '', password: '', balance: 0 });
-      alert('Tạo người dùng thành công trên Server Cloud!');
+      alert('Tạo người dùng thành công trên Cloud Database!');
       loadAllSyncData();
     }
   };
@@ -192,7 +185,7 @@ export default function AdminPage() {
     }
   };
 
-  // --- 2. QUẢN LÝ TOOL AUTO (TỰ ĐỘNG UPLOAD FILE LÊN SUPABASE STORAGE) ---
+  // --- 2. QUẢN LÝ TOOL AUTO & UPLOAD FILE ---
   const handleSaveTool = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!toolForm.name) return alert('Nhập tên Tool!');
@@ -200,7 +193,6 @@ export default function AdminPage() {
     setIsUploading(true);
     let finalImageUrl = toolForm.image;
 
-    // Upload file ảnh từ máy nếu người dùng có chọn
     if (imageFile) {
       const fileExt = imageFile.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
@@ -212,10 +204,9 @@ export default function AdminPage() {
 
       if (uploadError) {
         setIsUploading(false);
-        return alert('Lỗi tải ảnh lên Supabase Storage: ' + uploadError.message + '\n(Hãy đảm bảo bạn đã tạo bucket public "tool-images")');
+        return alert('Lỗi tải ảnh lên Storage: ' + uploadError.message + '\n(Đảm bảo bạn đã tạo bucket public "tool-images" trên Supabase)');
       }
 
-      // Lấy link public của ảnh vừa upload
       const { data: urlData } = supabase.storage
         .from('tool-images')
         .getPublicUrl(filePath);
@@ -244,13 +235,13 @@ export default function AdminPage() {
     setIsUploading(false);
 
     if (result.error) {
-      alert('Lỗi lưu Tool vào Database: ' + result.error.message);
+      alert('Lỗi lưu Tool: ' + result.error.message);
     } else {
       setImageFile(null);
       setPreviewUrl('');
       setToolForm({ id: 0, name: '', image: '', priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '' });
       setIsEditingTool(false);
-      alert('Đã tải ảnh từ máy lên Server và lưu sản phẩm thành công!');
+      alert('Tải ảnh từ máy lên Server và lưu sản phẩm thành công!');
       loadAllSyncData();
     }
   };
@@ -547,7 +538,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 2. TAB TOOL AUTO (ĐÃ CÓ KHUNG CHỌN FILE ÁNH TỪ MÁY TÍNH) */}
+        {/* 2. TAB TOOL AUTO (CHỌN FILE VÀ TỰ ĐỘNG UPLOAD LÊN SUPABASE STORAGE) */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
@@ -560,7 +551,7 @@ export default function AdminPage() {
                 <input type="text" required value={toolForm.name} onChange={e => setToolForm({ ...toolForm, name: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="vd: AUTO FARM F17" />
               </div>
 
-              {/* Ô CHỌN FILE ẢNH TỪ MÁY TÍNH */}
+              {/* KHUNG CHỌN FILE ẢNH TỪ MÁY */}
               <div className="space-y-2">
                 <label className="block text-[11px] text-slate-400">Ảnh Minh Họa Sản Phẩm</label>
                 
