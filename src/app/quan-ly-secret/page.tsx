@@ -6,7 +6,7 @@ import {
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
   Ban, CheckCircle, CreditCard, KeyRound, Search, DollarSign, Settings,
-  Upload, Loader2, Eye, EyeOff
+  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -34,7 +34,11 @@ export default function AdminPage() {
   // State Ẩn / Hiện mật khẩu
   const [showPasswords, setShowPasswords] = useState<{ [key: string]: boolean }>({});
 
-  // States Tool Auto (Đã có thêm trường status)
+  // State Modal Lịch sử giao dịch của khách hàng được chọn
+  const [selectedUserHistory, setSelectedUserHistory] = useState<{ username: string; logs: any[] } | null>(null);
+  const [loadingUserHistory, setLoadingUserHistory] = useState(false);
+
+  // States Tool Auto
   const [toolForm, setToolForm] = useState({
     id: 0,
     name: '',
@@ -133,6 +137,25 @@ export default function AdminPage() {
     setShowPasswords(prev => ({ ...prev, [username]: !prev[username] }));
   };
 
+  // Xem lịch sử giao dịch của 1 khách hàng từ Supabase Cloud
+  const handleViewUserTransactions = async (username: string) => {
+    setLoadingUserHistory(true);
+    setSelectedUserHistory({ username, logs: [] });
+
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('username', username)
+      .order('id', { ascending: false });
+
+    setLoadingUserHistory(false);
+    if (!error && data) {
+      setSelectedUserHistory({ username, logs: data });
+    } else {
+      console.error('Lỗi tải lịch sử:', error?.message);
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -166,6 +189,17 @@ export default function AdminPage() {
     if (error) {
       alert('Lỗi tạo tài khoản: ' + error.message);
     } else {
+      // Ghi log khởi tạo
+      await supabase.from('transactions').insert([
+        {
+          username: newUserForm.username.trim(),
+          type: 'INIT',
+          title: 'Khởi tạo tài khoản thành công',
+          amount: Number(newUserForm.balance) || 0,
+          status: 'Thành công'
+        }
+      ]);
+
       setNewUserForm({ username: '', password: '', balance: 0 });
       alert('Tạo người dùng thành công trên Cloud Database!');
       loadAllSyncData();
@@ -522,7 +556,7 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* 1. TAB USER */}
+        {/* 1. TAB USER (ĐÃ THÊM NÚT LỊCH SỬ GIAO DỊCH DÀNH CHO ADMIN KIỂM TRA) */}
         {activeTab === 'users' && (
           <div className="space-y-6">
             <form onSubmit={handleCreateUser} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
@@ -586,6 +620,15 @@ export default function AdminPage() {
                           )}
                         </td>
                         <td className="p-3 text-right space-x-2">
+                          {/* NÚT KIỂM TRA LỊCH SỬ GIAO DỊCH DÀNH CHO ADMIN */}
+                          <button 
+                            onClick={() => handleViewUserTransactions(u.username)} 
+                            className="bg-cyan-500/10 text-cyan-400 p-1.5 rounded-lg border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer" 
+                            title="Xem lịch sử giao dịch tài khoản này"
+                          >
+                            <History className="w-3.5 h-3.5" />
+                          </button>
+
                           <button onClick={() => setAdjustBal({ username: u.username, amount: 0, isAdd: true })} className="bg-emerald-500/10 text-emerald-400 p-1.5 rounded-lg border border-emerald-500/20 cursor-pointer" title="Cộng/Trừ tiền"><DollarSign className="w-3.5 h-3.5" /></button>
                           <button onClick={() => setEditUserPass({ username: u.username, newPass: '' })} className="bg-cyan-500/10 text-cyan-400 p-1.5 rounded-lg border border-cyan-500/20 cursor-pointer" title="Đổi mật khẩu"><Key className="w-3.5 h-3.5" /></button>
                           <button onClick={() => handleToggleBanUser(u)} className={`p-1.5 rounded-lg border cursor-pointer ${u.isBanned ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
@@ -644,6 +687,77 @@ export default function AdminPage() {
 
                     <button onClick={() => setAdjustBal(null)} className="text-slate-400 text-xs px-2 cursor-pointer">Hủy</button>
                   </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* MODAL POPUP KIỂM TRA LỊCH SỬ GIAO DỊCH CỦA KHÁCH HÀNG (HIỂN THỊ TẤT CẢ GIAO DỊCH REALTIME) */}
+        {selectedUserHistory && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+            <div className="bg-[#0D121D] border border-[#1C2638] w-full max-w-xl rounded-3xl p-6 space-y-5 relative shadow-2xl">
+              <button 
+                onClick={() => setSelectedUserHistory(null)} 
+                className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-[#1C2638] cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3 border-b border-[#1C2638] pb-4">
+                <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                  <History className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white uppercase tracking-wider">LỊCH SỬ GIAO DỊCH TÀI KHOẢN</h3>
+                  <p className="text-xs text-cyan-400 font-bold">Khách hàng: {selectedUserHistory.username}</p>
+                </div>
+              </div>
+
+              {loadingUserHistory ? (
+                <div className="flex items-center justify-center gap-2 py-10 text-xs text-slate-400">
+                  <Loader2 className="w-4 h-4 animate-spin text-cyan-400" /> Đang tải lịch sử giao dịch từ Cloud...
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                  {selectedUserHistory.logs.length === 0 ? (
+                    <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-2xl text-center text-slate-500 text-xs">
+                      Tài khoản này chưa có lịch sử mua tool hay biến động số dư nào trên Cloud.
+                    </div>
+                  ) : (
+                    selectedUserHistory.logs.map((log: any, idx: number) => (
+                      <div key={idx} className="bg-[#06090E] border border-[#1C2638] p-3.5 rounded-2xl flex items-center justify-between text-xs gap-3">
+                        <div className="space-y-1.5 flex-1">
+                          <div className="flex items-center gap-2">
+                            {log.type === 'BUY' && <ArrowDownLeft className="w-4 h-4 text-rose-400 shrink-0" />}
+                            {(log.type === 'RECHARGE' || log.type === 'ADMIN_ADD') && <ArrowUpRight className="w-4 h-4 text-emerald-400 shrink-0" />}
+                            {log.type === 'ADMIN_SUB' && <ArrowDownLeft className="w-4 h-4 text-rose-400 shrink-0" />}
+                            {log.type === 'INIT' && <CheckCircle className="w-4 h-4 text-cyan-400 shrink-0" />}
+                            
+                            <span className="font-bold text-white leading-snug">{log.title}</span>
+                          </div>
+
+                          {log.key_code && (
+                            <div className="bg-[#0D121D] border border-[#1C2638] px-2.5 py-1 rounded-lg text-[11px] text-cyan-400 font-mono w-fit">
+                              Key phát: {log.key_code}
+                            </div>
+                          )}
+
+                          <span className="text-[10px] text-slate-500 block">
+                            {log.created_at ? new Date(log.created_at).toLocaleString('vi-VN') : 'Gần đây'}
+                          </span>
+                        </div>
+
+                        {log.amount > 0 ? (
+                          <span className="text-emerald-400 font-black text-xs shrink-0">+{(log.amount).toLocaleString('vi-VN')}đ</span>
+                        ) : log.amount < 0 ? (
+                          <span className="text-rose-400 font-black text-xs shrink-0">{(log.amount).toLocaleString('vi-VN')}đ</span>
+                        ) : (
+                          <span className="text-slate-400 font-bold text-xs shrink-0">0đ</span>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </div>
