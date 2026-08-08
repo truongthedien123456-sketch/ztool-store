@@ -57,7 +57,9 @@ export default function HomePage() {
     }
   };
 
-  const featuredTool = tools.length > 0 ? tools[0] : null;
+  // LOGIC CHỌN TOOL NỔI BẬT: Chỉ lấy tool ĐANG HOẠT ĐỘNG (Bỏ qua tool Tạm ngưng)
+  const activeTools = tools.filter(t => t.status !== 'Tạm ngưng');
+  const featuredTool = activeTools.length > 0 ? activeTools[0] : null;
 
   return (
     <main className="min-h-screen bg-[#080B10] text-white font-sans pb-20">
@@ -91,7 +93,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Tool Nổi Bật Dạng Khung Đèn Neon (Đã Đồng Bộ Trạng Thái) */}
+          {/* Khung Tool Nổi Bật (Chỉ hiển thị khi có Tool ĐANG HOẠT ĐỘNG) */}
           {featuredTool && (
             <div className="bg-[#06090E] border-2 border-cyan-500/40 hover:border-cyan-400 rounded-3xl p-5 space-y-4 shadow-xl shadow-cyan-500/10 transition relative z-10">
               <div className="flex justify-between items-center border-b border-[#1C2638] pb-3">
@@ -99,12 +101,7 @@ export default function HomePage() {
                   <Wrench className="w-4 h-4" /> TOOL NỔI BẬT
                 </span>
                 
-                {/* Huy Hiệu Trạng Thái Tool Nổi Bật */}
-                <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded border ${
-                  featuredTool.status === 'Tạm ngưng'
-                    ? 'text-rose-400 bg-rose-500/10 border-rose-500/30'
-                    : 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30'
-                }`}>
+                <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded border text-emerald-400 bg-emerald-500/20 border-emerald-500/30">
                   {featuredTool.status ? featuredTool.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
                 </span>
               </div>
@@ -146,7 +143,7 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* Grid Khung Tool Auto Đã Đồng Bộ Huy Hiệu Trạng Thái Thay Cho ONLINE 24/7 */}
+          {/* Grid Danh Sách Sản Phẩm Tool Auto */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {tools.slice(0, 3).map((tool) => (
               <div 
@@ -161,7 +158,6 @@ export default function HomePage() {
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
                     />
                     
-                    {/* Huy Hiệu Trạng Thái Thật Từ Admin */}
                     <span className={`absolute top-3 right-3 text-[10px] font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md border ${
                       tool.status === 'Tạm ngưng'
                         ? 'bg-rose-500/20 text-rose-400 border-rose-500/40'
