@@ -186,12 +186,12 @@ export default function Navbar() {
     }
   };
 
-  // RENDER ĐỒNG HỒ ĐẾM NGƯỢC HOẶC VĨNH VIỄN CỰC KỲ BẮT MẮT
+  // RENDER ĐỒNG HỒ ĐẾM NGƯỢC HOẶC VĨNH VIỄN NỔI BẬT & CHUYÊN NGHIỆP
   const renderRemainingTime = (expireTimestamp: number) => {
     if (!expireTimestamp || expireTimestamp === 0) {
       return (
-        <span className="text-cyan-200 font-black bg-gradient-to-r from-cyan-500/30 via-teal-500/30 to-blue-500/30 px-4 py-2 rounded-xl border-2 border-cyan-400 text-xs shadow-[0_0_20px_rgba(6,182,212,0.4)] inline-flex items-center gap-2 animate-pulse">
-          👑 Vĩnh Viễn
+        <span className="text-cyan-300 font-black bg-gradient-to-r from-cyan-500/20 to-blue-500/20 px-3.5 py-1.5 rounded-xl border border-cyan-400/40 text-xs shadow-[0_0_12px_rgba(6,182,212,0.2)] inline-flex items-center gap-1.5">
+          ♾️ Vĩnh Viễn
         </span>
       );
     }
@@ -576,10 +576,10 @@ export default function Navbar() {
                           </div>
                         </div>
 
-                        {/* KHUNG THÔNG BÁO VĨNH VIỄN CỰC KỲ ĐẸP MẮT VÀ SANG TRỌNG */}
+                        {/* KHUNG THÔNG BÁO VĨNH VIỄN CÓ HIỆU ỨNG NHẢY LÊN RƠI XUỐNG CHO TOÀN BỘ KHUNG */}
                         {isLifetime ? (
-                          <div className="relative overflow-hidden bg-gradient-to-r from-cyan-500/20 via-teal-500/20 to-blue-500/20 border-2 border-cyan-400/60 p-4 rounded-2xl text-center shadow-[0_0_20px_rgba(6,182,212,0.25)] flex items-center justify-center gap-2.5">
-                            <Crown className="w-5 h-5 text-cyan-300 animate-bounce shrink-0" />
+                          <div className="relative overflow-hidden bg-gradient-to-r from-cyan-500/20 via-teal-500/20 to-blue-500/20 border-2 border-cyan-400/60 p-4 rounded-2xl text-center shadow-[0_0_20px_rgba(6,182,212,0.25)] flex items-center justify-center gap-2.5 animate-bounce">
+                            <Crown className="w-5 h-5 text-cyan-300 shrink-0" />
                             <span className="text-xs font-black text-cyan-200 tracking-wide">
                               Bạn đang sở hữu gói bản quyền Vĩnh Viễn. Không cần gia hạn!
                             </span>
