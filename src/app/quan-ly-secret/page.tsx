@@ -6,7 +6,7 @@ import {
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
   Ban, CheckCircle, CreditCard, KeyRound, Search, DollarSign, Settings,
-  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft
+  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -15,17 +15,20 @@ export default function AdminPage() {
   const [passwordInput, setPasswordInput] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'users' | 'tools' | 'projects' | 'keys' | 'sepay' | 'feedback'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'tools' | 'projects' | 'gist_accounts' | 'sepay' | 'feedback'>('users');
 
   // Dữ liệu Realtime
   const [users, setUsers] = useState<any[]>([]);
   const [tools, setTools] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
-  const [keysList, setKeysList] = useState<any[]>([]);
   const [sepayLogs, setSepayLogs] = useState<any[]>([]);
 
-  // Timer để re-render tự động kiểm tra Online/Offline thời gian thực
+  // Dữ liệu Tài khoản đọc từ GitHub Gist
+  const [gistAccounts, setGistAccounts] = useState<any[]>([]);
+  const [loadingGist, setLoadingGist] = useState(false);
+
+  // Timer để đếm ngược thời gian thực (1 giây/lần)
   const [nowTime, setNowTime] = useState(Date.now());
 
   // States thao tác
@@ -37,7 +40,7 @@ export default function AdminPage() {
   // State Ẩn / Hiện mật khẩu
   const [showPasswords, setShowPasswords] = useState<{ [key: string]: boolean }>({});
 
-  // State Modal Lịch sử giao dịch của khách hàng được chọn
+  // State Modal Lịch sử giao dịch
   const [selectedUserHistory, setSelectedUserHistory] = useState<{ username: string; logs: any[] } | null>(null);
   const [loadingUserHistory, setLoadingUserHistory] = useState(false);
 
@@ -71,8 +74,6 @@ export default function AdminPage() {
   const [projectPreviewUrl, setProjectPreviewUrl] = useState<string>('');
   const [isUploadingProject, setIsUploadingProject] = useState(false);
 
-  const [newKeyForm, setNewKeyForm] = useState({ toolName: '', keyString: '', duration: '1 Ngày' });
-
   useEffect(() => {
     const isLogged = localStorage.getItem('ztool_admin_authenticated');
     if (isLogged === 'true') {
@@ -80,13 +81,40 @@ export default function AdminPage() {
       loadAllSyncData();
     }
 
-    // Cập nhật đồng hồ đo thời gian thực mỗi 5 giây để kiểm tra Heartbeat Online
+    // Timer cập nhật đếm ngược mỗi 1 giây
     const timer = setInterval(() => {
       setNowTime(Date.now());
-    }, 5000);
+    }, 1000);
 
     return () => clearInterval(timer);
   }, []);
+
+  // TẢI DỮ LIỆU TỪ GITHUB GIST ACCOUNTS.JSON REALTIME
+  const fetchGistAccountsData = async () => {
+    setLoadingGist(true);
+    try {
+      const gistId = '21f0a39cbc434e5033d89f06e2c7d26e';
+      const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+        cache: 'no-store'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const contentRaw = data.files['accounts.json']?.content || '{}';
+        const parsed = JSON.parse(contentRaw);
+
+        // Chuyển cấu trúc Object JSON thành mảng danh sách tài khoản
+        const list = Object.keys(parsed).map((accName) => ({
+          username: accName,
+          ...parsed[accName]
+        }));
+        setGistAccounts(list);
+      }
+    } catch (err) {
+      console.error('Lỗi tải tài khoản Gist:', err);
+    } finally {
+      setLoadingGist(false);
+    }
+  };
 
   const loadAllSyncData = async () => {
     try {
@@ -120,26 +148,54 @@ export default function AdminPage() {
       const { data: feedbackData } = await supabase.from('feedbacks').select('*').order('id', { ascending: false });
       if (feedbackData) setFeedbacks(feedbackData);
 
-      // 5. Tải danh sách Key
-      const savedKeys = localStorage.getItem('ztool_keys');
-      if (savedKeys) setKeysList(JSON.parse(savedKeys));
-
-      // 6. Tải Lịch sử Nạp tiền SePay
+      // 5. Tải danh sách SePay
       const { data: sepayData } = await supabase
         .from('transactions')
         .select('*')
         .eq('type', 'RECHARGE')
         .order('id', { ascending: false });
-      
-      if (sepayData) {
-        setSepayLogs(sepayData);
-      } else {
-        const savedSepay = localStorage.getItem('ztool_recharge_history');
-        if (savedSepay) setSepayLogs(JSON.parse(savedSepay));
-      }
+      if (sepayData) setSepayLogs(sepayData);
+
+      // 6. Tải dữ liệu Gist Accounts
+      fetchGistAccountsData();
+
     } catch (e) {
       console.error('Lỗi đồng bộ dữ liệu Supabase:', e);
     }
+  };
+
+  // HÀM TÍNH TOÁN THỜI GIÁN CÒN LẠI (NGÀY, GIỜ, PHÚT, GIÂY) TỪ EXPIRE_TIMESTAMP
+  const renderRemainingTime = (expireTimestamp: number) => {
+    if (!expireTimestamp || expireTimestamp === 0) {
+      return (
+        <span className="text-cyan-400 font-black bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/30 text-xs">
+          ♾️ Vĩnh Viễn
+        </span>
+      );
+    }
+
+    const nowSec = Math.floor(nowTime / 1000);
+    const diffSec = expireTimestamp - nowSec;
+
+    if (diffSec <= 0) {
+      return (
+        <span className="text-rose-400 font-bold bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/30 text-xs">
+          ⚠️ Hết Hạn Quyền Dùng
+        </span>
+      );
+    }
+
+    const days = Math.floor(diffSec / 86400);
+    const hours = Math.floor((diffSec % 86400) / 3600);
+    const minutes = Math.floor((diffSec % 3600) / 60);
+    const seconds = diffSec % 60;
+
+    return (
+      <span className="text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/30 text-xs flex items-center gap-1.5 w-fit">
+        <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+        {days > 0 && `${days}d `}{hours}h {minutes}m {seconds}s
+      </span>
+    );
   };
 
   const handleAdminLogin = (e: React.FormEvent) => {
@@ -405,22 +461,6 @@ export default function AdminPage() {
     if (!error) loadAllSyncData();
   };
 
-  // KEY VÀ Ý KIẾN
-  const handleAddKey = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newKeyForm.keyString) return alert('Nhập chuỗi Key!');
-    const updated = [...keysList, { ...newKeyForm, id: Date.now(), isUsed: false, createdAt: new Date().toLocaleString('vi-VN') }];
-    setKeysList(updated);
-    localStorage.setItem('ztool_keys', JSON.stringify(updated));
-    setNewKeyForm({ toolName: '', keyString: '', duration: '1 Ngày' });
-  };
-
-  const handleDeleteKey = (id: number) => {
-    const updated = keysList.filter(k => k.id !== id);
-    setKeysList(updated);
-    localStorage.setItem('ztool_keys', JSON.stringify(updated));
-  };
-
   const handleDeleteFeedback = async (id: number) => {
     const { error } = await supabase.from('feedbacks').delete().eq('id', id);
     if (!error) loadAllSyncData();
@@ -496,7 +536,7 @@ export default function AdminPage() {
           </div>
           <div>
             <h1 className="text-sm font-black text-white tracking-wide">CONTROL PANEL DASHBOARD</h1>
-            <p className="text-[11px] text-slate-400">Đồng bộ Cloud Supabase Realtime</p>
+            <p className="text-[11px] text-slate-400">Đồng bộ Cloud Supabase & GitHub Gist Realtime</p>
           </div>
         </div>
 
@@ -546,13 +586,14 @@ export default function AdminPage() {
             <FolderKanban className="w-4 h-4" /> DỰ ÁN CỦA SHOP ({projects.length})
           </button>
 
+          {/* TAB THAY THẾ KHO KEY AUTO THÀNH KHO ACC TOOL (GITHUB GIST REALTIME) */}
           <button
-            onClick={() => setActiveTab('keys')}
+            onClick={() => { setActiveTab('gist_accounts'); fetchGistAccountsData(); }}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'keys' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
+              activeTab === 'gist_accounts' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
             }`}
           >
-            <KeyRound className="w-4 h-4" /> KHO KEY AUTO ({keysList.length})
+            <KeyRound className="w-4 h-4" /> KHO ACC TOOL ({gistAccounts.length})
           </button>
 
           <button
@@ -614,8 +655,6 @@ export default function AdminPage() {
                   </thead>
                   <tbody className="divide-y divide-[#1C2638]">
                     {users.filter(u => u.username?.toLowerCase().includes(userSearch.toLowerCase())).map((u, i) => {
-                      // TÍNH TRẠNG THÁI ONLINE THỜI GIAN THỰC: 
-                      // Cờ is_online = true VÀ last_seen được cập nhật trong vòng 20 giây gần nhất
                       const lastSeenMs = u.last_seen ? new Date(u.last_seen).getTime() : 0;
                       const isUserOnline = u.is_online === true && (nowTime - lastSeenMs < 20000);
 
@@ -638,7 +677,6 @@ export default function AdminPage() {
                           </td>
                           <td className="p-3 font-bold text-emerald-400">{(u.balance || 0).toLocaleString('vi-VN')} VNĐ</td>
                           
-                          {/* 1. HIỂN THỊ ONLINE / OFFLINE BẰNG THỜI GIAN THỰC */}
                           <td className="p-3">
                             {isUserOnline ? (
                               <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 text-[10px] inline-flex items-center gap-1.5 shadow-sm shadow-emerald-500/10">
@@ -651,7 +689,6 @@ export default function AdminPage() {
                             )}
                           </td>
 
-                          {/* 2. HIỂN THỊ TRẠNG THÁI KHÓA/MỞ TÀI KHOẢN */}
                           <td className="p-3">
                             {u.isBanned ? (
                               <span className="text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 text-[10px]">Bị BAN</span>
@@ -1010,47 +1047,72 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 4. TAB KEY */}
-        {activeTab === 'keys' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <form onSubmit={handleAddKey} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
-              <h3 className="text-xs font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
-                <Plus className="w-4 h-4 text-cyan-400" /> Khởi tạo Key phát tự động
-              </h3>
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Tên Tool áp dụng</label>
-                <input type="text" required placeholder="vd: AUTO FARM F17" value={newKeyForm.toolName} onChange={e => setNewKeyForm({ ...newKeyForm, toolName: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white" />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Chuỗi Key kích hoạt</label>
-                <input type="text" required placeholder="ZTOOL-XXXX-YYYY" value={newKeyForm.keyString} onChange={e => setNewKeyForm({ ...newKeyForm, keyString: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white" />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Thời hạn</label>
-                <select value={newKeyForm.duration} onChange={e => setNewKeyForm({ ...newKeyForm, duration: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white">
-                  <option value="1 Ngày">1 Ngày</option>
-                  <option value="7 Ngày">7 Ngày</option>
-                  <option value="30 Ngày">30 Ngày</option>
-                  <option value="Vĩnh Viễn">Vĩnh Viễn</option>
-                </select>
-              </div>
-              <button type="submit" className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer">LƯU VÀO KHO KEY</button>
-            </form>
-
-            <div className="lg:col-span-2 bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
-              <h3 className="text-xs font-bold text-white border-b border-[#1C2638] pb-3 uppercase">DANH SÁCH KEY TRONG KHO</h3>
-              <div className="space-y-3">
-                {keysList.map((k) => (
-                  <div key={k.id} className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl flex items-center justify-between gap-4">
-                    <div>
-                      <span className="text-xs font-bold text-white font-mono">{k.keyString}</span>
-                      <p className="text-[10px] text-slate-400">Tool: {k.toolName} | Thời hạn: {k.duration}</p>
-                    </div>
-                    <button onClick={() => handleDeleteKey(k.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg cursor-pointer"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                ))}
-              </div>
+        {/* 4. TAB KHO ACC TOOL (ĐỌC TỪ GITHUB GIST ACCOUNTS.JSON) */}
+        {activeTab === 'gist_accounts' && (
+          <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#1C2638] pb-3">
+              <h2 className="text-sm font-bold text-white flex items-center gap-2 uppercase">
+                <KeyRound className="w-4 h-4 text-cyan-400" /> QUẢN LÝ TÀI KHOẢN TOOL AUTO (GITHUB GIST REALTIME)
+              </h2>
+              <button 
+                onClick={fetchGistAccountsData} 
+                className="bg-[#06090E] border border-[#1C2638] hover:border-cyan-500 text-cyan-400 text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingGist ? 'animate-spin' : ''}`} /> Tải lại Gist
+              </button>
             </div>
+
+            {loadingGist ? (
+              <div className="flex items-center justify-center gap-2 py-10 text-xs text-slate-400">
+                <Loader2 className="w-4 h-4 animate-spin text-cyan-400" /> Đang đọc danh sách tài khoản từ GitHub Gist...
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-300">
+                  <thead className="bg-[#06090E] border-b border-[#1C2638] text-slate-400 uppercase text-[10px]">
+                    <tr>
+                      <th className="p-3">Tài khoản Tool</th>
+                      <th className="p-3">Mật khẩu Tool</th>
+                      <th className="p-3">Quyền hạn (Role)</th>
+                      <th className="p-3">Mã thiết bị (Device ID)</th>
+                      <th className="p-3">Thời gian còn lại (Countdown)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1C2638]">
+                    {gistAccounts.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="p-4 text-center text-slate-500">
+                          Chưa có tài khoản nào được tạo trên file accounts.json của GitHub Gist.
+                        </td>
+                      </tr>
+                    ) : (
+                      gistAccounts.map((acc, idx) => (
+                        <tr key={idx} className="hover:bg-[#06090E]/50 transition">
+                          <td className="p-3 font-bold text-white flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
+                            {acc.username}
+                          </td>
+                          <td className="p-3 font-mono text-cyan-400">{acc.password}</td>
+                          <td className="p-3">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase ${
+                              acc.role === 'admin' ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-slate-500/10 border-slate-500/30 text-slate-300'
+                            }`}>
+                              {acc.role || 'user'}
+                            </span>
+                          </td>
+                          <td className="p-3 font-mono text-slate-400 text-[11px]">
+                            {acc.device_id ? acc.device_id : <span className="text-slate-600">Chưa liên kết máy</span>}
+                          </td>
+                          <td className="p-3">
+                            {renderRemainingTime(acc.expire_timestamp)}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
