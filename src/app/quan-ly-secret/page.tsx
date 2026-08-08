@@ -48,6 +48,7 @@ export default function AdminPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isEditingTool, setIsEditingTool] = useState(false);
 
+  // States Dự Án & Chọn File Ảnh Dự Án
   const [projectForm, setProjectForm] = useState({
     id: 0,
     title: '',
@@ -55,6 +56,9 @@ export default function AdminPage() {
     description: '',
     status: 'Hoạt động tốt'
   });
+  const [projectImageFile, setProjectImageFile] = useState<File | null>(null);
+  const [projectPreviewUrl, setProjectPreviewUrl] = useState<string>('');
+  const [isUploadingProject, setIsUploadingProject] = useState(false);
 
   const [newKeyForm, setNewKeyForm] = useState({ toolName: '', keyString: '', duration: '1 Ngày' });
 
@@ -120,11 +124,21 @@ export default function AdminPage() {
     setIsAuthenticated(false);
   };
 
+  // Chọn file ảnh Tool
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setImageFile(file);
       setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  // Chọn file ảnh Dự Án
+  const handleProjectFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setProjectImageFile(file);
+      setProjectPreviewUrl(URL.createObjectURL(file));
     }
   };
 
@@ -252,23 +266,51 @@ export default function AdminPage() {
     if (!error) loadAllSyncData();
   };
 
-  // DỰ ÁN SHOP
+  // QUẢN LÝ DỰ ÁN SHOP (CÓ UPLOAD FILE ÁNH TƯƠNG TỰ TOOL AUTO)
   const handleSaveProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectForm.title) return alert('Nhập tên dự án!');
 
+    setIsUploadingProject(true);
+    let finalImageUrl = projectForm.image;
+
+    if (projectImageFile) {
+      const fileExt = projectImageFile.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `projects/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('tool-images')
+        .upload(filePath, projectImageFile);
+
+      if (uploadError) {
+        setIsUploadingProject(false);
+        return alert('Lỗi tải ảnh dự án lên Storage: ' + uploadError.message);
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('tool-images')
+        .getPublicUrl(filePath);
+
+      finalImageUrl = urlData.publicUrl;
+    }
+
     const payload = {
       title: projectForm.title,
-      image: projectForm.image,
+      image: finalImageUrl,
       status: projectForm.status,
       description: projectForm.description
     };
 
     const { error } = await supabase.from('projects').insert([payload]);
 
+    setIsUploadingProject(false);
+
     if (error) {
       alert('Lỗi lưu dự án: ' + error.message);
     } else {
+      setProjectImageFile(null);
+      setProjectPreviewUrl('');
       setProjectForm({ id: 0, title: '', image: '', description: '', status: 'Hoạt động tốt' });
       alert('Thêm dự án mới thành công!');
       loadAllSyncData();
@@ -538,7 +580,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 2. TAB TOOL AUTO (PREVIEW VUÔNG TỈ LỆ 1:1 CHUẨN XÁC) */}
+        {/* 2. TAB TOOL AUTO */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
@@ -619,7 +661,6 @@ export default function AdminPage() {
                 {tools.length === 0 ? <p className="text-xs text-slate-500">Chưa có dữ liệu Tool trên Cloud Database</p> : tools.map((t) => (
                   <div key={t.id} className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4 flex-1">
-                      {/* Ảnh đại diện vuông trong danh sách Admin */}
                       {t.image && (
                         <div className="w-16 h-16 bg-[#0D121D] border border-[#1C2638] rounded-lg overflow-hidden shrink-0">
                           <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
@@ -642,21 +683,36 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 3. TAB DỰ ÁN */}
+        {/* 3. TAB DỰ ÁN (ĐÃ CẬP NHẬT Ô CHỌN FILE TỪ MÁY) */}
         {activeTab === 'projects' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveProject} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
               <h3 className="text-xs font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
                 <Plus className="w-4 h-4 text-cyan-400" /> Thêm dự án
               </h3>
+              
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Tên Dự Án</label>
-                <input type="text" required value={projectForm.title} onChange={e => setProjectForm({ ...projectForm, title: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white" placeholder="Tên dự án..." />
+                <input type="text" required value={projectForm.title} onChange={e => setProjectForm({ ...projectForm, title: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none" placeholder="Tên dự án..." />
               </div>
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Link Ảnh Minh Họa</label>
-                <input type="text" value={projectForm.image} onChange={e => setProjectForm({ ...projectForm, image: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white" placeholder="https://..." />
+
+              {/* Ô CHỌN FILE ẢNH CHO DỰ ÁN GIỐNG TRANG TOOL AUTO */}
+              <div className="space-y-2">
+                <label className="block text-[11px] text-slate-400">Ảnh Minh Họa Dự Án</label>
+                
+                <label className="flex items-center justify-center gap-2 bg-[#06090E] border border-dashed border-[#1C2638] hover:border-cyan-500 text-slate-300 p-3 rounded-xl text-xs cursor-pointer transition">
+                  <Upload className="w-4 h-4 text-cyan-400" />
+                  <span className="truncate">{projectImageFile ? projectImageFile.name : 'Chọn file ảnh từ máy tính...'}</span>
+                  <input type="file" accept="image/*" onChange={handleProjectFileChange} className="hidden" />
+                </label>
+
+                {(projectPreviewUrl || projectForm.image) && (
+                  <div className="w-full aspect-square bg-[#06090E] border border-[#1C2638] rounded-xl overflow-hidden relative">
+                    <img src={projectPreviewUrl || projectForm.image} alt="Preview Project" className="w-full h-full object-cover" />
+                  </div>
+                )}
               </div>
+
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Tình trạng Dự án</label>
                 <select value={projectForm.status} onChange={e => setProjectForm({ ...projectForm, status: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white">
@@ -665,11 +721,26 @@ export default function AdminPage() {
                   <option value="Sắp cập nhật">Sắp cập nhật</option>
                 </select>
               </div>
+
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Mô tả dự án</label>
                 <textarea value={projectForm.description} onChange={e => setProjectForm({ ...projectForm, description: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white" placeholder="Chi tiết..." />
               </div>
-              <button type="submit" className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer">LƯU DỰ ÁN CLOUD</button>
+
+              <button 
+                type="submit" 
+                disabled={isUploadingProject}
+                className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer flex items-center justify-center gap-2"
+              >
+                {isUploadingProject ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+                    <span>ĐANG UPLOAD ẢNH & LƯU...</span>
+                  </>
+                ) : (
+                  <span>LƯU DỰ ÁN CLOUD</span>
+                )}
+              </button>
             </form>
 
             <div className="lg:col-span-2 bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
@@ -677,10 +748,17 @@ export default function AdminPage() {
               <div className="space-y-3">
                 {projects.map((p) => (
                   <div key={p.id} className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl flex items-center justify-between gap-4">
-                    <div>
-                      <h4 className="font-bold text-white text-xs">{p.title}</h4>
-                      <span className="text-[10px] text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 font-bold">{p.status}</span>
-                      <p className="text-[11px] text-slate-400 mt-1">{p.description}</p>
+                    <div className="flex items-center gap-4 flex-1">
+                      {p.image && (
+                        <div className="w-16 h-16 bg-[#0D121D] border border-[#1C2638] rounded-lg overflow-hidden shrink-0">
+                          <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="space-y-1">
+                        <h4 className="font-bold text-white text-xs">{p.title}</h4>
+                        <span className="text-[10px] text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 font-bold">{p.status}</span>
+                        <p className="text-[11px] text-slate-400 line-clamp-1 mt-1">{p.description}</p>
+                      </div>
                     </div>
                     <button onClick={() => handleDeleteProject(p.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                   </div>
