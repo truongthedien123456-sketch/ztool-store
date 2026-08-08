@@ -44,10 +44,11 @@ export default function AdminPage() {
   const [selectedUserHistory, setSelectedUserHistory] = useState<{ username: string; logs: any[] } | null>(null);
   const [loadingUserHistory, setLoadingUserHistory] = useState(false);
 
-  // States Tool Auto
+  // States Tool Auto (Bổ sung thêm toolCode)
   const [toolForm, setToolForm] = useState({
     id: 0,
     name: '',
+    toolCode: '',
     image: '',
     status: 'Đang hoạt động',
     priceDay: '',
@@ -81,37 +82,15 @@ export default function AdminPage() {
       loadAllSyncData();
     }
 
-    // 1. LẮNG NGHE ĐỒNG BỘ REALTIME TỪ SUPABASE
     const channel = supabase
       .channel('admin_realtime_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'users' },
-        () => loadAllSyncData()
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'transactions' },
-        () => loadAllSyncData()
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'feedbacks' },
-        () => loadAllSyncData()
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'tools' },
-        () => loadAllSyncData()
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'projects' },
-        () => loadAllSyncData()
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => loadAllSyncData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => loadAllSyncData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedbacks' }, () => loadAllSyncData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tools' }, () => loadAllSyncData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => loadAllSyncData())
       .subscribe();
 
-    // 2. Timer cập nhật đếm ngược mỗi 1 giây
     const timer = setInterval(() => {
       setNowTime(Date.now());
     }, 1000);
@@ -122,23 +101,18 @@ export default function AdminPage() {
     };
   }, []);
 
-  // TẢI DỮ LIỆU TỪ GITHUB GIST THÔNG QUA API NỘI BỘ (CHỐNG CACHE TRIỆT ĐỂ)
   const fetchGistAccountsData = async () => {
     setLoadingGist(true);
     try {
       const res = await fetch('/api/get-gist', {
         cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
+        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
       });
 
       if (res.ok) {
         const result = await res.json();
         if (result.success && result.data) {
           const parsed = result.data;
-          // Chuyển cấu trúc Object JSON thành mảng danh sách tài khoản
           const list = Object.keys(parsed).map((accName) => ({
             username: accName,
             ...parsed[accName]
@@ -155,16 +129,15 @@ export default function AdminPage() {
 
   const loadAllSyncData = async () => {
     try {
-      // 1. Tải danh sách khách hàng
       const { data: userData } = await supabase.from('users').select('*').order('id', { ascending: false });
       if (userData) setUsers(userData);
 
-      // 2. Tải danh sách Tool
       const { data: toolData } = await supabase.from('tools').select('*').order('id', { ascending: false });
       if (toolData) {
         const mappedTools = toolData.map((t: any) => ({
           id: t.id,
           name: t.name,
+          toolCode: t.toolCode || t.tool_code || '',
           image: t.image,
           status: t.status || 'Đang hoạt động',
           priceDay: t.priceDay || t.price_day || '',
@@ -177,31 +150,21 @@ export default function AdminPage() {
         setTools(mappedTools);
       }
 
-      // 3. Tải danh sách Dự án
       const { data: projectData } = await supabase.from('projects').select('*').order('id', { ascending: false });
       if (projectData) setProjects(projectData);
 
-      // 4. Tải danh sách Ý kiến phản hồi
       const { data: feedbackData } = await supabase.from('feedbacks').select('*').order('id', { ascending: false });
       if (feedbackData) setFeedbacks(feedbackData);
 
-      // 5. Tải danh sách SePay
-      const { data: sepayData } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('type', 'RECHARGE')
-        .order('id', { ascending: false });
+      const { data: sepayData } = await supabase.from('transactions').select('*').eq('type', 'RECHARGE').order('id', { ascending: false });
       if (sepayData) setSepayLogs(sepayData);
 
-      // 6. Tải dữ liệu Gist Accounts
       fetchGistAccountsData();
-
     } catch (e) {
       console.error('Lỗi đồng bộ dữ liệu Supabase:', e);
     }
   };
 
-  // HÀM TÍNH TOÁN THỜI GIÁN CÒN LẠI (NGÀY, GIỜ, PHÚT, GIÂY) TỪ EXPIRE_TIMESTAMP
   const renderRemainingTime = (expireTimestamp: number) => {
     if (!expireTimestamp || expireTimestamp === 0) {
       return (
@@ -260,17 +223,11 @@ export default function AdminPage() {
     setLoadingUserHistory(true);
     setSelectedUserHistory({ username, logs: [] });
 
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('username', username)
-      .order('id', { ascending: false });
+    const { data, error } = await supabase.from('transactions').select('*').eq('username', username).order('id', { ascending: false });
 
     setLoadingUserHistory(false);
     if (!error && data) {
       setSelectedUserHistory({ username, logs: data });
-    } else {
-      console.error('Lỗi tải lịch sử:', error?.message);
     }
   };
 
@@ -290,34 +247,20 @@ export default function AdminPage() {
     }
   };
 
-  // QUẢN LÝ NGƯỜI DÙNG
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUserForm.username || !newUserForm.password) return alert('Nhập đủ username/password!');
     
     const { error } = await supabase.from('users').insert([
-      {
-        username: newUserForm.username.trim(),
-        password: newUserForm.password,
-        balance: Number(newUserForm.balance) || 0,
-        isBanned: false,
-        is_online: false
-      }
+      { username: newUserForm.username.trim(), password: newUserForm.password, balance: Number(newUserForm.balance) || 0, isBanned: false, is_online: false }
     ]);
 
     if (error) {
       alert('Lỗi tạo tài khoản: ' + error.message);
     } else {
       await supabase.from('transactions').insert([
-        {
-          username: newUserForm.username.trim(),
-          type: 'INIT',
-          title: 'Khởi tạo tài khoản thành công',
-          amount: Number(newUserForm.balance) || 0,
-          status: 'Thành công'
-        }
+        { username: newUserForm.username.trim(), type: 'INIT', title: 'Khởi tạo tài khoản thành công', amount: Number(newUserForm.balance) || 0, status: 'Thành công' }
       ]);
-
       setNewUserForm({ username: '', password: '', balance: 0 });
       alert('Tạo người dùng thành công trên Cloud Database!');
       loadAllSyncData();
@@ -347,33 +290,24 @@ export default function AdminPage() {
 
   const handleExecAdjustBalance = async (u: any, isAddMode: boolean) => {
     if (!adjustBal || !adjustBal.amount) return alert('Vui lòng nhập số tiền hợp lệ!');
-    
     const cur = Number(u.balance) || 0;
     const changeAmt = Number(adjustBal.amount);
     const next = isAddMode ? cur + changeAmt : Math.max(0, cur - changeAmt);
     
     const { error: updateError } = await supabase.from('users').update({ balance: next }).eq('id', u.id);
-    
     if (updateError) {
       alert('Lỗi cập nhật số dư: ' + updateError.message);
     } else {
       await supabase.from('transactions').insert([
-        {
-          username: u.username,
-          type: isAddMode ? 'ADMIN_ADD' : 'ADMIN_SUB',
-          title: isAddMode ? 'Admin cộng tiền vào ví' : 'Admin trừ tiền khỏi ví',
-          amount: isAddMode ? changeAmt : -changeAmt,
-          status: 'Thành công'
-        }
+        { username: u.username, type: isAddMode ? 'ADMIN_ADD' : 'ADMIN_SUB', title: isAddMode ? 'Admin cộng tiền vào ví' : 'Admin trừ tiền khỏi ví', amount: isAddMode ? changeAmt : -changeAmt, status: 'Thành công' }
       ]);
-
       setAdjustBal(null);
-      alert(`${isAddMode ? 'Cộng' : 'Trừ'} tiền thành công cho ${u.username}! Số dư mới: ${next.toLocaleString('vi-VN')} VNĐ`);
+      alert(`${isAddMode ? 'Cộng' : 'Trừ'} tiền thành công cho ${u.username}!`);
       loadAllSyncData();
     }
   };
 
-  // QUẢN LÝ TOOL
+  // QUẢN LÝ TOOL (LƯU VÀ CẬP NHẬT THÊM toolCode)
   const handleSaveTool = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!toolForm.name) return alert('Nhập tên Tool!');
@@ -386,24 +320,19 @@ export default function AdminPage() {
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `tools/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('tool-images')
-        .upload(filePath, imageFile);
-
+      const { error: uploadError } = await supabase.storage.from('tool-images').upload(filePath, imageFile);
       if (uploadError) {
         setIsUploading(false);
         return alert('Lỗi tải ảnh lên Storage: ' + uploadError.message);
       }
 
-      const { data: urlData } = supabase.storage
-        .from('tool-images')
-        .getPublicUrl(filePath);
-
+      const { data: urlData } = supabase.storage.from('tool-images').getPublicUrl(filePath);
       finalImageUrl = urlData.publicUrl;
     }
 
     const payload = {
       name: toolForm.name,
+      toolCode: toolForm.toolCode.trim(),
       image: finalImageUrl,
       status: toolForm.status,
       priceDay: toolForm.priceDay,
@@ -428,7 +357,7 @@ export default function AdminPage() {
     } else {
       setImageFile(null);
       setPreviewUrl('');
-      setToolForm({ id: 0, name: '', image: '', status: 'Đang hoạt động', priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '' });
+      setToolForm({ id: 0, name: '', toolCode: '', image: '', status: 'Đang hoạt động', priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '' });
       setIsEditingTool(false);
       alert('Lưu sản phẩm thành công!');
       loadAllSyncData();
@@ -441,7 +370,6 @@ export default function AdminPage() {
     if (!error) loadAllSyncData();
   };
 
-  // QUẢN LÝ DỰ ÁN
   const handleSaveProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectForm.title) return alert('Nhập tên dự án!');
@@ -454,29 +382,17 @@ export default function AdminPage() {
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `projects/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('tool-images')
-        .upload(filePath, projectImageFile);
-
+      const { error: uploadError } = await supabase.storage.from('tool-images').upload(filePath, projectImageFile);
       if (uploadError) {
         setIsUploadingProject(false);
         return alert('Lỗi tải ảnh dự án lên Storage: ' + uploadError.message);
       }
 
-      const { data: urlData } = supabase.storage
-        .from('tool-images')
-        .getPublicUrl(filePath);
-
+      const { data: urlData } = supabase.storage.from('tool-images').getPublicUrl(filePath);
       finalImageUrl = urlData.publicUrl;
     }
 
-    const payload = {
-      title: projectForm.title,
-      image: finalImageUrl,
-      status: projectForm.status,
-      description: projectForm.description
-    };
-
+    const payload = { title: projectForm.title, image: finalImageUrl, status: projectForm.status, description: projectForm.description };
     const { error } = await supabase.from('projects').insert([payload]);
 
     setIsUploadingProject(false);
@@ -623,7 +539,6 @@ export default function AdminPage() {
             <FolderKanban className="w-4 h-4" /> DỰ ÁN CỦA SHOP ({projects.length})
           </button>
 
-          {/* TAB THAY THẾ KHO KEY AUTO THÀNH KHO ACC TOOL (GITHUB GIST REALTIME) */}
           <button
             onClick={() => { setActiveTab('gist_accounts'); fetchGistAccountsData(); }}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
@@ -703,20 +618,15 @@ export default function AdminPage() {
                               <span className="text-cyan-400">
                                 {showPasswords[u.username] ? u.password || '---' : '••••••••'}
                               </span>
-                              <button 
-                                onClick={() => handleToggleShowPass(u.username)}
-                                className="text-slate-500 hover:text-white transition cursor-pointer"
-                                title={showPasswords[u.username] ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                              >
+                              <button onClick={() => handleToggleShowPass(u.username)} className="text-slate-500 hover:text-white transition cursor-pointer">
                                 {showPasswords[u.username] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                               </button>
                             </div>
                           </td>
                           <td className="p-3 font-bold text-emerald-400">{(u.balance || 0).toLocaleString('vi-VN')} VNĐ</td>
-                          
                           <td className="p-3">
                             {isUserOnline ? (
-                              <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 text-[10px] inline-flex items-center gap-1.5 shadow-sm shadow-emerald-500/10">
+                              <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 text-[10px] inline-flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Online
                               </span>
                             ) : (
@@ -725,7 +635,6 @@ export default function AdminPage() {
                               </span>
                             )}
                           </td>
-
                           <td className="p-3">
                             {u.isBanned ? (
                               <span className="text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 text-[10px]">Bị BAN</span>
@@ -733,16 +642,10 @@ export default function AdminPage() {
                               <span className="text-cyan-400 font-bold bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 text-[10px]">Hoạt động</span>
                             )}
                           </td>
-
                           <td className="p-3 text-right space-x-2">
-                            <button 
-                              onClick={() => handleViewUserTransactions(u.username)} 
-                              className="bg-cyan-500/10 text-cyan-400 p-1.5 rounded-lg border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer" 
-                              title="Xem lịch sử giao dịch"
-                            >
+                            <button onClick={() => handleViewUserTransactions(u.username)} className="bg-cyan-500/10 text-cyan-400 p-1.5 rounded-lg border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer" title="Xem lịch sử">
                               <History className="w-3.5 h-3.5" />
                             </button>
-
                             <button onClick={() => setAdjustBal({ username: u.username, amount: 0, isAdd: true })} className="bg-emerald-500/10 text-emerald-400 p-1.5 rounded-lg border border-emerald-500/20 cursor-pointer" title="Cộng/Trừ tiền"><DollarSign className="w-3.5 h-3.5" /></button>
                             <button onClick={() => setEditUserPass({ username: u.username, newPass: '' })} className="bg-cyan-500/10 text-cyan-400 p-1.5 rounded-lg border border-cyan-500/20 cursor-pointer" title="Đổi mật khẩu"><Key className="w-3.5 h-3.5" /></button>
                             <button onClick={() => handleToggleBanUser(u)} className={`p-1.5 rounded-lg border cursor-pointer ${u.isBanned ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
@@ -772,34 +675,9 @@ export default function AdminPage() {
                 <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl space-y-3 mt-4">
                   <h4 className="text-xs font-bold text-white">Điều chỉnh số dư ví cho: {adjustBal.username}</h4>
                   <div className="flex gap-2 items-center">
-                    <input 
-                      type="number" 
-                      placeholder="Nhập số tiền..." 
-                      value={adjustBal.amount || ''} 
-                      onChange={e => setAdjustBal({ ...adjustBal, amount: Number(e.target.value) })} 
-                      className="bg-[#0D121D] border border-[#1C2638] px-3 py-1.5 text-xs text-white rounded-lg flex-1 focus:outline-none" 
-                    />
-                    
-                    <button 
-                      onClick={() => { 
-                        const user = users.find(u => u.username === adjustBal.username); 
-                        if (user) handleExecAdjustBalance(user, true); 
-                      }} 
-                      className="bg-emerald-500/20 text-emerald-400 px-3.5 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-500/30 transition cursor-pointer"
-                    >
-                      + Cộng tiền
-                    </button>
-
-                    <button 
-                      onClick={() => { 
-                        const user = users.find(u => u.username === adjustBal.username); 
-                        if (user) handleExecAdjustBalance(user, false); 
-                      }} 
-                      className="bg-rose-500/20 text-rose-400 px-3.5 py-1.5 rounded-lg text-xs font-bold hover:bg-rose-500/30 transition cursor-pointer"
-                    >
-                      - Trừ tiền
-                    </button>
-
+                    <input type="number" placeholder="Nhập số tiền..." value={adjustBal.amount || ''} onChange={e => setAdjustBal({ ...adjustBal, amount: Number(e.target.value) })} className="bg-[#0D121D] border border-[#1C2638] px-3 py-1.5 text-xs text-white rounded-lg flex-1 focus:outline-none" />
+                    <button onClick={() => { const user = users.find(u => u.username === adjustBal.username); if (user) handleExecAdjustBalance(user, true); }} className="bg-emerald-500/20 text-emerald-400 px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer">+ Cộng tiền</button>
+                    <button onClick={() => { const user = users.find(u => u.username === adjustBal.username); if (user) handleExecAdjustBalance(user, false); }} className="bg-rose-500/20 text-rose-400 px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer">- Trừ tiền</button>
                     <button onClick={() => setAdjustBal(null)} className="text-slate-400 text-xs px-2 cursor-pointer">Hủy</button>
                   </div>
                 </div>
@@ -808,17 +686,13 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* MODAL POPUP KIỂM TRA LỊCH SỬ GIAO DỊCH CỦA KHÁCH HÀNG */}
+        {/* MODAL POPUP LỊCH SỬ GIAO DỊCH */}
         {selectedUserHistory && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
             <div className="bg-[#0D121D] border border-[#1C2638] w-full max-w-xl rounded-3xl p-6 space-y-5 relative shadow-2xl">
-              <button 
-                onClick={() => setSelectedUserHistory(null)} 
-                className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-[#1C2638] cursor-pointer"
-              >
+              <button onClick={() => setSelectedUserHistory(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-[#1C2638] cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
-
               <div className="flex items-center gap-3 border-b border-[#1C2638] pb-4">
                 <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
                   <History className="w-5 h-5" />
@@ -828,7 +702,6 @@ export default function AdminPage() {
                   <p className="text-xs text-cyan-400 font-bold">Khách hàng: {selectedUserHistory.username}</p>
                 </div>
               </div>
-
               {loadingUserHistory ? (
                 <div className="flex items-center justify-center gap-2 py-10 text-xs text-slate-400">
                   <Loader2 className="w-4 h-4 animate-spin text-cyan-400" /> Đang tải lịch sử giao dịch từ Cloud...
@@ -848,21 +721,17 @@ export default function AdminPage() {
                             {(log.type === 'RECHARGE' || log.type === 'ADMIN_ADD') && <ArrowUpRight className="w-4 h-4 text-emerald-400 shrink-0" />}
                             {log.type === 'ADMIN_SUB' && <ArrowDownLeft className="w-4 h-4 text-rose-400 shrink-0" />}
                             {log.type === 'INIT' && <CheckCircle className="w-4 h-4 text-cyan-400 shrink-0" />}
-                            
                             <span className="font-bold text-white leading-snug">{log.title}</span>
                           </div>
-
                           {log.key_code && (
                             <div className="bg-[#0D121D] border border-[#1C2638] px-2.5 py-1 rounded-lg text-[11px] text-cyan-400 font-mono w-fit">
                               Key phát: {log.key_code}
                             </div>
                           )}
-
                           <span className="text-[10px] text-slate-500 block">
                             {log.created_at ? new Date(log.created_at).toLocaleString('vi-VN') : 'Gần đây'}
                           </span>
                         </div>
-
                         {log.amount > 0 ? (
                           <span className="text-emerald-400 font-black text-xs shrink-0">+{(log.amount).toLocaleString('vi-VN')}đ</span>
                         ) : log.amount < 0 ? (
@@ -879,7 +748,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 2. TAB TOOL AUTO */}
+        {/* 2. TAB TOOL AUTO (CÓ BỔ SUNG MỤC MÃ TOOL) */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
@@ -892,13 +761,16 @@ export default function AdminPage() {
                 <input type="text" required value={toolForm.name} onChange={e => setToolForm({ ...toolForm, name: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="vd: AUTO FARM F17" />
               </div>
 
+              {/* MỤC MÃ TOOL MỚI THÊM */}
+              <div>
+                <label className="block text-[11px] text-cyan-400 mb-1 font-bold">Mã Tool (Dùng xác thực đăng nhập)</label>
+                <input type="text" required value={toolForm.toolCode} onChange={e => setToolForm({ ...toolForm, toolCode: e.target.value })} className="w-full bg-[#06090E] border border-cyan-500/50 rounded-xl p-2 text-xs text-white focus:outline-none font-mono" placeholder="vd: auto-f17 hoặc auto-cau-ca" />
+                <span className="text-[10px] text-slate-500 mt-1 block">* Mã định danh dùng để phân biệt tool này với các tool khác khi đăng nhập.</span>
+              </div>
+
               <div>
                 <label className="block text-[11px] text-slate-400 mb-1">Trạng Thái Hoạt Động</label>
-                <select 
-                  value={toolForm.status} 
-                  onChange={e => setToolForm({ ...toolForm, status: e.target.value })}
-                  className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none"
-                >
+                <select value={toolForm.status} onChange={e => setToolForm({ ...toolForm, status: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none">
                   <option value="Đang hoạt động">Đang hoạt động</option>
                   <option value="Tạm ngưng">Tạm ngưng</option>
                 </select>
@@ -906,13 +778,11 @@ export default function AdminPage() {
 
               <div className="space-y-2">
                 <label className="block text-[11px] text-slate-400">Ảnh Minh Họa Sản Phẩm</label>
-                
                 <label className="flex items-center justify-center gap-2 bg-[#06090E] border border-dashed border-[#1C2638] hover:border-cyan-500 text-slate-300 p-3 rounded-xl text-xs cursor-pointer transition">
                   <Upload className="w-4 h-4 text-cyan-400" />
                   <span className="truncate">{imageFile ? imageFile.name : 'Chọn file ảnh từ máy tính...'}</span>
                   <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
                 </label>
-
                 {(previewUrl || toolForm.image) && (
                   <div className="w-full aspect-square bg-[#06090E] border border-[#1C2638] rounded-xl overflow-hidden relative">
                     <img src={previewUrl || toolForm.image} alt="Preview" className="w-full h-full object-cover" />
@@ -949,19 +819,8 @@ export default function AdminPage() {
                 <input type="text" value={toolForm.downloadLink} onChange={e => setToolForm({ ...toolForm, downloadLink: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="https://..." />
               </div>
 
-              <button 
-                type="submit" 
-                disabled={isUploading}
-                className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer flex items-center justify-center gap-2"
-              >
-                {isUploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-                    <span>ĐANG UPLOAD ẢNH & LƯU...</span>
-                  </>
-                ) : (
-                  <span>LƯU TỚI KHÁCH HÀNG (SUPABASE)</span>
-                )}
+              <button type="submit" disabled={isUploading} className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer flex items-center justify-center gap-2">
+                {isUploading ? <><Loader2 className="w-4 h-4 animate-spin text-cyan-400" /><span>ĐANG UPLOAD ẢNH & LƯU...</span></> : <span>LƯU TỚI KHÁCH HÀNG (SUPABASE)</span>}
               </button>
             </form>
 
@@ -979,9 +838,8 @@ export default function AdminPage() {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <h4 className="font-bold text-white text-xs">{t.name}</h4>
-                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded border ${
-                            t.status === 'Tạm ngưng' ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
-                          }`}>
+                          <span className="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/30">Mã: {t.toolCode || 'Chưa có'}</span>
+                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded border ${t.status === 'Tạm ngưng' ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'}`}>
                             {t.status || 'Đang hoạt động'}
                           </span>
                         </div>
@@ -1007,28 +865,23 @@ export default function AdminPage() {
               <h3 className="text-xs font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
                 <Plus className="w-4 h-4 text-cyan-400" /> Thêm dự án
               </h3>
-              
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Tên Dự Án</label>
                 <input type="text" required value={projectForm.title} onChange={e => setProjectForm({ ...projectForm, title: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none" placeholder="Tên dự án..." />
               </div>
-
               <div className="space-y-2">
                 <label className="block text-[11px] text-slate-400">Ảnh Minh Họa Dự Án</label>
-                
                 <label className="flex items-center justify-center gap-2 bg-[#06090E] border border-dashed border-[#1C2638] hover:border-cyan-500 text-slate-300 p-3 rounded-xl text-xs cursor-pointer transition">
                   <Upload className="w-4 h-4 text-cyan-400" />
                   <span className="truncate">{projectImageFile ? projectImageFile.name : 'Chọn file ảnh từ máy tính...'}</span>
                   <input type="file" accept="image/*" onChange={handleProjectFileChange} className="hidden" />
                 </label>
-
                 {(projectPreviewUrl || projectForm.image) && (
                   <div className="w-full aspect-square bg-[#06090E] border border-[#1C2638] rounded-xl overflow-hidden relative">
                     <img src={projectPreviewUrl || projectForm.image} alt="Preview Project" className="w-full h-full object-cover" />
                   </div>
                 )}
               </div>
-
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Tình trạng Dự án</label>
                 <select value={projectForm.status} onChange={e => setProjectForm({ ...projectForm, status: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white">
@@ -1037,28 +890,14 @@ export default function AdminPage() {
                   <option value="Sắp cập nhật">Sắp cập nhật</option>
                 </select>
               </div>
-
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Mô tả dự án</label>
                 <textarea value={projectForm.description} onChange={e => setProjectForm({ ...projectForm, description: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white" placeholder="Chi tiết..." />
               </div>
-
-              <button 
-                type="submit" 
-                disabled={isUploadingProject}
-                className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer flex items-center justify-center gap-2"
-              >
-                {isUploadingProject ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-                    <span>ĐANG UPLOAD ẢNH & LƯU...</span>
-                  </>
-                ) : (
-                  <span>LƯU DỰ ÁN CLOUD</span>
-                )}
+              <button type="submit" disabled={isUploadingProject} className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer flex items-center justify-center gap-2">
+                {isUploadingProject ? <><Loader2 className="w-4 h-4 animate-spin text-cyan-400" /><span>ĐANG UPLOAD ẢNH & LƯU...</span></> : <span>LƯU DỰ ÁN CLOUD</span>}
               </button>
             </form>
-
             <div className="lg:col-span-2 bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
               <h3 className="text-xs font-bold text-white border-b border-[#1C2638] pb-3 uppercase">DANH SÁCH DỰ ÁN CỦA SHOP</h3>
               <div className="space-y-3">
@@ -1084,21 +923,17 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 4. TAB KHO ACC TOOL (ĐỌC TỪ GITHUB GIST ACCOUNTS.JSON REALTIME) */}
+        {/* 4. TAB KHO ACC TOOL */}
         {activeTab === 'gist_accounts' && (
           <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-[#1C2638] pb-3">
               <h2 className="text-sm font-bold text-white flex items-center gap-2 uppercase">
                 <KeyRound className="w-4 h-4 text-cyan-400" /> QUẢN LÝ TÀI KHOẢN TOOL AUTO (GITHUB GIST REALTIME)
               </h2>
-              <button 
-                onClick={fetchGistAccountsData} 
-                className="bg-[#06090E] border border-[#1C2638] hover:border-cyan-500 text-cyan-400 text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
-              >
+              <button onClick={fetchGistAccountsData} className="bg-[#06090E] border border-[#1C2638] hover:border-cyan-500 text-cyan-400 text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer">
                 <RefreshCw className={`w-3.5 h-3.5 ${loadingGist ? 'animate-spin' : ''}`} /> Tải lại Gist
               </button>
             </div>
-
             {loadingGist ? (
               <div className="flex items-center justify-center gap-2 py-10 text-xs text-slate-400">
                 <Loader2 className="w-4 h-4 animate-spin text-cyan-400" /> Đang đọc danh sách tài khoản từ GitHub Gist...
@@ -1110,6 +945,7 @@ export default function AdminPage() {
                     <tr>
                       <th className="p-3">Tài khoản Tool</th>
                       <th className="p-3">Mật khẩu Tool</th>
+                      <th className="p-3">Mã Tool sở hữu</th>
                       <th className="p-3">Quyền hạn (Role)</th>
                       <th className="p-3">Mã thiết bị (Device ID)</th>
                       <th className="p-3">Thời gian còn lại (Countdown)</th>
@@ -1117,11 +953,7 @@ export default function AdminPage() {
                   </thead>
                   <tbody className="divide-y divide-[#1C2638]">
                     {gistAccounts.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="p-4 text-center text-slate-500">
-                          Chưa có tài khoản nào được tạo trên file accounts.json của GitHub Gist.
-                        </td>
-                      </tr>
+                      <tr><td colSpan={6} className="p-4 text-center text-slate-500">Chưa có tài khoản nào được tạo trên file accounts.json của GitHub Gist.</td></tr>
                     ) : (
                       gistAccounts.map((acc, idx) => (
                         <tr key={idx} className="hover:bg-[#06090E]/50 transition">
@@ -1130,19 +962,14 @@ export default function AdminPage() {
                             {acc.username}
                           </td>
                           <td className="p-3 font-mono text-cyan-400">{acc.password}</td>
+                          <td className="p-3 font-mono text-emerald-400">{acc.tool_code || acc.toolCode || <span className="text-slate-500">Tất cả / Chung</span>}</td>
                           <td className="p-3">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase ${
-                              acc.role === 'admin' ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-slate-500/10 border-slate-500/30 text-slate-300'
-                            }`}>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase ${acc.role === 'admin' ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-slate-500/10 border-slate-500/30 text-slate-300'}`}>
                               {acc.role || 'user'}
                             </span>
                           </td>
-                          <td className="p-3 font-mono text-slate-400 text-[11px]">
-                            {acc.device_id ? acc.device_id : <span className="text-slate-600">Chưa liên kết máy</span>}
-                          </td>
-                          <td className="p-3">
-                            {renderRemainingTime(acc.expire_timestamp)}
-                          </td>
+                          <td className="p-3 font-mono text-slate-400 text-[11px]">{acc.device_id ? acc.device_id : <span className="text-slate-600">Chưa liên kết máy</span>}</td>
+                          <td className="p-3">{renderRemainingTime(acc.expire_timestamp)}</td>
                         </tr>
                       ))
                     )}
@@ -1178,9 +1005,7 @@ export default function AdminPage() {
                         <td className="p-3 font-bold text-white">{s.username}</td>
                         <td className="p-3 text-slate-300">{s.title || s.content || 'Nạp tiền tự động qua QR SePay'}</td>
                         <td className="p-3 font-black text-emerald-400">+{(Number(s.amount) || 0).toLocaleString('vi-VN')} VNĐ</td>
-                        <td className="p-3 text-slate-400">
-                          {s.created_at ? new Date(s.created_at).toLocaleString('vi-VN') : s.date || 'Gần đây'}
-                        </td>
+                        <td className="p-3 text-slate-400">{s.created_at ? new Date(s.created_at).toLocaleString('vi-VN') : s.date || 'Gần đây'}</td>
                       </tr>
                     ))
                   )}
