@@ -3,12 +3,17 @@
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { supabase } from '@/lib/supabase';
-import { FolderKanban, Sparkles, CheckCircle2, MessageSquare, Send, Clock } from 'lucide-react';
+import { FolderKanban, Sparkles, CheckCircle2, MessageSquare, Send, Clock, Server, Briefcase } from 'lucide-react';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
-  const [feedbackContent, setFeedbackContent] = useState('');
+  
+  // State form 3 phần theo yêu cầu
+  const [serverName, setServerName] = useState('');
+  const [jobName, setJobName] = useState('');
+  const [toolDescription, setToolDescription] = useState('');
+  
   const [msg, setMsg] = useState('');
 
   useEffect(() => {
@@ -16,16 +21,15 @@ export default function ProjectsPage() {
   }, []);
 
   const loadProjectsAndFeedbacks = async () => {
-    // 1. Tải danh sách dự án trực tiếp từ Supabase Cloud
+    // Tải danh sách dự án
     const { data: projectData } = await supabase
       .from('projects')
       .select('*')
       .order('id', { ascending: false });
 
-    // Đồng bộ chính xác dữ liệu từ Database (nếu chưa có dự án sẽ set mảng rỗng)
     setProjects(projectData || []);
 
-    // 2. Tải danh sách ý kiến đóng góp dự án từ Supabase Cloud
+    // Tải danh sách ý kiến đóng góp
     const { data: feedbackData } = await supabase
       .from('feedbacks')
       .select('*')
@@ -34,26 +38,34 @@ export default function ProjectsPage() {
     if (feedbackData) setFeedbacks(feedbackData);
   };
 
-  // Gửi ý kiến đóng góp dự án tool lên Cloud Database
+  // Xử lý gửi góp ý 3 phần
   const handleSendFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!feedbackContent.trim()) return;
+    if (!serverName.trim() || !jobName.trim() || !toolDescription.trim()) {
+      alert('Vui lòng điền đầy đủ cả 3 thông tin!');
+      return;
+    }
 
     const currentUsername = localStorage.getItem('ztool_current_user') || 'Khách ẩn danh';
+    
+    // Gộp thông tin 3 phần thành chuỗi chuẩn hóa gửi lên Cloud
+    const fullContent = `[Server: ${serverName.trim()}] - [Nghề: ${jobName.trim()}]\nMô tả & Cách hoạt động: ${toolDescription.trim()}`;
 
     const { error } = await supabase.from('feedbacks').insert([
       {
         username: currentUsername,
-        content: feedbackContent.trim()
+        content: fullContent
       }
     ]);
 
     if (!error) {
-      setFeedbackContent('');
-      setMsg('Gửi ý kiến đóng góp thành công! Cảm ơn bạn đã hỗ trợ dự án.');
+      setServerName('');
+      setJobName('');
+      setToolDescription('');
+      setMsg('Gửi yêu cầu phát triển Tool thành công! Admin sẽ xem xét sớm nhất.');
       loadProjectsAndFeedbacks();
     } else {
-      setMsg('Có lỗi xảy ra khi gửi đóng góp!');
+      setMsg('Có lỗi xảy ra khi gửi góp ý!');
     }
   };
 
@@ -72,13 +84,13 @@ export default function ProjectsPage() {
           </p>
         </div>
 
-        {/* Danh Sách Dự Án Thực Tế Đồng Bộ 100% Với Supabase */}
+        {/* Danh Sách Dự Án Thực Tế */}
         {projects.length === 0 ? (
           <div className="text-center py-16 bg-[#0F141C] border border-[#1A2332] rounded-3xl space-y-3">
             <FolderKanban className="w-12 h-12 text-cyanGlow/40 mx-auto" />
             <h3 className="text-sm font-bold text-white">HIỆN TẠI CHƯA CÓ DỰ ÁN NÀO</h3>
             <p className="text-xs text-gray-400 max-w-sm mx-auto">
-              Chưa có dự án nào được cập nhật trên hệ thống. Hãy quay lại sau hoặc gửi ý kiến góp ý bên dưới!
+              Chưa có dự án nào được cập nhật trên hệ thống. Hãy quay lại sau hoặc gửi yêu cầu đặt tool bên dưới!
             </p>
           </div>
         ) : (
@@ -103,7 +115,7 @@ export default function ProjectsPage() {
           </div>
         )}
 
-        {/* Khung Đóng Góp Ý Kiến Cho Dự Án Tool */}
+        {/* Khung Đóng Góp Ý Kiến Phát Triển Dự Án Tool (3 Phần) */}
         <div className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 sm:p-8 space-y-6 max-w-3xl mx-auto shadow-2xl">
           <div className="flex items-center gap-3 border-b border-[#1A2332] pb-4">
             <div className="w-10 h-10 rounded-2xl bg-neonBlue/10 border border-neonBlue/30 flex items-center justify-center text-cyanGlow shrink-0">
@@ -111,7 +123,7 @@ export default function ProjectsPage() {
             </div>
             <div>
               <h2 className="text-base font-bold text-white">ĐÓNG GÓP Ý KIẾN PHÁT TRIỂN DỰ ÁN TOOL</h2>
-              <p className="text-xs text-gray-400">Gửi yêu cầu thêm tính năng mới hoặc báo lỗi tool cho Admin</p>
+              <p className="text-xs text-gray-400">Gửi thông tin Server & Nghề bạn muốn làm Tool tự động cho Admin</p>
             </div>
           </div>
 
@@ -122,37 +134,75 @@ export default function ProjectsPage() {
           )}
 
           <form onSubmit={handleSendFeedback} className="space-y-4">
-            <textarea
-              required
-              rows={4}
-              value={feedbackContent}
-              onChange={(e) => setFeedbackContent(e.target.value)}
-              placeholder="Nhập nội dung góp ý, báo lỗi hoặc ý tưởng tính năng tool bạn mong muốn..."
-              className="w-full bg-[#080B10] border border-[#1A2332] rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-neonBlue transition"
-            />
+            {/* 2 phần nhỏ phía trên */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-300 mb-1.5 flex items-center gap-1.5">
+                  <Server className="w-3.5 h-3.5 text-cyanGlow" /> Tên Server FiveM
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={serverName}
+                  onChange={(e) => setServerName(e.target.value)}
+                  placeholder="vd: F17 City, Lũ Quỷ RP..."
+                  className="w-full bg-[#080B10] border border-[#1A2332] rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-neonBlue transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-300 mb-1.5 flex items-center gap-1.5">
+                  <Briefcase className="w-3.5 h-3.5 text-cyanGlow" /> Tên Nghề Cần Làm Tool
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={jobName}
+                  onChange={(e) => setJobName(e.target.value)}
+                  placeholder="vd: Nghề Công Trường, Câu Cá, Chặt Gỗ..."
+                  className="w-full bg-[#080B10] border border-[#1A2332] rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-neonBlue transition"
+                />
+              </div>
+            </div>
+
+            {/* 1 phần lớn ở dưới */}
+            <div>
+              <label className="block text-xs font-bold text-gray-300 mb-1.5">
+                Mô tả chi tiết nghề & Cách bạn muốn Tool hoạt động
+              </label>
+              <textarea
+                required
+                rows={5}
+                value={toolDescription}
+                onChange={(e) => setToolDescription(e.target.value)}
+                placeholder="Mô tả các bước thực hiện trong game (vd: tự chạy đến vị trí, bấm phím E, giải minigame mũi tên, tự cất đồ vào cốp xe...)"
+                className="w-full bg-[#080B10] border border-[#1A2332] rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-neonBlue transition leading-relaxed"
+              />
+            </div>
+
             <button
               type="submit"
-              className="bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold px-6 py-3 rounded-xl text-xs flex items-center gap-2 hover:opacity-90 transition cursor-pointer"
+              className="bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold px-6 py-3.5 rounded-xl text-xs flex items-center gap-2 hover:opacity-90 transition cursor-pointer shadow-lg shadow-neonBlue/10"
             >
-              <Send className="w-4 h-4" /> GỬI ĐÓNG GÓP TỚI ADMIN
+              <Send className="w-4 h-4" /> GỬI YÊU CẦU LÀM TOOL TỚI ADMIN
             </button>
           </form>
 
-          {/* Danh sách các góp ý đã gửi */}
+          {/* Lịch sử đóng góp */}
           <div className="space-y-3 pt-4 border-t border-[#1A2332]">
-            <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Ý kiến đóng góp gần đây từ cộng đồng:</h4>
+            <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Yêu cầu phát triển tool gần đây:</h4>
             {feedbacks.length === 0 ? (
-              <p className="text-xs text-gray-500">Chưa có đóng góp nào. Hãy là người đầu tiên gửi góp ý!</p>
+              <p className="text-xs text-gray-500">Chưa có yêu cầu nào. Hãy là người đầu tiên gửi ý tưởng!</p>
             ) : (
               feedbacks.slice(0, 5).map((f) => (
-                <div key={f.id} className="bg-[#080B10] border border-[#1A2332] p-3.5 rounded-2xl space-y-1">
+                <div key={f.id} className="bg-[#080B10] border border-[#1A2332] p-4 rounded-2xl space-y-1.5">
                   <div className="flex justify-between items-center text-[11px]">
                     <span className="font-bold text-cyanGlow">{f.username || 'Khách ẩn danh'}</span>
                     <span className="text-gray-500 text-[10px] flex items-center gap-1">
                       <Clock className="w-3 h-3" /> {f.created_at ? new Date(f.created_at).toLocaleDateString('vi-VN') : 'Gần đây'}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-300">{f.content}</p>
+                  <p className="text-xs text-gray-300 whitespace-pre-line leading-relaxed">{f.content}</p>
                 </div>
               ))
             )}
