@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { supabase } from '@/lib/supabase';
 import { 
-  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info 
+  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2
 } from 'lucide-react';
 
 export default function ToolsPage() {
@@ -14,6 +14,7 @@ export default function ToolsPage() {
   const [selectedToolForBuy, setSelectedToolForBuy] = useState<any | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<'day' | 'week' | 'month' | 'lifetime'>('day');
   const [purchaseMsg, setPurchaseMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [loadingBuy, setLoadingBuy] = useState(false);
 
   // Modal Xem Chi Tiết Tool
   const [selectedToolForDetail, setSelectedToolForDetail] = useState<any | null>(null);
@@ -52,6 +53,7 @@ export default function ToolsPage() {
     }
   };
 
+  // HÀM MUA TOOL: TỰ ĐỘNG TẠO/GIA HẠN TÀI KHOẢN TRÊN GITHUB GIST (ACCOUNTS.JSON)
   const handleBuyTool = async () => {
     setPurchaseMsg(null);
     if (!selectedToolForBuy) return;
@@ -67,23 +69,47 @@ export default function ToolsPage() {
       return;
     }
 
+    setLoadingBuy(true);
+
+    // 1. Tải thông tin user từ Supabase Cloud
     const { data: userData } = await supabase.from('users').select('*').eq('username', currentUsername).single();
 
     if (!userData) {
+      setLoadingBuy(false);
       setPurchaseMsg({ type: 'error', text: 'Không tìm thấy thông tin tài khoản của bạn trên hệ thống!' });
       return;
     }
 
     let priceStr = '0';
     let durationText = '1 Ngày';
-    if (selectedDuration === 'day') { priceStr = selectedToolForBuy.priceDay || '0'; durationText = '1 Ngày'; }
-    if (selectedDuration === 'week') { priceStr = selectedToolForBuy.priceWeek || '0'; durationText = '7 Ngày'; }
-    if (selectedDuration === 'month') { priceStr = selectedToolForBuy.priceMonth || '0'; durationText = '30 Ngày'; }
-    if (selectedDuration === 'lifetime') { priceStr = selectedToolForBuy.priceLifetime || '0'; durationText = 'Vĩnh Viễn'; }
+    let durationDays = 1;
+
+    if (selectedDuration === 'day') { 
+      priceStr = selectedToolForBuy.priceDay || '0'; 
+      durationText = '1 Ngày'; 
+      durationDays = 1;
+    }
+    if (selectedDuration === 'week') { 
+      priceStr = selectedToolForBuy.priceWeek || '0'; 
+      durationText = '7 Ngày'; 
+      durationDays = 7;
+    }
+    if (selectedDuration === 'month') { 
+      priceStr = selectedToolForBuy.priceMonth || '0'; 
+      durationText = '30 Ngày'; 
+      durationDays = 30;
+    }
+    if (selectedDuration === 'lifetime') { 
+      priceStr = selectedToolForBuy.priceLifetime || '0'; 
+      durationText = 'Vĩnh Viễn'; 
+      durationDays = 0; // 0 quy ước là Vĩnh Viễn
+    }
 
     const priceNum = Number(String(priceStr).replace(/[^0-9]/g, '')) || 0;
 
+    // 2. Kiểm tra số dư ví
     if ((userData.balance || 0) < priceNum) {
+      setLoadingBuy(false);
       setPurchaseMsg({
         type: 'error',
         text: `Số dư ví không đủ! Cần ${priceNum.toLocaleString('en-US')} VNĐ nhưng số dư hiện tại là ${(userData.balance || 0).toLocaleString('en-US')} VNĐ.`
@@ -91,42 +117,66 @@ export default function ToolsPage() {
       return;
     }
 
-    // 1. Trừ số dư ví tài khoản
-    const newBalance = userData.balance - priceNum;
-    await supabase.from('users').update({ balance: newBalance }).eq('id', userData.id);
+    try {
+      // 3. GỌI API ĐỂ CẬP NHẬT TÀI KHOẢN, MẬT KHẨU VÀ EXPIRATION TIMESTAMP VÀO FILE ACCOUNTS.JSON TRÊN GITHUB GIST
+      const gistRes = await fetch('/api/gist-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: userData.username,
+          password: userData.password,
+          durationDays: durationDays
+        })
+      });
 
-    // 2. Lấy key từ kho local hoặc tạo key ngẫu nhiên
-    const savedKeys = JSON.parse(localStorage.getItem('ztool_keys') || '[]');
-    const availableKeyIndex = savedKeys.findIndex((k: any) => k.toolName === selectedToolForBuy.name && !k.isUsed);
+      const gistData = await gistRes.json();
 
-    let deliveredKey = 'ZTOOL-' + Math.random().toString(36).substring(2, 9).toUpperCase();
-
-    if (availableKeyIndex !== -1) {
-      deliveredKey = savedKeys[availableKeyIndex].keyString;
-      savedKeys[availableKeyIndex].isUsed = true;
-      localStorage.setItem('ztool_keys', JSON.stringify(savedKeys));
-    }
-
-    // 3. GHI NHẬT KÝ MUA TOOL LÊN SUPABASE CLOUD
-    const { error: logError } = await supabase.from('transactions').insert([
-      {
-        username: currentUsername,
-        type: 'BUY',
-        title: `Mua Key ${selectedToolForBuy.name} (${durationText})`,
-        amount: -priceNum,
-        key_code: deliveredKey,
-        status: 'Thành công'
+      if (!gistData.success) {
+        setLoadingBuy(false);
+        setPurchaseMsg({ 
+          type: 'error', 
+          text: `Lỗi đăng ký tài khoản Tool trên GitHub Gist: ${gistData.error || gistData.message}` 
+        });
+        return;
       }
-    ]);
 
-    if (logError) {
-      console.error('Lỗi ghi lịch sử giao dịch Cloud:', logError.message);
+      // 4. Trừ số dư ví tài khoản khách trên Supabase Cloud
+      const newBalance = userData.balance - priceNum;
+      await supabase.from('users').update({ balance: newBalance }).eq('id', userData.id);
+
+      // 5. Ghi nhật ký lịch sử mua hàng lên Supabase Cloud
+      const { error: logError } = await supabase.from('transactions').insert([
+        {
+          username: currentUsername,
+          type: 'BUY',
+          title: `Mua ${selectedToolForBuy.name} (${durationText})`,
+          amount: -priceNum,
+          status: 'Thành công'
+        }
+      ]);
+
+      if (logError) {
+        console.error('Lỗi ghi nhật ký Cloud:', logError.message);
+      }
+
+      setLoadingBuy(false);
+      setPurchaseMsg({
+        type: 'success',
+        text: `Kích hoạt thành công! Tài khoản "${userData.username}" đã được cấp quyền sử dụng Tool (${durationText}) trên ứng dụng.`
+      });
+
+      // Tự động tải lại trang sau 2.5 giây để cập nhật số dư hiển thị mới
+      setTimeout(() => {
+        window.location.reload();
+      }, 2500);
+
+    } catch (err: any) {
+      setLoadingBuy(false);
+      setPurchaseMsg({
+        type: 'error',
+        text: `Lỗi kết nối máy chủ: ${err.message}`
+      });
     }
-
-    setPurchaseMsg({
-      type: 'success',
-      text: `Thanh toán thành công! Mã Key kích hoạt của bạn: ${deliveredKey}`
-    });
   };
 
   return (
@@ -155,7 +205,7 @@ export default function ToolsPage() {
                     className="w-full h-full object-cover" 
                   />
                   
-                  {/* HUY HIỆU TRẠNG THÁI TỰ ĐỘNG THAY ĐỔI THEO ADMIN */}
+                  {/* HUY HIỆU TRẠNG THÁI */}
                   <span className={`absolute top-3 right-3 text-[10px] font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md border ${
                     tool.status === 'Tạm ngưng' 
                       ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' 
@@ -363,10 +413,20 @@ export default function ToolsPage() {
               </div>
 
               <button
+                disabled={loadingBuy}
                 onClick={handleBuyTool}
                 className="w-full bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold py-3.5 rounded-2xl text-xs shadow-lg shadow-neonBlue/20 hover:opacity-90 transition cursor-pointer flex items-center justify-center gap-2"
               >
-                <ShieldCheck className="w-4 h-4" /> XÁC NHẬN THANH TOÁN TỪ VÍ
+                {loadingBuy ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-black" />
+                    <span>ĐANG ĐĂNG KÝ TÀI KHOẢN GIST...</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-4 h-4" /> XÁC NHẬN THANH TOÁN TỪ VÍ
+                  </>
+                )}
               </button>
             </div>
           </div>
