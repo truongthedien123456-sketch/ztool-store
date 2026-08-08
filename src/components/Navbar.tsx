@@ -51,35 +51,41 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // CƠ CHẾ HEARTBEAT CẬP NHẬT TRẠNG THÁI ONLINE / OFFLINE REALTIME DỰA TRÊN USERNAME
+  // HÀM HEARTBEAT CHUẨN XÁC DÀNH CHO ONLINE/OFFLINE
   useEffect(() => {
     if (!currentUser?.username) return;
 
-    const updateOnlineStatus = async (status: boolean) => {
-      try {
-        await supabase
-          .from('users')
-          .update({ 
-            is_online: status,
-            last_seen: new Date().toISOString() 
-          })
-          .eq('username', currentUser.username);
-      } catch (err) {
-        console.error('Lỗi cập nhật Online status:', err);
-      }
+    const updateOnline = async () => {
+      await supabase
+        .from('users')
+        .update({ 
+          is_online: true,
+          last_seen: new Date().toISOString() 
+        })
+        .eq('username', currentUser.username);
     };
 
-    // 1. Gửi tín hiệu Online ngay khi user vừa xuất hiện
-    updateOnlineStatus(true);
+    // Bắn tín hiệu Online ngay khi load
+    updateOnline();
 
-    // 2. Định kỳ bắn Heartbeat giữ Online mỗi 10 giây
-    const interval = setInterval(() => {
-      updateOnlineStatus(true);
-    }, 10000);
+    // Bắn heartbeat mỗi 10 giây
+    const interval = setInterval(updateOnline, 10000);
 
-    // 3. Tự động chuyển Offline khi đóng tab / tắt trình duyệt
+    // Xử lý khi đóng tab / chuyển trang ngắt kết nối lập tức
     const handleUnload = () => {
-      updateOnlineStatus(false);
+      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/users?username=eq.${encodeURIComponent(currentUser.username)}`;
+      const headers = {
+        'Content-Type': 'application/json',
+        'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}`
+      };
+      
+      fetch(url, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ is_online: false }),
+        keepalive: true
+      }).catch(() => {});
     };
 
     window.addEventListener('beforeunload', handleUnload);
@@ -87,7 +93,6 @@ export default function Navbar() {
     return () => {
       clearInterval(interval);
       window.removeEventListener('beforeunload', handleUnload);
-      updateOnlineStatus(false);
     };
   }, [currentUser?.username]);
 
@@ -108,7 +113,6 @@ export default function Navbar() {
     }
   };
 
-  // HÀM TẢI LỊCH SỬ GIAO DỊCH TỰ ĐỘNG TỪ BẢNG TRANSACTIONS TRÊN CLOUD
   const loadUserTransactionsFromCloud = async (username: string) => {
     setLoadingHistory(true);
     const { data, error } = await supabase
@@ -178,7 +182,6 @@ export default function Navbar() {
         localStorage.setItem('ztool_current_user', newUser.username);
         setCurrentUser(newUser);
 
-        // Ghi nhật ký khởi tạo tài khoản lên bảng transactions trên Cloud
         await supabase.from('transactions').insert([
           {
             username: newUser.username,
@@ -407,7 +410,6 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* MÃ QR SEPAY VỚI TÀI KHOẢN ẢO 96247JFG2G */}
             <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-2xl flex flex-col items-center space-y-3 text-center">
               <img
                 src={`https://qr.sepay.vn/img?bank=BIDV&acc=96247JFG2G&template=compact&amount=${rechargeAmount}&des=${encodeURIComponent(`NAP ${currentUser.username}`)}`}
@@ -434,7 +436,7 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* MODAL LỊCH SỬ GIAO DỊCH TẢI TỪ DATABASE CLOUD */}
+      {/* MODAL LỊCH SỬ GIAO DỊCH */}
       {showHistoryModal && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
           <div className="bg-[#0D121D] border border-[#1C2638] w-full max-w-lg rounded-3xl p-6 space-y-5 relative shadow-2xl">
@@ -547,7 +549,7 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* MODAL AUTH DÀNH CHO ĐĂNG NHẬP / ĐĂNG KÝ */}
+      {/* MODAL AUTH */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
           <div className="bg-[#0D121D] border border-[#1C2638] w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-2xl">

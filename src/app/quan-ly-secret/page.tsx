@@ -25,6 +25,9 @@ export default function AdminPage() {
   const [keysList, setKeysList] = useState<any[]>([]);
   const [sepayLogs, setSepayLogs] = useState<any[]>([]);
 
+  // Timer để re-render tự động kiểm tra Online/Offline thời gian thực
+  const [nowTime, setNowTime] = useState(Date.now());
+
   // States thao tác
   const [userSearch, setUserSearch] = useState('');
   const [newUserForm, setNewUserForm] = useState({ username: '', password: '', balance: 0 });
@@ -76,6 +79,13 @@ export default function AdminPage() {
       setIsAuthenticated(true);
       loadAllSyncData();
     }
+
+    // Cập nhật đồng hồ đo thời gian thực mỗi 5 giây để kiểm tra Heartbeat Online
+    const timer = setInterval(() => {
+      setNowTime(Date.now());
+    }, 5000);
+
+    return () => clearInterval(timer);
   }, []);
 
   const loadAllSyncData = async () => {
@@ -114,7 +124,7 @@ export default function AdminPage() {
       const savedKeys = localStorage.getItem('ztool_keys');
       if (savedKeys) setKeysList(JSON.parse(savedKeys));
 
-      // 6. Tải Lịch sử Nạp tiền SePay trực tiếp từ Cloud Supabase
+      // 6. Tải Lịch sử Nạp tiền SePay
       const { data: sepayData } = await supabase
         .from('transactions')
         .select('*')
@@ -153,7 +163,6 @@ export default function AdminPage() {
     setShowPasswords(prev => ({ ...prev, [username]: !prev[username] }));
   };
 
-  // Xem lịch sử giao dịch của 1 khách hàng từ Supabase Cloud
   const handleViewUserTransactions = async (username: string) => {
     setLoadingUserHistory(true);
     setSelectedUserHistory({ username, logs: [] });
@@ -206,7 +215,6 @@ export default function AdminPage() {
     if (error) {
       alert('Lỗi tạo tài khoản: ' + error.message);
     } else {
-      // Ghi log khởi tạo
       await supabase.from('transactions').insert([
         {
           username: newUserForm.username.trim(),
@@ -244,7 +252,6 @@ export default function AdminPage() {
     }
   };
 
-  // HÀM XỬ LÝ CỘNG / TRỪ TIỀN VÀ GHI TỰ ĐỘNG VÀO BẢNG TRANSACTIONS LÊN CLOUD
   const handleExecAdjustBalance = async (u: any, isAddMode: boolean) => {
     if (!adjustBal || !adjustBal.amount) return alert('Vui lòng nhập số tiền hợp lệ!');
     
@@ -252,14 +259,12 @@ export default function AdminPage() {
     const changeAmt = Number(adjustBal.amount);
     const next = isAddMode ? cur + changeAmt : Math.max(0, cur - changeAmt);
     
-    // 1. Cập nhật số dư mới vào bảng users
     const { error: updateError } = await supabase.from('users').update({ balance: next }).eq('id', u.id);
     
     if (updateError) {
       alert('Lỗi cập nhật số dư: ' + updateError.message);
     } else {
-      // 2. Ghi nhật ký biến động số dư vào bảng transactions trên Cloud
-      const { error: logError } = await supabase.from('transactions').insert([
+      await supabase.from('transactions').insert([
         {
           username: u.username,
           type: isAddMode ? 'ADMIN_ADD' : 'ADMIN_SUB',
@@ -268,10 +273,6 @@ export default function AdminPage() {
           status: 'Thành công'
         }
       ]);
-
-      if (logError) {
-        console.error('Lỗi ghi nhật ký Cloud:', logError.message);
-      }
 
       setAdjustBal(null);
       alert(`${isAddMode ? 'Cộng' : 'Trừ'} tiền thành công cho ${u.username}! Số dư mới: ${next.toLocaleString('vi-VN')} VNĐ`);
@@ -573,7 +574,7 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* 1. TAB USER (HIỂN THỊ TRẠNG THÁI ONLINE / OFFLINE TÁCH BIỆT) */}
+        {/* 1. TAB USER */}
         {activeTab === 'users' && (
           <div className="space-y-6">
             <form onSubmit={handleCreateUser} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
@@ -613,8 +614,10 @@ export default function AdminPage() {
                   </thead>
                   <tbody className="divide-y divide-[#1C2638]">
                     {users.filter(u => u.username?.toLowerCase().includes(userSearch.toLowerCase())).map((u, i) => {
-                      // Kiểm tra trực tiếp cờ is_online kết hợp thời gian nạp tin nhắn heartbeat trong vòng 25s
-                      const isUserOnline = u.is_online && u.last_seen && (new Date().getTime() - new Date(u.last_seen).getTime() < 25000);
+                      // TÍNH TRẠNG THÁI ONLINE THỜI GIAN THỰC: 
+                      // Cờ is_online = true VÀ last_seen được cập nhật trong vòng 20 giây gần nhất
+                      const lastSeenMs = u.last_seen ? new Date(u.last_seen).getTime() : 0;
+                      const isUserOnline = u.is_online === true && (nowTime - lastSeenMs < 20000);
 
                       return (
                         <tr key={i} className="hover:bg-[#06090E]/50 transition">
@@ -635,7 +638,7 @@ export default function AdminPage() {
                           </td>
                           <td className="p-3 font-bold text-emerald-400">{(u.balance || 0).toLocaleString('vi-VN')} VNĐ</td>
                           
-                          {/* 1. HIỂN THỊ ONLINE / OFFLINE REALTIME */}
+                          {/* 1. HIỂN THỊ ONLINE / OFFLINE BẰNG THỜI GIAN THỰC */}
                           <td className="p-3">
                             {isUserOnline ? (
                               <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 text-[10px] inline-flex items-center gap-1.5 shadow-sm shadow-emerald-500/10">
