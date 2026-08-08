@@ -22,6 +22,14 @@ export default function ToolsPage() {
     loadToolsData();
   }, []);
 
+  // Hàm chuyển đổi chuỗi giá tiền sang dạng có dấu phẩy (vd: "5000" -> "5,000")
+  const formatPrice = (price: string | number) => {
+    if (!price) return '---';
+    const num = Number(String(price).replace(/[^0-9]/g, ''));
+    if (isNaN(num) || num === 0) return '---';
+    return num.toLocaleString('en-US');
+  };
+
   const loadToolsData = async () => {
     const { data, error } = await supabase.from('tools').select('*').order('id', { ascending: false });
     
@@ -33,10 +41,10 @@ export default function ToolsPage() {
           id: 1,
           name: 'AUTO FARM F17',
           image: 'https://i.ibb.co/8L2gsmQ0/logo.jpg',
-          priceDay: '5.000',
-          priceWeek: '20.000',
-          priceMonth: '50.000',
-          priceLifetime: '100.000',
+          priceDay: '5000',
+          priceWeek: '20000',
+          priceMonth: '50000',
+          priceLifetime: '100000',
           description: 'Tự động chạy nhanh, bấm E nghề công trường F17 City.',
           downloadLink: ''
         }
@@ -72,7 +80,7 @@ export default function ToolsPage() {
     if ((userData.balance || 0) < priceNum) {
       setPurchaseMsg({
         type: 'error',
-        text: `Số dư ví không đủ! Cần ${priceNum.toLocaleString('vi-VN')} VNĐ nhưng số dư hiện tại là ${(userData.balance || 0).toLocaleString('vi-VN')} VNĐ.`
+        text: `Số dư ví không đủ! Cần ${priceNum.toLocaleString('en-US')} VNĐ nhưng số dư hiện tại là ${(userData.balance || 0).toLocaleString('en-US')} VNĐ.`
       });
       return;
     }
@@ -116,7 +124,7 @@ export default function ToolsPage() {
           {tools.map((tool) => (
             <div key={tool.id} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-xl hover:border-neonBlue/50 transition duration-300">
               <div className="space-y-4">
-                {/* Khung ảnh vuông TỈ LỆ 1:1 chuẩn xác với ảnh gốc */}
+                {/* Khung ảnh vuông TỈ LỆ 1:1 */}
                 <div className="w-full aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
                   <img 
                     src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
@@ -135,22 +143,23 @@ export default function ToolsPage() {
                   </p>
                 </div>
 
+                {/* Khung Giá Tiền Đã Được Định Dạng 1,000 VNĐ */}
                 <div className="bg-[#080B10] border border-[#1A2332] p-3.5 rounded-2xl space-y-2 text-xs">
                   <div className="flex justify-between items-center text-gray-300">
                     <span>Theo Ngày:</span>
-                    <b className="text-emerald-400 font-bold">{tool.priceDay ? `${tool.priceDay} VNĐ` : '---'}</b>
+                    <b className="text-emerald-400 font-bold">{tool.priceDay ? `${formatPrice(tool.priceDay)} VNĐ` : '---'}</b>
                   </div>
                   <div className="flex justify-between items-center text-gray-300">
                     <span>Theo Tuần:</span>
-                    <b className="text-emerald-400 font-bold">{tool.priceWeek ? `${tool.priceWeek} VNĐ` : '---'}</b>
+                    <b className="text-emerald-400 font-bold">{tool.priceWeek ? `${formatPrice(tool.priceWeek)} VNĐ` : '---'}</b>
                   </div>
                   <div className="flex justify-between items-center text-gray-300">
                     <span>Theo Tháng:</span>
-                    <b className="text-emerald-400 font-bold">{tool.priceMonth ? `${tool.priceMonth} VNĐ` : '---'}</b>
+                    <b className="text-emerald-400 font-bold">{tool.priceMonth ? `${formatPrice(tool.priceMonth)} VNĐ` : '---'}</b>
                   </div>
                   <div className="flex justify-between items-center text-gray-300 border-t border-[#1A2332] pt-1.5">
                     <span className="font-semibold text-white">Vĩnh Viễn:</span>
-                    <b className="text-cyanGlow font-black">{tool.priceLifetime ? `${tool.priceLifetime} VNĐ` : '---'}</b>
+                    <b className="text-cyanGlow font-black">{tool.priceLifetime ? `${formatPrice(tool.priceLifetime)} VNĐ` : '---'}</b>
                   </div>
                 </div>
               </div>
@@ -195,7 +204,6 @@ export default function ToolsPage() {
                 </div>
               </div>
 
-              {/* Khung vuông xem chi tiết ảnh */}
               <div className="w-full max-w-md mx-auto aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden">
                 <img 
                   src={selectedToolForDetail.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
@@ -214,19 +222,19 @@ export default function ToolsPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center">
                   <span className="text-[10px] text-gray-400 block">Ngày</span>
-                  <b className="text-xs text-emerald-400">{selectedToolForDetail.priceDay || '---'}đ</b>
+                  <b className="text-xs text-emerald-400">{formatPrice(selectedToolForDetail.priceDay)}đ</b>
                 </div>
                 <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center">
                   <span className="text-[10px] text-gray-400 block">Tuần</span>
-                  <b className="text-xs text-emerald-400">{selectedToolForDetail.priceWeek || '---'}đ</b>
+                  <b className="text-xs text-emerald-400">{formatPrice(selectedToolForDetail.priceWeek)}đ</b>
                 </div>
                 <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center">
                   <span className="text-[10px] text-gray-400 block">Tháng</span>
-                  <b className="text-xs text-emerald-400">{selectedToolForDetail.priceMonth || '---'}đ</b>
+                  <b className="text-xs text-emerald-400">{formatPrice(selectedToolForDetail.priceMonth)}đ</b>
                 </div>
                 <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center">
                   <span className="text-[10px] text-gray-400 block">Vĩnh Viễn</span>
-                  <b className="text-xs text-cyanGlow">{selectedToolForDetail.priceLifetime || '---'}đ</b>
+                  <b className="text-xs text-cyanGlow">{formatPrice(selectedToolForDetail.priceLifetime)}đ</b>
                 </div>
               </div>
 
@@ -281,7 +289,7 @@ export default function ToolsPage() {
                     }`}
                   >
                     <div className="font-bold">Gói 1 Ngày</div>
-                    <div className="text-emerald-400 font-extrabold">{selectedToolForBuy.priceDay || '0'} VNĐ</div>
+                    <div className="text-emerald-400 font-extrabold">{formatPrice(selectedToolForBuy.priceDay)} VNĐ</div>
                   </button>
 
                   <button
@@ -291,7 +299,7 @@ export default function ToolsPage() {
                     }`}
                   >
                     <div className="font-bold">Gói 7 Ngày</div>
-                    <div className="text-emerald-400 font-extrabold">{selectedToolForBuy.priceWeek || '0'} VNĐ</div>
+                    <div className="text-emerald-400 font-extrabold">{formatPrice(selectedToolForBuy.priceWeek)} VNĐ</div>
                   </button>
 
                   <button
@@ -301,7 +309,7 @@ export default function ToolsPage() {
                     }`}
                   >
                     <div className="font-bold">Gói 30 Ngày</div>
-                    <div className="text-emerald-400 font-extrabold">{selectedToolForBuy.priceMonth || '0'} VNĐ</div>
+                    <div className="text-emerald-400 font-extrabold">{formatPrice(selectedToolForBuy.priceMonth)} VNĐ</div>
                   </button>
 
                   <button
@@ -311,7 +319,7 @@ export default function ToolsPage() {
                     }`}
                   >
                     <div className="font-bold">Gói Vĩnh Viễn</div>
-                    <div className="text-cyanGlow font-extrabold">{selectedToolForBuy.priceLifetime || '0'} VNĐ</div>
+                    <div className="text-cyanGlow font-extrabold">{formatPrice(selectedToolForBuy.priceLifetime)} VNĐ</div>
                   </button>
                 </div>
               </div>
