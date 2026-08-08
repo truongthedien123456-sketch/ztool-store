@@ -62,18 +62,22 @@ export default function Navbar() {
     };
   }, []);
 
-  // HEARTBEAT ONLINE / OFFLINE
+  // CƠ CHẾ HEARTBEAT CẬP NHẬT TRẠNG THÁI ONLINE / OFFLINE REALTIME
   useEffect(() => {
     if (!currentUser?.username) return;
 
     const updateOnline = async () => {
       await supabase
         .from('users')
-        .update({ is_online: true, last_seen: new Date().toISOString() })
+        .update({ 
+          is_online: true,
+          last_seen: new Date().toISOString() 
+        })
         .eq('username', currentUser.username);
     };
 
     updateOnline();
+
     const interval = setInterval(updateOnline, 10000);
 
     const handleUnload = () => {
@@ -83,10 +87,17 @@ export default function Navbar() {
         'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
         'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}`
       };
-      fetch(url, { method: 'PATCH', headers, body: JSON.stringify({ is_online: false }), keepalive: true }).catch(() => {});
+      
+      fetch(url, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ is_online: false }),
+        keepalive: true
+      }).catch(() => {});
     };
 
     window.addEventListener('beforeunload', handleUnload);
+
     return () => {
       clearInterval(interval);
       window.removeEventListener('beforeunload', handleUnload);
@@ -110,18 +121,27 @@ export default function Navbar() {
     }
   };
 
-  // TẢI THÔNG TIN TÀI KHOẢN TỪ GITHUB GIST ĐỂ XEM EXPIRE_TIMESTAMP
+  // TẢI THÔNG TIN TÀI KHOẢN TỪ GITHUB GIST ĐỂ XEM EXPIRE_TIMESTAMP (ĐÃ ĐỒNG BỘ CHUẨN XÁC VỚI ADMIN)
   const loadUserGistData = async (username: string) => {
     setLoadingPurchasedTools(true);
     try {
       const gistId = '21f0a39cbc434e5033d89f06e2c7d26e';
-      const res = await fetch(`https://api.github.com/gists/${gistId}`, { cache: 'no-store' });
+      const res = await fetch(`https://api.github.com/gists/${gistId}?timestamp=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         const contentRaw = data.files['accounts.json']?.content || '{}';
         const parsed = JSON.parse(contentRaw);
-        if (parsed[username]) {
-          setUserGistData(parsed[username]);
+        
+        // Tìm kiếm không phân biệt hoa thường hoặc khoảng trắng để đồng bộ tuyệt đối với kho acc tool admin
+        const matchedKey = Object.keys(parsed).find(
+          k => k.trim().toLowerCase() === username.trim().toLowerCase()
+        );
+
+        if (matchedKey && parsed[matchedKey]) {
+          setUserGistData({
+            username: matchedKey,
+            ...parsed[matchedKey]
+          });
         } else {
           setUserGistData(null);
         }
@@ -144,6 +164,8 @@ export default function Navbar() {
     setLoadingHistory(false);
     if (!error && data) {
       setUserTransactions(data);
+    } else {
+      console.error('Lỗi tải lịch sử Cloud:', error?.message);
     }
   };
 
@@ -184,10 +206,12 @@ export default function Navbar() {
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthMsg(null);
+
     if (!usernameInput.trim() || !passwordInput.trim()) {
       setAuthMsg({ type: 'error', text: 'Vui lòng điền đầy đủ tài khoản và mật khẩu!' });
       return;
     }
+
     setLoading(true);
 
     if (authMode === 'register') {
@@ -196,52 +220,86 @@ export default function Navbar() {
         setAuthMsg({ type: 'error', text: 'Mật khẩu nhập lại không trùng khớp!' });
         return;
       }
-      const { data: existingUser } = await supabase.from('users').select('username').eq('username', usernameInput.trim()).single();
+
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('username')
+        .eq('username', usernameInput.trim())
+        .single();
+
       if (existingUser) {
         setLoading(false);
         setAuthMsg({ type: 'error', text: 'Tài khoản này đã tồn tại trên hệ thống!' });
         return;
       }
-      const { data: newUser, error } = await supabase.from('users').insert([{
-        username: usernameInput.trim(),
-        password: passwordInput,
-        balance: 0,
-        isBanned: false,
-        is_online: true,
-        last_seen: new Date().toISOString()
-      }]).select().single();
+
+      const { data: newUser, error } = await supabase
+        .from('users')
+        .insert([
+          {
+            username: usernameInput.trim(),
+            password: passwordInput,
+            balance: 0,
+            isBanned: false,
+            is_online: true,
+            last_seen: new Date().toISOString()
+          }
+        ])
+        .select()
+        .single();
 
       setLoading(false);
+
       if (error) {
         setAuthMsg({ type: 'error', text: 'Lỗi đăng ký: ' + error.message });
       } else {
         localStorage.setItem('ztool_current_user', newUser.username);
         setCurrentUser(newUser);
-        await supabase.from('transactions').insert([{
-          username: newUser.username,
-          type: 'INIT',
-          title: 'Khởi tạo tài khoản thành công',
-          amount: 0,
-          status: 'Thành công'
-        }]);
+
+        await supabase.from('transactions').insert([
+          {
+            username: newUser.username,
+            type: 'INIT',
+            title: 'Khởi tạo tài khoản thành công',
+            amount: 0,
+            status: 'Thành công'
+          }
+        ]);
+
         setAuthMsg({ type: 'success', text: 'Đăng ký tài khoản thành công!' });
-        setTimeout(() => { setShowAuthModal(false); resetForm(); }, 1200);
+        setTimeout(() => {
+          setShowAuthModal(false);
+          resetForm();
+        }, 1200);
       }
     } else {
-      const { data: user, error } = await supabase.from('users').select('*').eq('username', usernameInput.trim()).eq('password', passwordInput).single();
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', usernameInput.trim())
+        .eq('password', passwordInput)
+        .single();
+
       setLoading(false);
+
       if (error || !user) {
         setAuthMsg({ type: 'error', text: 'Tài khoản hoặc mật khẩu không chính xác!' });
         return;
       }
+
       if (user.isBanned) {
         setAuthMsg({ type: 'error', text: 'Tài khoản của bạn đã bị BAN khỏi hệ thống!' });
         return;
       }
+
       localStorage.setItem('ztool_current_user', user.username);
       setCurrentUser(user);
+
       setAuthMsg({ type: 'success', text: 'Đăng nhập thành công!' });
-      setTimeout(() => { setShowAuthModal(false); resetForm(); }, 1000);
+      setTimeout(() => {
+        setShowAuthModal(false);
+        resetForm();
+      }, 1000);
     }
   };
 
@@ -271,10 +329,14 @@ export default function Navbar() {
     <>
       <nav className="bg-[#080B10]/95 backdrop-blur-md border-b-2 border-cyan-400/50 sticky top-0 z-40 px-4 lg:px-8 py-3.5 flex items-center justify-between shadow-lg shadow-cyan-500/15">
         
-        {/* LOGO ZTOOL */}
+        {/* 1. KHU VỰC LOGO ZTOOL SIÊU SÁNG */}
         <Link href="/" className="flex items-center gap-3.5 group">
           <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#06090E] p-1 border-2 border-cyan-400 shadow-xl shadow-cyan-400/60 group-hover:scale-105 group-hover:border-cyan-300 transition duration-300 overflow-hidden shrink-0">
-            <img src="/logo.jpg" alt="ZTool Logo" className="w-full h-full object-cover rounded-xl" />
+            <img 
+              src="/logo.jpg" 
+              alt="ZTool Logo" 
+              className="w-full h-full object-cover rounded-xl"
+            />
           </div>
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-white tracking-wider leading-none group-hover:text-cyan-300 transition drop-shadow-[0_0_12px_rgba(6,182,212,0.8)]">ZTOOL</h1>
@@ -282,20 +344,43 @@ export default function Navbar() {
           </div>
         </Link>
 
-        {/* MENU ĐIỀU HƯỚNG */}
+        {/* 2. MENU ĐIỀU HƯỚNG VỚI HIỆU ỨNG VIỀN SÁNG RỰC RỠ & HOVER NỔI BẬT */}
         <div className="hidden md:flex items-center gap-2.5 bg-[#06090E] p-2 rounded-2xl border-2 border-cyan-400/50 shadow-2xl shadow-cyan-500/25">
-          <Link href="/" className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 border-2 cursor-pointer ${pathname === '/' ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-lg shadow-cyan-400/70 -translate-y-0.5' : 'text-slate-100 border-cyan-500/40 hover:border-cyan-300 hover:text-cyan-300 hover:bg-[#0D121D] hover:shadow-lg hover:shadow-cyan-400/50 hover:-translate-y-1'}`}>
+          <Link 
+            href="/" 
+            className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 border-2 cursor-pointer ${
+              pathname === '/' 
+                ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-lg shadow-cyan-400/70 -translate-y-0.5' 
+                : 'text-slate-100 border-cyan-500/40 hover:border-cyan-300 hover:text-cyan-300 hover:bg-[#0D121D] hover:shadow-lg hover:shadow-cyan-400/50 hover:-translate-y-1'
+            }`}
+          >
             Trang chủ
           </Link>
-          <Link href="/tools" className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 border-2 cursor-pointer ${pathname === '/tools' ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-lg shadow-cyan-400/70 -translate-y-0.5' : 'text-slate-100 border-cyan-500/40 hover:border-cyan-300 hover:text-cyan-300 hover:bg-[#0D121D] hover:shadow-lg hover:shadow-cyan-400/50 hover:-translate-y-1'}`}>
+
+          <Link 
+            href="/tools" 
+            className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 border-2 cursor-pointer ${
+              pathname === '/tools' 
+                ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-lg shadow-cyan-400/70 -translate-y-0.5' 
+                : 'text-slate-100 border-cyan-500/40 hover:border-cyan-300 hover:text-cyan-300 hover:bg-[#0D121D] hover:shadow-lg hover:shadow-cyan-400/50 hover:-translate-y-1'
+            }`}
+          >
             TOOL AUTO
           </Link>
-          <Link href="/projects" className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 border-2 cursor-pointer ${pathname === '/projects' ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-lg shadow-cyan-400/70 -translate-y-0.5' : 'text-slate-100 border-cyan-500/40 hover:border-cyan-300 hover:text-cyan-300 hover:bg-[#0D121D] hover:shadow-lg hover:shadow-cyan-400/50 hover:-translate-y-1'}`}>
+
+          <Link 
+            href="/projects" 
+            className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 border-2 cursor-pointer ${
+              pathname === '/projects' 
+                ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-lg shadow-cyan-400/70 -translate-y-0.5' 
+                : 'text-slate-100 border-cyan-500/40 hover:border-cyan-300 hover:text-cyan-300 hover:bg-[#0D121D] hover:shadow-lg hover:shadow-cyan-400/50 hover:-translate-y-1'
+            }`}
+          >
             Dự án
           </Link>
         </div>
 
-        {/* NẠP TIỀN & VÍ TIỀN */}
+        {/* 3. NẠP TIỀN & VÍ TIỀN PHÁT SÁNG NỔI BẬT */}
         <div className="flex items-center gap-3.5">
           {currentUser ? (
             <div className="flex items-center gap-3.5">
@@ -429,7 +514,7 @@ export default function Navbar() {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#1C2638] pb-3">
                       <div>
                         <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider block">Tên Tài Khoản Tool</span>
-                        <h4 className="font-black text-white text-base">{currentUser.username}</h4>
+                        <h4 className="font-black text-white text-base">{userGistData.username}</h4>
                       </div>
                       <div>
                         <span className="text-[10px] text-slate-400 block mb-1">Thời hạn sử dụng:</span>
