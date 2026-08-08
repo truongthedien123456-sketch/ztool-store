@@ -5,30 +5,29 @@ export async function POST(request: Request) {
   try {
     const data = await request.json();
 
-    // Lấy nội dung chuyển khoản và số tiền từ payload SePay gửi về
-    const content = String(data.content || data.code || data.description || '').trim();
+    // SePay gửi nội dung gốc qua trường 'content' hoặc 'description'
+    const rawContent = String(data.content || data.description || data.code || '').trim();
     const amount = Number(data.transferAmount || data.amount || 0);
 
-    if (!content || amount <= 0) {
+    if (!rawContent || amount <= 0) {
       return NextResponse.json({ success: false, message: 'Dữ liệu không hợp lệ' }, { status: 400 });
     }
 
-    // Tách lấy username đứng sau từ khóa NAP (Chấp nhận nội dung chứa từ NAP ở bất kỳ đâu)
-    // Ví dụ đọc tốt cả: "NAP abc", "SEPAY NAP abc", "VietQR NAP abc 123"
-    const match = content.match(/NAP[\s_]+([a-zA-Z0-9_]+)/i);
+    // Lọc lấy username đứng sau từ khóa NAP (Chấp nhận viết hoa/thường, đứng ở bất kỳ vị trí nào trong chuỗi)
+    const match = rawContent.match(/NAP[\s_]+([a-zA-Z0-9_]+)/i);
 
     if (match && match[1]) {
       const username = match[1].trim();
 
-      // 1. Lấy thông tin người dùng từ Supabase Database
+      // 1. Tìm người dùng trên Database Supabase
       const { data: user, error: userErr } = await supabase
         .from('users')
         .select('*')
-        .ilike('username', username) // So sánh không phân biệt hoa thường
+        .ilike('username', username)
         .single();
 
       if (user) {
-        // 2. Cộng số dư mới
+        // 2. Cộng đúng số tiền thực tế khách đã chuyển khoản
         const newBalance = (Number(user.balance) || 0) + amount;
         await supabase
           .from('users')
@@ -47,12 +46,10 @@ export async function POST(request: Request) {
         ]);
 
         return NextResponse.json({ success: true, message: `Đã cộng ${amount}đ cho ${user.username}` });
-      } else {
-        console.error('Không tìm thấy user:', username);
       }
     }
 
-    return NextResponse.json({ success: false, message: 'Nội dung không chứa cú pháp NAP <username>' });
+    return NextResponse.json({ success: false, message: 'Nội dung giao dịch không chứa NAP <username>' });
   } catch (error: any) {
     console.error('Lỗi xử lý Webhook SePay:', error.message);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
