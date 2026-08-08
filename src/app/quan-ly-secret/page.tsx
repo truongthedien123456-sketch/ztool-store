@@ -538,7 +538,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 2. TAB TOOL AUTO (KHUNG PREVIEW & DANH SÁCH HIỂN THỊ DỌC TỰ NHIÊN, KHÔNG CÓ VIỀN ĐEN) */}
+        {/* 2. TAB TOOL AUTO (PREVIEW VUÔNG TỈ LỆ 1:1 CHUẨN XÁC) */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
@@ -551,7 +551,7 @@ export default function AdminPage() {
                 <input type="text" required value={toolForm.name} onChange={e => setToolForm({ ...toolForm, name: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="vd: AUTO FARM F17" />
               </div>
 
-              {/* KHUNG CHỌN FILE ẢNH & PREVIEW TỈ LỆ DỌC NGUYÊN BẢN */}
+              {/* KHUNG CHỌN FILE ẢNH & PREVIEW VUÔNG 1:1 TRỌN VẸN ẢNH */}
               <div className="space-y-2">
                 <label className="block text-[11px] text-slate-400">Ảnh Minh Họa Sản Phẩm</label>
                 
@@ -562,7 +562,7 @@ export default function AdminPage() {
                 </label>
 
                 {(previewUrl || toolForm.image) && (
-                  <div className="w-full aspect-[4/5] bg-[#06090E] border border-[#1C2638] rounded-xl overflow-hidden relative">
+                  <div className="w-full aspect-square bg-[#06090E] border border-[#1C2638] rounded-xl overflow-hidden relative">
                     <img src={previewUrl || toolForm.image} alt="Preview" className="w-full h-full object-cover" />
                   </div>
                 )}
@@ -619,9 +619,9 @@ export default function AdminPage() {
                 {tools.length === 0 ? <p className="text-xs text-slate-500">Chưa có dữ liệu Tool trên Cloud Database</p> : tools.map((t) => (
                   <div key={t.id} className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4 flex-1">
-                      {/* Ảnh đại diện tỉ lệ dọc trong danh sách Admin */}
+                      {/* Ảnh đại diện vuông trong danh sách Admin */}
                       {t.image && (
-                        <div className="w-16 aspect-[4/5] bg-[#0D121D] border border-[#1C2638] rounded-lg overflow-hidden shrink-0">
+                        <div className="w-16 h-16 bg-[#0D121D] border border-[#1C2638] rounded-lg overflow-hidden shrink-0">
                           <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
                         </div>
                       )}

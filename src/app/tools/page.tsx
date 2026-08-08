@@ -116,8 +116,8 @@ export default function ToolsPage() {
           {tools.map((tool) => (
             <div key={tool.id} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-xl hover:border-neonBlue/50 transition duration-300">
               <div className="space-y-4">
-                {/* Khung chứa ảnh TỈ LỆ DỌC khít 100% không bị thừa nền đen */}
-                <div className="w-full aspect-[4/5] bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
+                {/* Khung ảnh vuông TỈ LỆ 1:1 chuẩn xác với ảnh gốc */}
+                <div className="w-full aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
                   <img 
                     src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
                     alt={tool.name} 
@@ -195,8 +195,8 @@ export default function ToolsPage() {
                 </div>
               </div>
 
-              {/* Khung xem chi tiết ảnh tỉ lệ dọc khít toàn bộ */}
-              <div className="w-full max-w-sm mx-auto aspect-[4/5] bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden">
+              {/* Khung vuông xem chi tiết ảnh */}
+              <div className="w-full max-w-md mx-auto aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden">
                 <img 
                   src={selectedToolForDetail.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
                   alt={selectedToolForDetail.name} 
