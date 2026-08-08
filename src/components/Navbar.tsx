@@ -186,11 +186,11 @@ export default function Navbar() {
     }
   };
 
-  // RENDER ĐỒNG HỒ ĐẾM NGƯỢC HOẶC VĨNH VIỄN CỰC KỲ BẮT MẮT
+  // RENDER ĐỒNG HỒ ĐẾM NGƯỢC HOẶC VĨNH VIỄN NỔI BẬT & CHUYÊN NGHIỆP
   const renderRemainingTime = (expireTimestamp: number) => {
     if (!expireTimestamp || expireTimestamp === 0) {
       return (
-        <span className="text-cyan-100 font-black bg-gradient-to-r from-cyan-600 via-blue-500 to-indigo-600 px-4 py-2 rounded-xl border border-cyan-400 text-xs shadow-[0_0_15px_rgba(6,182,212,0.6)] inline-flex items-center gap-1.5 animate-pulse">
+        <span className="text-cyan-300 font-black bg-gradient-to-r from-cyan-500/20 to-blue-500/20 px-3.5 py-1.5 rounded-xl border border-cyan-400/40 text-xs shadow-[0_0_12px_rgba(6,182,212,0.2)] inline-flex items-center gap-1.5">
           ♾️ Vĩnh Viễn
         </span>
       );
@@ -576,12 +576,12 @@ export default function Navbar() {
                           </div>
                         </div>
 
-                        {/* KHUNG THÔNG BÁO VĨNH VIỄN CỐ ĐỊNH, CHỈ LOGO VÀ CHỮ BÊN TRONG BOUNCE NHẸ MƯỢT MÀ */}
+                        {/* KHUNG THÔNG BÁO VĨNH VIỄN - HIỆU ỨNG NHỊP ĐẬP (PULSE) ĐỒNG BỘ VỚI TRANG */}
                         {isLifetime ? (
-                          <div className="bg-gradient-to-r from-cyan-500/20 via-teal-500/20 to-blue-500/20 border-2 border-cyan-400/60 p-4 rounded-2xl text-center shadow-[0_0_20px_rgba(6,182,212,0.25)] flex items-center justify-center overflow-hidden">
-                            <div className="inline-flex items-center gap-2.5 transform transition-transform duration-1000 animate-bounce">
-                              <Crown className="w-5 h-5 text-cyan-300 shrink-0" />
-                              <span className="text-xs font-black text-cyan-200 tracking-wide">
+                          <div className="bg-[#080B10] border-2 border-cyan-500/50 p-4 rounded-2xl text-center shadow-[0_0_15px_rgba(6,182,212,0.2)] flex items-center justify-center">
+                            <div className="inline-flex items-center gap-2.5 animate-pulse">
+                              <Crown className="w-5 h-5 text-cyan-400 shrink-0" />
+                              <span className="text-xs font-bold text-cyan-300 tracking-wide">
                                 Bạn đang sở hữu gói bản quyền Vĩnh Viễn. Không cần gia hạn!
                               </span>
                             </div>
