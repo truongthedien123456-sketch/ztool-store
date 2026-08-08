@@ -16,7 +16,7 @@ export default function AdminPage() {
 
   const [activeTab, setActiveTab] = useState<'users' | 'tools' | 'projects' | 'keys' | 'sepay' | 'feedback'>('users');
 
-  // Dữ liệu Realtime từ Supabase Cloud
+  // Dữ liệu Cloud Supabase
   const [users, setUsers] = useState<any[]>([]);
   const [tools, setTools] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
@@ -63,28 +63,46 @@ export default function AdminPage() {
 
   // Tải dữ liệu Realtime trực tiếp từ Supabase Cloud
   const loadAllSyncData = async () => {
-    // 1. Tải Users
-    const { data: userData } = await supabase.from('users').select('*').order('id', { ascending: false });
-    if (userData) setUsers(userData);
+    try {
+      // 1. Tải Users
+      const { data: userData } = await supabase.from('users').select('*').order('id', { ascending: false });
+      if (userData) setUsers(userData);
 
-    // 2. Tải Tools
-    const { data: toolData } = await supabase.from('tools').select('*').order('id', { ascending: false });
-    if (toolData) setTools(toolData);
+      // 2. Tải Tools
+      const { data: toolData, error: toolErr } = await supabase.from('tools').select('*').order('id', { ascending: false });
+      if (toolData) {
+        // Chuẩn hóa mapping dữ liệu từ Supabase về dạng Frontend
+        const mappedTools = toolData.map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          image: t.image,
+          priceDay: t.priceDay || t.price_day || '',
+          priceWeek: t.priceWeek || t.price_week || '',
+          priceMonth: t.priceMonth || t.price_month || '',
+          priceLifetime: t.priceLifetime || t.price_lifetime || '',
+          description: t.description,
+          downloadLink: t.downloadLink || t.download_link || ''
+        }));
+        setTools(mappedTools);
+      }
 
-    // 3. Tải Projects
-    const { data: projectData } = await supabase.from('projects').select('*').order('id', { ascending: false });
-    if (projectData) setProjects(projectData);
+      // 3. Tải Projects
+      const { data: projectData } = await supabase.from('projects').select('*').order('id', { ascending: false });
+      if (projectData) setProjects(projectData);
 
-    // 4. Tải Feedbacks
-    const { data: feedbackData } = await supabase.from('feedbacks').select('*').order('id', { ascending: false });
-    if (feedbackData) setFeedbacks(feedbackData);
+      // 4. Tải Feedbacks
+      const { data: feedbackData } = await supabase.from('feedbacks').select('*').order('id', { ascending: false });
+      if (feedbackData) setFeedbacks(feedbackData);
 
-    // Dữ liệu bộ nhớ tạm phụ
-    const savedKeys = localStorage.getItem('ztool_keys');
-    if (savedKeys) setKeysList(JSON.parse(savedKeys));
+      // Dữ liệu kho Key & Lịch sử
+      const savedKeys = localStorage.getItem('ztool_keys');
+      if (savedKeys) setKeysList(JSON.parse(savedKeys));
 
-    const savedSepay = localStorage.getItem('ztool_recharge_history');
-    if (savedSepay) setSepayLogs(JSON.parse(savedSepay));
+      const savedSepay = localStorage.getItem('ztool_recharge_history');
+      if (savedSepay) setSepayLogs(JSON.parse(savedSepay));
+    } catch (e) {
+      console.error('Error loading Supabase sync data:', e);
+    }
   };
 
   const handleAdminLogin = (e: React.FormEvent) => {
@@ -104,7 +122,7 @@ export default function AdminPage() {
     setIsAuthenticated(false);
   };
 
-  // --- 1. QUẢN LÝ NGƯỜI DÙNG CỦA HỆ THỐNG ---
+  // --- 1. QUẢN LÝ NGƯỜI DÙNG ---
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUserForm.username || !newUserForm.password) return alert('Nhập đủ username/password!');
@@ -161,7 +179,7 @@ export default function AdminPage() {
     }
   };
 
-  // --- 2. QUẢN LÝ SẢN PHẨM TOOL (ĐỒNG BỘ REALTIME TỚI TẤT CẢ KHÁCH HÀNG) ---
+  // --- 2. QUẢN LÝ TOOL AUTO (GỬI ĐỒNG THỜI CẢ CAMELCASE VÀ SNAKE_CASE ĐỂ KHÔNG BỊ TRỐNG BẢNG) ---
   const handleSaveTool = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!toolForm.name) return alert('Nhập tên Tool!');
@@ -189,7 +207,7 @@ export default function AdminPage() {
     } else {
       setToolForm({ id: 0, name: '', image: '', priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '' });
       setIsEditingTool(false);
-      alert('Lưu sản phẩm thành công! Tất cả khách hàng lập tức nhìn thấy thay đổi này.');
+      alert('Lưu sản phẩm thành công! Đã đẩy dữ liệu Realtime tới máy khách.');
       loadAllSyncData();
     }
   };
@@ -200,7 +218,7 @@ export default function AdminPage() {
     if (!error) loadAllSyncData();
   };
 
-  // --- 3. QUẢN LÝ DỰ ÁN CỦA SHOP ---
+  // --- 3. DỰ ÁN SHOP ---
   const handleSaveProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectForm.title) return alert('Nhập tên dự án!');
@@ -229,7 +247,7 @@ export default function AdminPage() {
     if (!error) loadAllSyncData();
   };
 
-  // --- 4. KEY VÀ Ý KIẾN ĐÓNG GÓP ---
+  // --- 4. KEY VÀ Ý KIẾN ---
   const handleAddKey = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newKeyForm.keyString) return alert('Nhập chuỗi Key!');
@@ -486,7 +504,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 2. TAB TOOL */}
+        {/* 2. TAB TOOL AUTO */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
