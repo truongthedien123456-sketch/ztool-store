@@ -34,12 +34,26 @@ export default function ToolsPage() {
     const { data } = await supabase.from('tools').select('*').order('id', { ascending: false });
     
     if (data && data.length > 0) {
-      setTools(data);
+      const mappedTools = data.map((t: any) => ({
+        id: t.id,
+        name: t.name,
+        toolCode: t.toolCode || t.tool_code || '',
+        image: t.image,
+        status: t.status || 'Đang hoạt động',
+        priceDay: t.priceDay || t.price_day || '',
+        priceWeek: t.priceWeek || t.price_week || '',
+        priceMonth: t.priceMonth || t.price_month || '',
+        priceLifetime: t.priceLifetime || t.price_lifetime || '',
+        description: t.description,
+        downloadLink: t.downloadLink || t.download_link || ''
+      }));
+      setTools(mappedTools);
     } else {
       setTools([
         {
           id: 1,
           name: 'AUTO FARM CÔNG TRƯỜNG F17',
+          toolCode: 'congtruongf17',
           image: 'https://i.ibb.co/8L2gsmQ0/logo.jpg',
           status: 'Đang hoạt động',
           priceDay: '5000',
@@ -121,7 +135,8 @@ export default function ToolsPage() {
         body: JSON.stringify({
           username: userData.username,
           password: userData.password,
-          durationDays: durationDays
+          durationDays: durationDays,
+          tool_code: selectedToolForBuy.toolCode || selectedToolForBuy.tool_code || '' // ĐÃ TRUYỀN MÃ TOOL VÀO ĐÂY
         })
       });
 
@@ -187,7 +202,7 @@ export default function ToolsPage() {
           </p>
         </div>
 
-        {/* DANH SÁCH TOOL AUTO VỚI HIỆU ỨNG HOVER GLOW CYAN VÀ LÊN NHẸ */}
+        {/* DANH SÁCH TOOL AUTO */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {tools.map((tool) => (
             <div 

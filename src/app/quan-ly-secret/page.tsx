@@ -44,7 +44,7 @@ export default function AdminPage() {
   const [selectedUserHistory, setSelectedUserHistory] = useState<{ username: string; logs: any[] } | null>(null);
   const [loadingUserHistory, setLoadingUserHistory] = useState(false);
 
-  // States Tool Auto (Bổ sung thêm toolCode)
+  // States Tool Auto
   const [toolForm, setToolForm] = useState({
     id: 0,
     name: '',
@@ -307,7 +307,6 @@ export default function AdminPage() {
     }
   };
 
-  // QUẢN LÝ TOOL (LƯU VÀ CẬP NHẬT THÊM toolCode)
   const handleSaveTool = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!toolForm.name) return alert('Nhập tên Tool!');
@@ -442,14 +441,7 @@ export default function AdminPage() {
               <label className="block text-xs text-slate-300 mb-1 font-medium">Tài khoản Quản trị</label>
               <div className="relative">
                 <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-                <input
-                  type="text"
-                  required
-                  placeholder="Nhập username..."
-                  value={usernameInput}
-                  onChange={(e) => setUsernameInput(e.target.value)}
-                  className="w-full bg-[#06090E] border border-[#1C2638] focus:border-cyan-500 rounded-xl pl-10 pr-4 py-3 text-xs text-white focus:outline-none transition"
-                />
+                <input type="text" required placeholder="Nhập username..." value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} className="w-full bg-[#06090E] border border-[#1C2638] focus:border-cyan-500 rounded-xl pl-10 pr-4 py-3 text-xs text-white focus:outline-none transition" />
               </div>
             </div>
 
@@ -457,21 +449,11 @@ export default function AdminPage() {
               <label className="block text-xs text-slate-300 mb-1 font-medium">Mật khẩu Bảo mật</label>
               <div className="relative">
                 <Key className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-                <input
-                  type="password"
-                  required
-                  placeholder="Nhập mật khẩu..."
-                  value={passwordInput}
-                  onChange={(e) => setPasswordInput(e.target.value)}
-                  className="w-full bg-[#06090E] border border-[#1C2638] focus:border-cyan-500 rounded-xl pl-10 pr-4 py-3 text-xs text-white focus:outline-none transition"
-                />
+                <input type="password" required placeholder="Nhập mật khẩu..." value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full bg-[#06090E] border border-[#1C2638] focus:border-cyan-500 rounded-xl pl-10 pr-4 py-3 text-xs text-white focus:outline-none transition" />
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold text-xs py-3.5 rounded-xl shadow-lg shadow-cyan-500/20 transition flex items-center justify-center gap-2 cursor-pointer mt-2"
-            >
+            <button type="submit" className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold text-xs py-3.5 rounded-xl shadow-lg shadow-cyan-500/20 transition flex items-center justify-center gap-2 cursor-pointer mt-2">
               <ShieldCheck className="w-4 h-4" /> XÁC THỰC VÀ ĐĂNG NHẬP
             </button>
           </form>
@@ -494,17 +476,10 @@ export default function AdminPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={loadAllSyncData}
-            className="bg-[#141C2B] border border-[#1C2638] hover:border-slate-600 text-slate-300 text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
-          >
+          <button onClick={loadAllSyncData} className="bg-[#141C2B] border border-[#1C2638] hover:border-slate-600 text-slate-300 text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer">
             <RefreshCw className="w-3.5 h-3.5 text-cyan-400" /> Tải lại dữ liệu Cloud
           </button>
-
-          <button
-            onClick={handleAdminLogout}
-            className="bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-400 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
-          >
+          <button onClick={handleAdminLogout} className="bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-400 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer">
             <LogOut className="w-3.5 h-3.5" /> Đăng xuất
           </button>
         </div>
@@ -512,57 +487,22 @@ export default function AdminPage() {
 
       <div className="max-w-7xl w-full mx-auto px-4 py-8 space-y-8 flex-1">
         <div className="flex flex-wrap items-center gap-2 bg-[#0D121D] p-2 rounded-2xl border border-[#1C2638]">
-          <button
-            onClick={() => setActiveTab('users')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'users' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
-            }`}
-          >
+          <button onClick={() => setActiveTab('users')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'users' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}>
             <Users className="w-4 h-4" /> QUẢN LÝ NGƯỜI DÙNG ({users.length})
           </button>
-
-          <button
-            onClick={() => setActiveTab('tools')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'tools' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
-            }`}
-          >
+          <button onClick={() => setActiveTab('tools')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'tools' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}>
             <Wrench className="w-4 h-4" /> SẢN PHẨM TOOL ({tools.length})
           </button>
-
-          <button
-            onClick={() => setActiveTab('projects')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'projects' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
-            }`}
-          >
+          <button onClick={() => setActiveTab('projects')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'projects' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}>
             <FolderKanban className="w-4 h-4" /> DỰ ÁN CỦA SHOP ({projects.length})
           </button>
-
-          <button
-            onClick={() => { setActiveTab('gist_accounts'); fetchGistAccountsData(); }}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'gist_accounts' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
-            }`}
-          >
+          <button onClick={() => { setActiveTab('gist_accounts'); fetchGistAccountsData(); }} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'gist_accounts' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}>
             <KeyRound className="w-4 h-4" /> KHO ACC TOOL ({gistAccounts.length})
           </button>
-
-          <button
-            onClick={() => setActiveTab('sepay')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'sepay' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
-            }`}
-          >
+          <button onClick={() => setActiveTab('sepay')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'sepay' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}>
             <CreditCard className="w-4 h-4" /> LỊCH SỬ SEPAY ({sepayLogs.length})
           </button>
-
-          <button
-            onClick={() => setActiveTab('feedback')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'feedback' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
-            }`}
-          >
+          <button onClick={() => setActiveTab('feedback')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'feedback' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}>
             <MessageSquare className="w-4 h-4" /> ĐÓNG GÓP DỰ ÁN TOOL ({feedbacks.length})
           </button>
         </div>
@@ -686,7 +626,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* MODAL POPUP LỊCH SỬ GIAO DỊCH */}
+        {/* MODAL LỊCH SỬ GIAO DỊCH */}
         {selectedUserHistory && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
             <div className="bg-[#0D121D] border border-[#1C2638] w-full max-w-xl rounded-3xl p-6 space-y-5 relative shadow-2xl">
@@ -748,7 +688,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 2. TAB TOOL AUTO (CÓ BỔ SUNG MỤC MÃ TOOL) */}
+        {/* 2. TAB TOOL AUTO */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
@@ -761,7 +701,6 @@ export default function AdminPage() {
                 <input type="text" required value={toolForm.name} onChange={e => setToolForm({ ...toolForm, name: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="vd: AUTO FARM F17" />
               </div>
 
-              {/* MỤC MÃ TOOL MỚI THÊM */}
               <div>
                 <label className="block text-[11px] text-cyan-400 mb-1 font-bold">Mã Tool (Dùng xác thực đăng nhập)</label>
                 <input type="text" required value={toolForm.toolCode} onChange={e => setToolForm({ ...toolForm, toolCode: e.target.value })} className="w-full bg-[#06090E] border border-cyan-500/50 rounded-xl p-2 text-xs text-white focus:outline-none font-mono" placeholder="vd: auto-f17 hoặc auto-cau-ca" />

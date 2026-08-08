@@ -6,7 +6,7 @@ const GIST_ID = process.env.GIST_ID || '21f0a39cbc434e5033d89f06e2c7d26e';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { username, password, durationDays } = body;
+    const { username, password, durationDays, tool_code } = body;
 
     if (!username || !password) {
       return NextResponse.json({ success: false, message: 'Thiếu username hoặc password' }, { status: 400 });
@@ -47,10 +47,11 @@ export async function POST(request: Request) {
       }
     }
 
-    // 3. Cập nhật tài khoản vào JSON
+    // 3. Cập nhật tài khoản vào JSON kèm theo tool_code
     accountsJson[username] = {
       password: password,
-      role: 'user',
+      role: accountsJson[username]?.role || 'user',
+      tool_code: tool_code ? tool_code.trim() : (accountsJson[username]?.tool_code || ''),
       expire_timestamp: expireTimestamp,
       device_id: accountsJson[username]?.device_id || ''
     };
