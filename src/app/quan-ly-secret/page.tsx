@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 import { 
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
-  Ban, CheckCircle, CreditCard, KeyRound, Search, DollarSign, Activity, Settings
+  Ban, CheckCircle, CreditCard, KeyRound, Search, DollarSign, Settings
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -13,10 +14,9 @@ export default function AdminPage() {
   const [passwordInput, setPasswordInput] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  // Tab điều hướng Dashboard
   const [activeTab, setActiveTab] = useState<'users' | 'tools' | 'projects' | 'keys' | 'sepay' | 'feedback'>('users');
 
-  // --- DỮ LIỆU ĐỒNG BỘ STORE ---
+  // Dữ liệu Realtime từ Supabase Cloud
   const [users, setUsers] = useState<any[]>([]);
   const [tools, setTools] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
@@ -24,13 +24,12 @@ export default function AdminPage() {
   const [keysList, setKeysList] = useState<any[]>([]);
   const [sepayLogs, setSepayLogs] = useState<any[]>([]);
 
-  // States Người dùng
+  // States thao tác
   const [userSearch, setUserSearch] = useState('');
   const [newUserForm, setNewUserForm] = useState({ username: '', password: '', balance: 0 });
   const [editUserPass, setEditUserPass] = useState<{ username: string; newPass: string } | null>(null);
   const [adjustBal, setAdjustBal] = useState<{ username: string; amount: number; isAdd: boolean } | null>(null);
 
-  // States Tool Auto
   const [toolForm, setToolForm] = useState({
     id: 0,
     name: '',
@@ -44,7 +43,6 @@ export default function AdminPage() {
   });
   const [isEditingTool, setIsEditingTool] = useState(false);
 
-  // States Dự án
   const [projectForm, setProjectForm] = useState({
     id: 0,
     title: '',
@@ -53,7 +51,6 @@ export default function AdminPage() {
     status: 'Hoạt động tốt'
   });
 
-  // States Key
   const [newKeyForm, setNewKeyForm] = useState({ toolName: '', keyString: '', duration: '1 Ngày' });
 
   useEffect(() => {
@@ -64,19 +61,25 @@ export default function AdminPage() {
     }
   }, []);
 
-  const loadAllSyncData = () => {
-    const savedUsers = localStorage.getItem('ztool_users');
-    if (savedUsers) setUsers(JSON.parse(savedUsers));
+  // Tải dữ liệu Realtime trực tiếp từ Supabase Cloud
+  const loadAllSyncData = async () => {
+    // 1. Tải Users
+    const { data: userData } = await supabase.from('users').select('*').order('id', { ascending: false });
+    if (userData) setUsers(userData);
 
-    const savedTools = localStorage.getItem('ztool_tools');
-    if (savedTools) setTools(JSON.parse(savedTools));
+    // 2. Tải Tools
+    const { data: toolData } = await supabase.from('tools').select('*').order('id', { ascending: false });
+    if (toolData) setTools(toolData);
 
-    const savedProjects = localStorage.getItem('ztool_projects');
-    if (savedProjects) setProjects(JSON.parse(savedProjects));
+    // 3. Tải Projects
+    const { data: projectData } = await supabase.from('projects').select('*').order('id', { ascending: false });
+    if (projectData) setProjects(projectData);
 
-    const savedFeedbacks = localStorage.getItem('ztool_feedbacks');
-    if (savedFeedbacks) setFeedbacks(JSON.parse(savedFeedbacks));
+    // 4. Tải Feedbacks
+    const { data: feedbackData } = await supabase.from('feedbacks').select('*').order('id', { ascending: false });
+    if (feedbackData) setFeedbacks(feedbackData);
 
+    // Dữ liệu bộ nhớ tạm phụ
     const savedKeys = localStorage.getItem('ztool_keys');
     if (savedKeys) setKeysList(JSON.parse(savedKeys));
 
@@ -101,120 +104,152 @@ export default function AdminPage() {
     setIsAuthenticated(false);
   };
 
-  const syncStorage = (key: string, data: any) => {
-    localStorage.setItem(key, JSON.stringify(data));
-  };
-
-  // --- QUẢN LÝ NGƯỜI DÙNG ---
-  const handleCreateUser = (e: React.FormEvent) => {
+  // --- 1. QUẢN LÝ NGƯỜI DÙNG CỦA HỆ THỐNG ---
+  const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUserForm.username || !newUserForm.password) return alert('Nhập đủ thông tin!');
-    if (users.some(u => u.username === newUserForm.username)) return alert('Tài khoản đã tồn tại!');
+    if (!newUserForm.username || !newUserForm.password) return alert('Nhập đủ username/password!');
     
-    const updated = [...users, { ...newUserForm, balance: Number(newUserForm.balance) || 0, isBanned: false, createdAt: new Date().toLocaleString('vi-VN') }];
-    setUsers(updated);
-    syncStorage('ztool_users', updated);
-    setNewUserForm({ username: '', password: '', balance: 0 });
-    alert('Tạo tài khoản thành công!');
-  };
-
-  const handleToggleBanUser = (username: string) => {
-    const updated = users.map(u => u.username === username ? { ...u, isBanned: !u.isBanned } : u);
-    setUsers(updated);
-    syncStorage('ztool_users', updated);
-  };
-
-  const handleDeleteUser = (username: string) => {
-    if (!confirm(`Xóa tài khoản ${username}?`)) return;
-    const updated = users.filter(u => u.username !== username);
-    setUsers(updated);
-    syncStorage('ztool_users', updated);
-  };
-
-  const handleSaveUserPassword = (username: string) => {
-    if (!editUserPass?.newPass) return;
-    const updated = users.map(u => u.username === username ? { ...u, password: editUserPass.newPass } : u);
-    setUsers(updated);
-    syncStorage('ztool_users', updated);
-    setEditUserPass(null);
-    alert('Đổi mật khẩu thành công!');
-  };
-
-  const handleExecAdjustBalance = (username: string) => {
-    if (!adjustBal || !adjustBal.amount) return;
-    const updated = users.map(u => {
-      if (u.username === username) {
-        const cur = u.balance || 0;
-        const next = adjustBal.isAdd ? cur + Number(adjustBal.amount) : Math.max(0, cur - Number(adjustBal.amount));
-        return { ...u, balance: next };
+    const { error } = await supabase.from('users').insert([
+      {
+        username: newUserForm.username.trim(),
+        password: newUserForm.password,
+        balance: Number(newUserForm.balance) || 0,
+        isBanned: false
       }
-      return u;
-    });
-    setUsers(updated);
-    syncStorage('ztool_users', updated);
-    setAdjustBal(null);
-    alert('Cập nhật số dư thành công!');
+    ]);
+
+    if (error) {
+      alert('Lỗi tạo tài khoản: ' + error.message);
+    } else {
+      setNewUserForm({ username: '', password: '', balance: 0 });
+      alert('Tạo người dùng thành công trên Server Cloud!');
+      loadAllSyncData();
+    }
   };
 
-  // --- TOOL AUTO ---
-  const handleSaveTool = (e: React.FormEvent) => {
+  const handleToggleBanUser = async (u: any) => {
+    const { error } = await supabase.from('users').update({ isBanned: !u.isBanned }).eq('id', u.id);
+    if (!error) loadAllSyncData();
+  };
+
+  const handleDeleteUser = async (id: number, username: string) => {
+    if (!confirm(`Xóa tài khoản ${username}?`)) return;
+    const { error } = await supabase.from('users').delete().eq('id', id);
+    if (!error) loadAllSyncData();
+  };
+
+  const handleSaveUserPassword = async (id: number) => {
+    if (!editUserPass?.newPass) return;
+    const { error } = await supabase.from('users').update({ password: editUserPass.newPass }).eq('id', id);
+    if (!error) {
+      setEditUserPass(null);
+      alert('Đã cập nhật mật khẩu thành công!');
+      loadAllSyncData();
+    }
+  };
+
+  const handleExecAdjustBalance = async (u: any) => {
+    if (!adjustBal || !adjustBal.amount) return;
+    const cur = u.balance || 0;
+    const next = adjustBal.isAdd ? cur + Number(adjustBal.amount) : Math.max(0, cur - Number(adjustBal.amount));
+    
+    const { error } = await supabase.from('users').update({ balance: next }).eq('id', u.id);
+    if (!error) {
+      setAdjustBal(null);
+      alert('Cập nhật số dư thành công!');
+      loadAllSyncData();
+    }
+  };
+
+  // --- 2. QUẢN LÝ SẢN PHẨM TOOL (ĐỒNG BỘ REALTIME TỚI TẤT CẢ KHÁCH HÀNG) ---
+  const handleSaveTool = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!toolForm.name) return alert('Nhập tên Tool!');
-    let updated = isEditingTool 
-      ? tools.map(t => t.id === toolForm.id ? toolForm : t)
-      : [...tools, { ...toolForm, id: Date.now() }];
-    setTools(updated);
-    syncStorage('ztool_tools', updated);
-    setToolForm({ id: 0, name: '', image: '', priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '' });
-    setIsEditingTool(false);
+
+    const payload = {
+      name: toolForm.name,
+      image: toolForm.image,
+      priceDay: toolForm.priceDay,
+      priceWeek: toolForm.priceWeek,
+      priceMonth: toolForm.priceMonth,
+      priceLifetime: toolForm.priceLifetime,
+      description: toolForm.description,
+      downloadLink: toolForm.downloadLink
+    };
+
+    let result;
+    if (isEditingTool && toolForm.id) {
+      result = await supabase.from('tools').update(payload).eq('id', toolForm.id);
+    } else {
+      result = await supabase.from('tools').insert([payload]);
+    }
+
+    if (result.error) {
+      alert('Lỗi lưu Tool: ' + result.error.message);
+    } else {
+      setToolForm({ id: 0, name: '', image: '', priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '' });
+      setIsEditingTool(false);
+      alert('Lưu sản phẩm thành công! Tất cả khách hàng lập tức nhìn thấy thay đổi này.');
+      loadAllSyncData();
+    }
   };
 
-  const handleDeleteTool = (id: number) => {
-    if (!confirm('Xóa Tool này?')) return;
-    const updated = tools.filter(t => t.id !== id);
-    setTools(updated);
-    syncStorage('ztool_tools', updated);
+  const handleDeleteTool = async (id: number) => {
+    if (!confirm('Xóa Tool này khỏi hệ thống?')) return;
+    const { error } = await supabase.from('tools').delete().eq('id', id);
+    if (!error) loadAllSyncData();
   };
 
-  // --- DỰ ÁN ---
-  const handleSaveProject = (e: React.FormEvent) => {
+  // --- 3. QUẢN LÝ DỰ ÁN CỦA SHOP ---
+  const handleSaveProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectForm.title) return alert('Nhập tên dự án!');
-    const updated = [...projects, { ...projectForm, id: Date.now() }];
-    setProjects(updated);
-    syncStorage('ztool_projects', updated);
-    setProjectForm({ id: 0, title: '', image: '', description: '', status: 'Hoạt động tốt' });
+
+    const payload = {
+      title: projectForm.title,
+      image: projectForm.image,
+      status: projectForm.status,
+      description: projectForm.description
+    };
+
+    const { error } = await supabase.from('projects').insert([payload]);
+
+    if (error) {
+      alert('Lỗi lưu dự án: ' + error.message);
+    } else {
+      setProjectForm({ id: 0, title: '', image: '', description: '', status: 'Hoạt động tốt' });
+      alert('Thêm dự án mới thành công!');
+      loadAllSyncData();
+    }
   };
 
-  const handleDeleteProject = (id: number) => {
-    const updated = projects.filter(p => p.id !== id);
-    setProjects(updated);
-    syncStorage('ztool_projects', updated);
+  const handleDeleteProject = async (id: number) => {
+    if (!confirm('Xóa dự án này?')) return;
+    const { error } = await supabase.from('projects').delete().eq('id', id);
+    if (!error) loadAllSyncData();
   };
 
-  // --- KEY & ĐÓNG GÓP ---
+  // --- 4. KEY VÀ Ý KIẾN ĐÓNG GÓP ---
   const handleAddKey = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newKeyForm.keyString) return alert('Nhập chuỗi Key!');
     const updated = [...keysList, { ...newKeyForm, id: Date.now(), isUsed: false, createdAt: new Date().toLocaleString('vi-VN') }];
     setKeysList(updated);
-    syncStorage('ztool_keys', updated);
+    localStorage.setItem('ztool_keys', JSON.stringify(updated));
     setNewKeyForm({ toolName: '', keyString: '', duration: '1 Ngày' });
   };
 
   const handleDeleteKey = (id: number) => {
     const updated = keysList.filter(k => k.id !== id);
     setKeysList(updated);
-    syncStorage('ztool_keys', updated);
+    localStorage.setItem('ztool_keys', JSON.stringify(updated));
   };
 
-  const handleDeleteFeedback = (id: number) => {
-    const updated = feedbacks.filter(f => f.id !== id);
-    setFeedbacks(updated);
-    syncStorage('ztool_feedbacks', updated);
+  const handleDeleteFeedback = async (id: number) => {
+    const { error } = await supabase.from('feedbacks').delete().eq('id', id);
+    if (!error) loadAllSyncData();
   };
 
-  // MÀN HÌNH ĐĂNG NHẬP ADMIN BẢO VỆ
   if (!isAuthenticated) {
     return (
       <main className="min-h-screen bg-[#06090E] text-white font-sans flex flex-col justify-center items-center px-4">
@@ -223,7 +258,7 @@ export default function AdminPage() {
             <div className="w-14 h-14 bg-cyan-500/10 border border-cyan-500/30 rounded-2xl flex items-center justify-center mx-auto text-cyan-400">
               <Lock className="w-7 h-7" />
             </div>
-            <h1 className="text-xl font-bold tracking-wider text-white">HỆ THỐNG QUẢN TRỊ</h1>
+            <h1 className="text-xl font-bold tracking-wider text-white">HỆ THỐNG QUẢN TRỊ ZTOOL</h1>
             <p className="text-xs text-slate-400">Đăng nhập tài khoản Quản trị viên để truy cập</p>
           </div>
 
@@ -276,11 +311,8 @@ export default function AdminPage() {
     );
   }
 
-  // MÀN HÌNH DASHBOARD QUẢN TRỊ RIÊNG BIỆT (KHÔNG CÓ NAVBAR BÁN HÀNG)
   return (
     <main className="min-h-screen bg-[#06090E] text-slate-200 font-sans flex flex-col">
-      
-      {/* Top Header Chuyên Nghiệp Dành Cho Admin */}
       <header className="bg-[#0D121D] border-b border-[#1C2638] px-6 py-4 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
@@ -288,7 +320,7 @@ export default function AdminPage() {
           </div>
           <div>
             <h1 className="text-sm font-black text-white tracking-wide">CONTROL PANEL DASHBOARD</h1>
-            <p className="text-[11px] text-slate-400">Hệ thống quản lý trung tâm</p>
+            <p className="text-[11px] text-slate-400">Đồng bộ Cloud Supabase Realtime</p>
           </div>
         </div>
 
@@ -297,7 +329,7 @@ export default function AdminPage() {
             onClick={loadAllSyncData}
             className="bg-[#141C2B] border border-[#1C2638] hover:border-slate-600 text-slate-300 text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-cyan-400" /> Tải lại dữ liệu
+            <RefreshCw className="w-3.5 h-3.5 text-cyan-400" /> Tải lại dữ liệu Cloud
           </button>
 
           <button
@@ -309,15 +341,12 @@ export default function AdminPage() {
         </div>
       </header>
 
-      {/* Nội dung chính Dashboard */}
       <div className="max-w-7xl w-full mx-auto px-4 py-8 space-y-8 flex-1">
-        
-        {/* Thanh Menu Chức Năng Bảng Điều Khiển */}
         <div className="flex flex-wrap items-center gap-2 bg-[#0D121D] p-2 rounded-2xl border border-[#1C2638]">
           <button
             onClick={() => setActiveTab('users')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'users' ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
+              activeTab === 'users' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
             }`}
           >
             <Users className="w-4 h-4" /> QUẢN LÝ NGƯỜI DÙNG ({users.length})
@@ -326,7 +355,7 @@ export default function AdminPage() {
           <button
             onClick={() => setActiveTab('tools')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'tools' ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
+              activeTab === 'tools' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
             }`}
           >
             <Wrench className="w-4 h-4" /> SẢN PHẨM TOOL ({tools.length})
@@ -335,7 +364,7 @@ export default function AdminPage() {
           <button
             onClick={() => setActiveTab('projects')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'projects' ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
+              activeTab === 'projects' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
             }`}
           >
             <FolderKanban className="w-4 h-4" /> DỰ ÁN CỦA SHOP ({projects.length})
@@ -344,16 +373,16 @@ export default function AdminPage() {
           <button
             onClick={() => setActiveTab('keys')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'keys' ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
+              activeTab === 'keys' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
             }`}
           >
-            <KeyRound className="w-4 h-4" /> KHO KEY PHÁT TỰ ĐỘNG ({keysList.length})
+            <KeyRound className="w-4 h-4" /> KHO KEY AUTO ({keysList.length})
           </button>
 
           <button
             onClick={() => setActiveTab('sepay')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'sepay' ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
+              activeTab === 'sepay' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
             }`}
           >
             <CreditCard className="w-4 h-4" /> LỊCH SỬ SEPAY ({sepayLogs.length})
@@ -362,14 +391,14 @@ export default function AdminPage() {
           <button
             onClick={() => setActiveTab('feedback')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'feedback' ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
+              activeTab === 'feedback' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'
             }`}
           >
-            <MessageSquare className="w-4 h-4" /> ĐÓNG GÓP TỪ KHÁCH ({feedbacks.length})
+            <MessageSquare className="w-4 h-4" /> ĐÓNG GÓP DỰ ÁN TOOL ({feedbacks.length})
           </button>
         </div>
 
-        {/* ================= 1. TAB NGƯỜI DÙNG ================= */}
+        {/* 1. TAB USER */}
         {activeTab === 'users' && (
           <div className="space-y-6">
             <form onSubmit={handleCreateUser} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
@@ -377,9 +406,9 @@ export default function AdminPage() {
                 <Plus className="w-4 h-4 text-cyan-400" /> Tạo tài khoản người dùng
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <input type="text" placeholder="Tên tài khoản..." value={newUserForm.username} onChange={e => setNewUserForm({ ...newUserForm, username: e.target.value })} className="bg-[#06090E] border border-[#1C2638] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500" />
-                <input type="text" placeholder="Mật khẩu..." value={newUserForm.password} onChange={e => setNewUserForm({ ...newUserForm, password: e.target.value })} className="bg-[#06090E] border border-[#1C2638] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500" />
-                <input type="number" placeholder="Số dư ban đầu (VNĐ)..." value={newUserForm.balance || ''} onChange={e => setNewUserForm({ ...newUserForm, balance: Number(e.target.value) })} className="bg-[#06090E] border border-[#1C2638] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500" />
+                <input type="text" placeholder="Tên tài khoản..." value={newUserForm.username} onChange={e => setNewUserForm({ ...newUserForm, username: e.target.value })} className="bg-[#06090E] border border-[#1C2638] rounded-xl px-3 py-2 text-xs text-white focus:outline-none" />
+                <input type="text" placeholder="Mật khẩu..." value={newUserForm.password} onChange={e => setNewUserForm({ ...newUserForm, password: e.target.value })} className="bg-[#06090E] border border-[#1C2638] rounded-xl px-3 py-2 text-xs text-white focus:outline-none" />
+                <input type="number" placeholder="Số dư ban đầu (VNĐ)..." value={newUserForm.balance || ''} onChange={e => setNewUserForm({ ...newUserForm, balance: Number(e.target.value) })} className="bg-[#06090E] border border-[#1C2638] rounded-xl px-3 py-2 text-xs text-white focus:outline-none" />
               </div>
               <button type="submit" className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 px-5 py-2 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer">Thêm người dùng mới</button>
             </form>
@@ -387,11 +416,11 @@ export default function AdminPage() {
             <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
               <div className="flex items-center justify-between border-b border-[#1C2638] pb-3">
                 <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Users className="w-4 h-4 text-cyan-400" /> DANH SÁCH KHÁCH HÀNG
+                  <Users className="w-4 h-4 text-cyan-400" /> DANH SÁCH KHÁCH HÀNG (DATABASE CLOUD)
                 </h2>
                 <div className="relative w-64">
                   <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
-                  <input type="text" placeholder="Tìm tên..." value={userSearch} onChange={e => setUserSearch(e.target.value)} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500" />
+                  <input type="text" placeholder="Tìm tên..." value={userSearch} onChange={e => setUserSearch(e.target.value)} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none" />
                 </div>
               </div>
 
@@ -418,12 +447,12 @@ export default function AdminPage() {
                           )}
                         </td>
                         <td className="p-3 text-right space-x-2">
-                          <button onClick={() => setAdjustBal({ username: u.username, amount: 0, isAdd: true })} className="bg-emerald-500/10 text-emerald-400 p-1.5 rounded-lg border border-emerald-500/20 hover:bg-emerald-500/20" title="Cộng/Trừ tiền"><DollarSign className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => setEditUserPass({ username: u.username, newPass: '' })} className="bg-cyan-500/10 text-cyan-400 p-1.5 rounded-lg border border-cyan-500/20 hover:bg-cyan-500/20" title="Đổi mật khẩu"><Key className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => handleToggleBanUser(u.username)} className={`p-1.5 rounded-lg border ${u.isBanned ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`} title={u.isBanned ? 'Mở khóa' : 'Khóa tài khoản'}>
+                          <button onClick={() => setAdjustBal({ username: u.username, amount: 0, isAdd: true })} className="bg-emerald-500/10 text-emerald-400 p-1.5 rounded-lg border border-emerald-500/20" title="Cộng/Trừ tiền"><DollarSign className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => setEditUserPass({ username: u.username, newPass: '' })} className="bg-cyan-500/10 text-cyan-400 p-1.5 rounded-lg border border-cyan-500/20" title="Đổi mật khẩu"><Key className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => handleToggleBanUser(u)} className={`p-1.5 rounded-lg border ${u.isBanned ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
                             {u.isBanned ? <CheckCircle className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
                           </button>
-                          <button onClick={() => handleDeleteUser(u.username)} className="bg-rose-500/10 text-rose-400 p-1.5 rounded-lg border border-rose-500/20 hover:bg-rose-500/20" title="Xóa"><Trash2 className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => handleDeleteUser(u.id, u.username)} className="bg-rose-500/10 text-rose-400 p-1.5 rounded-lg border border-rose-500/20"><Trash2 className="w-3.5 h-3.5" /></button>
                         </td>
                       </tr>
                     ))}
@@ -435,8 +464,8 @@ export default function AdminPage() {
                 <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl space-y-3 mt-4">
                   <h4 className="text-xs font-bold text-white">Đổi mật khẩu cho: {editUserPass.username}</h4>
                   <div className="flex gap-2">
-                    <input type="text" placeholder="Nhập mật khẩu mới..." value={editUserPass.newPass} onChange={e => setEditUserPass({ ...editUserPass, newPass: e.target.value })} className="bg-[#0D121D] border border-[#1C2638] px-3 py-1.5 text-xs text-white rounded-lg flex-1 focus:outline-none" />
-                    <button onClick={() => handleSaveUserPassword(editUserPass.username)} className="bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-lg text-xs font-bold">Lưu</button>
+                    <input type="text" placeholder="Nhập mật khẩu mới..." value={editUserPass.newPass} onChange={e => setEditUserPass({ ...editUserPass, newPass: e.target.value })} className="bg-[#0D121D] border border-[#1C2638] px-3 py-1.5 text-xs text-white rounded-lg flex-1" />
+                    <button onClick={() => { const user = users.find(u => u.username === editUserPass.username); if (user) handleSaveUserPassword(user.id); }} className="bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-lg text-xs font-bold">Lưu</button>
                     <button onClick={() => setEditUserPass(null)} className="text-slate-400 text-xs px-2">Hủy</button>
                   </div>
                 </div>
@@ -446,9 +475,9 @@ export default function AdminPage() {
                 <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl space-y-3 mt-4">
                   <h4 className="text-xs font-bold text-white">Điều chỉnh số dư ví cho: {adjustBal.username}</h4>
                   <div className="flex gap-2 items-center">
-                    <input type="number" placeholder="Nhập số tiền..." value={adjustBal.amount || ''} onChange={e => setAdjustBal({ ...adjustBal, amount: Number(e.target.value) })} className="bg-[#0D121D] border border-[#1C2638] px-3 py-1.5 text-xs text-white rounded-lg flex-1 focus:outline-none" />
-                    <button onClick={() => { setAdjustBal({ ...adjustBal, isAdd: true }); handleExecAdjustBalance(adjustBal.username); }} className="bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-lg text-xs font-bold">+ Cộng tiền</button>
-                    <button onClick={() => { setAdjustBal({ ...adjustBal, isAdd: false }); handleExecAdjustBalance(adjustBal.username); }} className="bg-rose-500/20 text-rose-400 px-3 py-1.5 rounded-lg text-xs font-bold">- Trừ tiền</button>
+                    <input type="number" placeholder="Nhập số tiền..." value={adjustBal.amount || ''} onChange={e => setAdjustBal({ ...adjustBal, amount: Number(e.target.value) })} className="bg-[#0D121D] border border-[#1C2638] px-3 py-1.5 text-xs text-white rounded-lg flex-1" />
+                    <button onClick={() => { const user = users.find(u => u.username === adjustBal.username); if (user) { setAdjustBal({ ...adjustBal, isAdd: true }); handleExecAdjustBalance(user); } }} className="bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-lg text-xs font-bold">+ Cộng tiền</button>
+                    <button onClick={() => { const user = users.find(u => u.username === adjustBal.username); if (user) { setAdjustBal({ ...adjustBal, isAdd: false }); handleExecAdjustBalance(user); } }} className="bg-rose-500/20 text-rose-400 px-3 py-1.5 rounded-lg text-xs font-bold">- Trừ tiền</button>
                     <button onClick={() => setAdjustBal(null)} className="text-slate-400 text-xs px-2">Hủy</button>
                   </div>
                 </div>
@@ -457,7 +486,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= 2. TAB TOOL AUTO ================= */}
+        {/* 2. TAB TOOL */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
@@ -466,50 +495,50 @@ export default function AdminPage() {
               </h3>
               <div>
                 <label className="block text-[11px] text-slate-400 mb-1">Tên Tool</label>
-                <input type="text" required value={toolForm.name} onChange={e => setToolForm({ ...toolForm, name: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="vd: Tool Auto FiveM" />
+                <input type="text" required value={toolForm.name} onChange={e => setToolForm({ ...toolForm, name: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="vd: AUTO FARM F17" />
               </div>
               <div>
                 <label className="block text-[11px] text-slate-400 mb-1">Link Ảnh Minh Họa</label>
-                <input type="text" value={toolForm.image} onChange={e => setToolForm({ ...toolForm, image: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="https://..." />
+                <input type="text" value={toolForm.image} onChange={e => setToolForm({ ...toolForm, image: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="https://i.ibb.co/..." />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-[10px] text-slate-400">Giá Ngày (VNĐ)</label>
-                  <input type="text" value={toolForm.priceDay} onChange={e => setToolForm({ ...toolForm, priceDay: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="20.000" />
+                  <input type="text" value={toolForm.priceDay} onChange={e => setToolForm({ ...toolForm, priceDay: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="5.000" />
                 </div>
                 <div>
                   <label className="block text-[10px] text-slate-400">Giá Tuần (VNĐ)</label>
-                  <input type="text" value={toolForm.priceWeek} onChange={e => setToolForm({ ...toolForm, priceWeek: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="100.000" />
+                  <input type="text" value={toolForm.priceWeek} onChange={e => setToolForm({ ...toolForm, priceWeek: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="20.000" />
                 </div>
                 <div>
                   <label className="block text-[10px] text-slate-400">Giá Tháng (VNĐ)</label>
-                  <input type="text" value={toolForm.priceMonth} onChange={e => setToolForm({ ...toolForm, priceMonth: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="300.000" />
+                  <input type="text" value={toolForm.priceMonth} onChange={e => setToolForm({ ...toolForm, priceMonth: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="50.000" />
                 </div>
                 <div>
                   <label className="block text-[10px] text-slate-400">Giá Vĩnh Viễn (VNĐ)</label>
-                  <input type="text" value={toolForm.priceLifetime} onChange={e => setToolForm({ ...toolForm, priceLifetime: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="1.000.000" />
+                  <input type="text" value={toolForm.priceLifetime} onChange={e => setToolForm({ ...toolForm, priceLifetime: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="100.000" />
                 </div>
               </div>
               <div>
                 <label className="block text-[11px] text-slate-400 mb-1">Mô tả sản phẩm</label>
-                <textarea value={toolForm.description} onChange={e => setToolForm({ ...toolForm, description: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="Chi tiết tính năng..." />
+                <textarea value={toolForm.description} onChange={e => setToolForm({ ...toolForm, description: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="Chi tiết tính năng..." />
               </div>
               <div>
                 <label className="block text-[11px] text-slate-400 mb-1">Link Tải Tool</label>
-                <input type="text" value={toolForm.downloadLink} onChange={e => setToolForm({ ...toolForm, downloadLink: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="https://..." />
+                <input type="text" value={toolForm.downloadLink} onChange={e => setToolForm({ ...toolForm, downloadLink: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="https://..." />
               </div>
-              <button type="submit" className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer">LƯU CẤU HÌNH TOOL</button>
+              <button type="submit" className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer">LƯU TỚI KHÁCH HÀNG (SUPABASE)</button>
             </form>
 
             <div className="lg:col-span-2 bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
-              <h3 className="text-xs font-bold text-white border-b border-[#1C2638] pb-3 uppercase">DANH SÁCH TOOL AUTO ĐANG BÁN</h3>
+              <h3 className="text-xs font-bold text-white border-b border-[#1C2638] pb-3 uppercase">DANH SÁCH TOOL AUTO HIỂN THỊ REALTIME</h3>
               <div className="space-y-3">
-                {tools.length === 0 ? <p className="text-xs text-slate-500">Chưa có dữ liệu Tool</p> : tools.map((t) => (
+                {tools.length === 0 ? <p className="text-xs text-slate-500">Chưa có dữ liệu Tool trên Cloud Database</p> : tools.map((t) => (
                   <div key={t.id} className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl flex items-center justify-between gap-4">
                     <div className="space-y-1">
                       <h4 className="font-bold text-white text-xs">{t.name}</h4>
                       <p className="text-[10px] text-emerald-400 font-medium">Giá: Ngày {t.priceDay || 0}đ | Tuần {t.priceWeek || 0}đ | Tháng {t.priceMonth || 0}đ | VV {t.priceLifetime || 0}đ</p>
-                      <p className="text-[11px] text-slate-400">{t.description}</p>
+                      <p className="text-[11px] text-slate-400 line-clamp-1">{t.description}</p>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => { setToolForm(t); setIsEditingTool(true); }} className="text-cyan-400 p-2 hover:bg-cyan-500/10 rounded-lg"><Edit className="w-4 h-4" /></button>
@@ -522,7 +551,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= 3. TAB DỰ ÁN ================= */}
+        {/* 3. TAB DỰ ÁN */}
         {activeTab === 'projects' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveProject} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
@@ -531,15 +560,15 @@ export default function AdminPage() {
               </h3>
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Tên Dự Án</label>
-                <input type="text" required value={projectForm.title} onChange={e => setProjectForm({ ...projectForm, title: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none" placeholder="Tên dự án..." />
+                <input type="text" required value={projectForm.title} onChange={e => setProjectForm({ ...projectForm, title: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white" placeholder="Tên dự án..." />
               </div>
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Link Ảnh Minh Họa</label>
-                <input type="text" value={projectForm.image} onChange={e => setProjectForm({ ...projectForm, image: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none" placeholder="https://..." />
+                <input type="text" value={projectForm.image} onChange={e => setProjectForm({ ...projectForm, image: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white" placeholder="https://..." />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Tình trạng Tool/Dự án</label>
-                <select value={projectForm.status} onChange={e => setProjectForm({ ...projectForm, status: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none">
+                <label className="block text-xs text-slate-400 mb-1">Tình trạng Dự án</label>
+                <select value={projectForm.status} onChange={e => setProjectForm({ ...projectForm, status: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white">
                   <option value="Hoạt động tốt">Hoạt động tốt</option>
                   <option value="Đang bảo trì">Đang bảo trì</option>
                   <option value="Sắp cập nhật">Sắp cập nhật</option>
@@ -547,9 +576,9 @@ export default function AdminPage() {
               </div>
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Mô tả dự án</label>
-                <textarea value={projectForm.description} onChange={e => setProjectForm({ ...projectForm, description: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none" placeholder="Chi tiết..." />
+                <textarea value={projectForm.description} onChange={e => setProjectForm({ ...projectForm, description: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white" placeholder="Chi tiết..." />
               </div>
-              <button type="submit" className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer">LƯU DỰ ÁN</button>
+              <button type="submit" className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer">LƯU DỰ ÁN CLOUD</button>
             </form>
 
             <div className="lg:col-span-2 bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
@@ -570,7 +599,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= 4. TAB KEY AUTO ================= */}
+        {/* 4. TAB KEY */}
         {activeTab === 'keys' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleAddKey} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
@@ -579,15 +608,15 @@ export default function AdminPage() {
               </h3>
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Tên Tool áp dụng</label>
-                <input type="text" required placeholder="vd: Tool Auto FiveM" value={newKeyForm.toolName} onChange={e => setNewKeyForm({ ...newKeyForm, toolName: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none" />
+                <input type="text" required placeholder="vd: AUTO FARM F17" value={newKeyForm.toolName} onChange={e => setNewKeyForm({ ...newKeyForm, toolName: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white" />
               </div>
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Chuỗi Key kích hoạt</label>
-                <input type="text" required placeholder="ZTOOL-XXXX-YYYY" value={newKeyForm.keyString} onChange={e => setNewKeyForm({ ...newKeyForm, keyString: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none" />
+                <input type="text" required placeholder="ZTOOL-XXXX-YYYY" value={newKeyForm.keyString} onChange={e => setNewKeyForm({ ...newKeyForm, keyString: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white" />
               </div>
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Thời hạn</label>
-                <select value={newKeyForm.duration} onChange={e => setNewKeyForm({ ...newKeyForm, duration: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none">
+                <select value={newKeyForm.duration} onChange={e => setNewKeyForm({ ...newKeyForm, duration: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white">
                   <option value="1 Ngày">1 Ngày</option>
                   <option value="7 Ngày">7 Ngày</option>
                   <option value="30 Ngày">30 Ngày</option>
@@ -614,11 +643,11 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= 5. TAB SEPAY NẠP TIỀN ================= */}
+        {/* 5. TAB SEPAY */}
         {activeTab === 'sepay' && (
           <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
             <h2 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
-              <CreditCard className="w-4 h-4 text-cyan-400" /> LỊCH SỬ BIẾN ĐỘNG NẠP TIỀN SEPAY
+              <CreditCard className="w-4 h-4 text-cyan-400" /> LỊCH SỬ NẠP TIỀN SEPAY
             </h2>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-300">
@@ -647,21 +676,22 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= 6. TAB ĐÓNG GÓP KHÁCH HÀNG ================= */}
+        {/* 6. TAB ĐÓNG GÓP DỰ ÁN TOOL */}
         {activeTab === 'feedback' && (
           <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
             <h2 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
-              <MessageSquare className="w-4 h-4 text-cyan-400" /> PHẢN HỒI VÀ Ý KIẾN KHÁCH HÀNG
+              <MessageSquare className="w-4 h-4 text-cyan-400" /> PHẢN HỒI Ý KIẾN ĐÓNG GÓP DỰ ÁN TOOL (KHÁCH GỬI REALTIME)
             </h2>
             <div className="space-y-3">
               {feedbacks.length === 0 ? (
-                <p className="text-xs text-slate-500 text-center py-6">Chưa có đóng góp nào từ khách hàng</p>
+                <p className="text-xs text-slate-500 text-center py-6">Chưa có ý kiến đóng góp dự án tool nào từ khách hàng</p>
               ) : (
                 feedbacks.map((f) => (
                   <div key={f.id} className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl flex items-start justify-between gap-4">
                     <div>
                       <span className="text-xs font-bold text-cyan-400">{f.username || 'Khách ẩn danh'}</span>
                       <p className="text-xs text-slate-300 mt-1">{f.content}</p>
+                      <span className="text-[10px] text-slate-500 mt-1 block">{f.created_at ? new Date(f.created_at).toLocaleString('vi-VN') : 'Gần đây'}</span>
                     </div>
                     <button onClick={() => handleDeleteFeedback(f.id)} className="text-rose-400 p-1.5 hover:bg-rose-500/10 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                   </div>

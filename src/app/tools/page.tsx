@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
+import { supabase } from '@/lib/supabase';
 import { 
   Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info 
 } from 'lucide-react';
@@ -21,48 +22,43 @@ export default function ToolsPage() {
     loadToolsData();
   }, []);
 
-  const loadToolsData = () => {
-    try {
-      const savedTools = localStorage.getItem('ztool_tools');
-      if (savedTools) {
-        const parsed = JSON.parse(savedTools);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setTools(parsed);
-          return;
+  // Tải dữ liệu Realtime từ Cloud Supabase
+  const loadToolsData = async () => {
+    const { data, error } = await supabase.from('tools').select('*').order('id', { ascending: false });
+    
+    if (data && data.length > 0) {
+      setTools(data);
+    } else {
+      // Dữ liệu mẫu ban đầu nếu Cloud chưa có sản phẩm
+      setTools([
+        {
+          id: 1,
+          name: 'AUTO FARM F17',
+          image: 'https://i.ibb.co/8L2gsmQ0/logo.jpg',
+          priceDay: '5.000',
+          priceWeek: '20.000',
+          priceMonth: '50.000',
+          priceLifetime: '100.000',
+          description: 'Tự động chạy nhanh, bấm E nghề công trường F17 City.',
+          downloadLink: ''
+        },
+        {
+          id: 2,
+          name: 'AUTO CÂU CÁ LŨ QUỶ',
+          image: 'https://i.ibb.co/8L2gsmQ0/logo.jpg',
+          priceDay: '20.000',
+          priceWeek: '50.000',
+          priceMonth: '150.000',
+          priceLifetime: '300.000',
+          description: 'Tự quăng cần câu, giải minigame mũi tên, tự ngồi lên thuyền.',
+          downloadLink: ''
         }
-      }
-    } catch (e) {
-      console.error(e);
+      ]);
     }
-
-    // Dữ liệu mặc định an toàn nếu chưa có sản phẩm nào
-    setTools([
-      {
-        id: 1,
-        name: 'AUTO FARM F17',
-        image: '',
-        priceDay: '5.000',
-        priceWeek: '20.000',
-        priceMonth: '50.000',
-        priceLifetime: '100.000',
-        description: 'Tự động chạy nhanh, bấm E nghề công trường F17 City.',
-        downloadLink: ''
-      },
-      {
-        id: 2,
-        name: 'AUTO CÂU CÁ LŨ QUỶ',
-        image: '',
-        priceDay: '20.000',
-        priceWeek: '50.000',
-        priceMonth: '150.000',
-        priceLifetime: '300.000',
-        description: 'Tự quăng cần câu, giải minigame mũi tên, tự ngồi lên thuyền.',
-        downloadLink: ''
-      }
-    ]);
   };
 
-  const handleBuyTool = () => {
+  // Mua Tool
+  const handleBuyTool = async () => {
     setPurchaseMsg(null);
     if (!selectedToolForBuy) return;
 
@@ -72,15 +68,13 @@ export default function ToolsPage() {
       return;
     }
 
-    const savedUsers = JSON.parse(localStorage.getItem('ztool_users') || '[]');
-    const userIndex = savedUsers.findIndex((u: any) => u.username === currentUsername);
+    // Đọc thông tin user từ Supabase Cloud
+    const { data: userData } = await supabase.from('users').select('*').eq('username', currentUsername).single();
 
-    if (userIndex === -1) {
-      setPurchaseMsg({ type: 'error', text: 'Không tìm thấy thông tin tài khoản!' });
+    if (!userData) {
+      setPurchaseMsg({ type: 'error', text: 'Không tìm thấy thông tin tài khoản của bạn trên hệ thống!' });
       return;
     }
-
-    const user = savedUsers[userIndex];
 
     let priceStr = '0';
     if (selectedDuration === 'day') priceStr = selectedToolForBuy.priceDay || '0';
@@ -90,18 +84,19 @@ export default function ToolsPage() {
 
     const priceNum = Number(String(priceStr).replace(/[^0-9]/g, '')) || 0;
 
-    if ((user.balance || 0) < priceNum) {
+    if ((userData.balance || 0) < priceNum) {
       setPurchaseMsg({
         type: 'error',
-        text: `Số dư ví không đủ! Cần ${priceNum.toLocaleString('vi-VN')} VNĐ nhưng số dư hiện tại là ${(user.balance || 0).toLocaleString('vi-VN')} VNĐ.`
+        text: `Số dư ví không đủ! Cần ${priceNum.toLocaleString('vi-VN')} VNĐ nhưng số dư hiện tại là ${(userData.balance || 0).toLocaleString('vi-VN')} VNĐ.`
       });
       return;
     }
 
-    user.balance -= priceNum;
-    savedUsers[userIndex] = user;
-    localStorage.setItem('ztool_users', JSON.stringify(savedUsers));
+    // Trừ tiền tài khoản người dùng trên Supabase
+    const newBalance = userData.balance - priceNum;
+    await supabase.from('users').update({ balance: newBalance }).eq('id', userData.id);
 
+    // Lấy key tự động
     const savedKeys = JSON.parse(localStorage.getItem('ztool_keys') || '[]');
     const availableKeyIndex = savedKeys.findIndex((k: any) => k.toolName === selectedToolForBuy.name && !k.isUsed);
 
@@ -138,17 +133,19 @@ export default function ToolsPage() {
           {tools.map((tool) => (
             <div key={tool.id} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-xl hover:border-neonBlue/50 transition duration-300">
               <div className="space-y-4">
+                {/* Ảnh Tool hiển thị chuẩn cho máy khách */}
                 <div className="w-full h-44 bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden flex items-center justify-center relative">
-                  {tool.image ? (
-                    <img src={tool.image} alt={tool.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <Wrench className="w-12 h-12 text-cyanGlow/40" />
-                  )}
+                  <img 
+                    src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
+                    alt={tool.name} 
+                    className="w-full h-full object-cover" 
+                  />
                   <span className="absolute top-3 right-3 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-extrabold px-2.5 py-1 rounded-lg">
                     ONLINE 24/7
                   </span>
                 </div>
 
+                {/* Tên & Mô tả cắt gọn đúng 1 dòng ở ngoài */}
                 <div>
                   <h3 className="text-lg font-bold text-white">{tool.name}</h3>
                   <p className="text-xs text-gray-400 mt-1 line-clamp-1 truncate" title={tool.description}>
@@ -217,14 +214,11 @@ export default function ToolsPage() {
               </div>
 
               <div className="w-full h-64 bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden flex items-center justify-center">
-                {selectedToolForDetail.image ? (
-                  <img src={selectedToolForDetail.image} alt={selectedToolForDetail.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-gray-500">
-                    <Wrench className="w-16 h-16 text-cyanGlow/40 mb-2" />
-                    <span className="text-xs">Chưa có hình ảnh mô phỏng</span>
-                  </div>
-                )}
+                <img 
+                  src={selectedToolForDetail.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
+                  alt={selectedToolForDetail.name} 
+                  className="w-full h-full object-cover" 
+                />
               </div>
 
               <div className="space-y-2">
