@@ -80,9 +80,11 @@ export default function AdminPage() {
 
   const loadAllSyncData = async () => {
     try {
+      // 1. Tải danh sách khách hàng
       const { data: userData } = await supabase.from('users').select('*').order('id', { ascending: false });
       if (userData) setUsers(userData);
 
+      // 2. Tải danh sách Tool
       const { data: toolData } = await supabase.from('tools').select('*').order('id', { ascending: false });
       if (toolData) {
         const mappedTools = toolData.map((t: any) => ({
@@ -100,19 +102,33 @@ export default function AdminPage() {
         setTools(mappedTools);
       }
 
+      // 3. Tải danh sách Dự án
       const { data: projectData } = await supabase.from('projects').select('*').order('id', { ascending: false });
       if (projectData) setProjects(projectData);
 
+      // 4. Tải danh sách Ý kiến phản hồi
       const { data: feedbackData } = await supabase.from('feedbacks').select('*').order('id', { ascending: false });
       if (feedbackData) setFeedbacks(feedbackData);
 
+      // 5. Tải danh sách Key
       const savedKeys = localStorage.getItem('ztool_keys');
       if (savedKeys) setKeysList(JSON.parse(savedKeys));
 
-      const savedSepay = localStorage.getItem('ztool_recharge_history');
-      if (savedSepay) setSepayLogs(JSON.parse(savedSepay));
+      // 6. Tải Lịch sử Nạp tiền SePay trực tiếp từ Cloud Supabase
+      const { data: sepayData } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('type', 'RECHARGE')
+        .order('id', { ascending: false });
+      
+      if (sepayData) {
+        setSepayLogs(sepayData);
+      } else {
+        const savedSepay = localStorage.getItem('ztool_recharge_history');
+        if (savedSepay) setSepayLogs(JSON.parse(savedSepay));
+      }
     } catch (e) {
-      console.error('Error loading Supabase sync data:', e);
+      console.error('Lỗi đồng bộ dữ liệu Supabase:', e);
     }
   };
 
@@ -556,7 +572,7 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* 1. TAB USER (ĐÃ THÊM NÚT LỊCH SỬ GIAO DỊCH DÀNH CHO ADMIN KIỂM TRA) */}
+        {/* 1. TAB USER */}
         {activeTab === 'users' && (
           <div className="space-y-6">
             <form onSubmit={handleCreateUser} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
@@ -620,7 +636,6 @@ export default function AdminPage() {
                           )}
                         </td>
                         <td className="p-3 text-right space-x-2">
-                          {/* NÚT KIỂM TRA LỊCH SỬ GIAO DỊCH DÀNH CHO ADMIN */}
                           <button 
                             onClick={() => handleViewUserTransactions(u.username)} 
                             className="bg-cyan-500/10 text-cyan-400 p-1.5 rounded-lg border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer" 
@@ -693,7 +708,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* MODAL POPUP KIỂM TRA LỊCH SỬ GIAO DỊCH CỦA KHÁCH HÀNG (HIỂN THỊ TẤT CẢ GIAO DỊCH REALTIME) */}
+        {/* MODAL POPUP KIỂM TRA LỊCH SỬ GIAO DỊCH CỦA KHÁCH HÀNG */}
         {selectedUserHistory && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
             <div className="bg-[#0D121D] border border-[#1C2638] w-full max-w-xl rounded-3xl p-6 space-y-5 relative shadow-2xl">
@@ -1013,7 +1028,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 5. TAB SEPAY */}
+        {/* 5. TAB SEPAY (ĐÃ ĐỒNG BỘ HIỂN THỊ REALTIME TỪ DATABASE CLOUD) */}
         {activeTab === 'sepay' && (
           <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
             <h2 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
@@ -1023,20 +1038,24 @@ export default function AdminPage() {
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-[#06090E] border-b border-[#1C2638] text-slate-400 uppercase text-[10px]">
                   <tr>
-                    <th className="p-3">Nội dung / Mã giao dịch</th>
+                    <th className="p-3">Tài khoản</th>
+                    <th className="p-3">Nội dung / Mô tả giao dịch</th>
                     <th className="p-3">Số tiền</th>
                     <th className="p-3">Thời gian ghi nhận</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#1C2638]">
                   {sepayLogs.length === 0 ? (
-                    <tr><td colSpan={3} className="p-4 text-center text-slate-500">Chưa có giao dịch SePay</td></tr>
+                    <tr><td colSpan={4} className="p-4 text-center text-slate-500">Chưa có giao dịch SePay nào được ghi nhận trên Cloud.</td></tr>
                   ) : (
                     sepayLogs.map((s, i) => (
                       <tr key={i} className="hover:bg-[#06090E]/50 transition">
-                        <td className="p-3 font-bold text-white">{s.content || s.username}</td>
-                        <td className="p-3 font-bold text-emerald-400">+{(s.amount || 0).toLocaleString('vi-VN')} VNĐ</td>
-                        <td className="p-3 text-slate-400">{s.date || 'Gần đây'}</td>
+                        <td className="p-3 font-bold text-white">{s.username}</td>
+                        <td className="p-3 text-slate-300">{s.title || s.content || 'Nạp tiền tự động qua QR SePay'}</td>
+                        <td className="p-3 font-black text-emerald-400">+{(Number(s.amount) || 0).toLocaleString('vi-VN')} VNĐ</td>
+                        <td className="p-3 text-slate-400">
+                          {s.created_at ? new Date(s.created_at).toLocaleString('vi-VN') : s.date || 'Gần đây'}
+                        </td>
                       </tr>
                     ))
                   )}

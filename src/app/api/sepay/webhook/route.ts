@@ -5,7 +5,7 @@ export async function POST(request: Request) {
   try {
     const data = await request.json();
 
-    // SePay gửi nội dung gốc qua trường 'content' hoặc 'description'
+    // SePay gửi nội dung qua trường 'content' hoặc 'description'
     const rawContent = String(data.content || data.description || data.code || '').trim();
     const amount = Number(data.transferAmount || data.amount || 0);
 
@@ -13,33 +13,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Dữ liệu không hợp lệ' }, { status: 400 });
     }
 
-    // Lọc lấy username đứng sau từ khóa NAP (Chấp nhận viết hoa/thường, đứng ở bất kỳ vị trí nào trong chuỗi)
+    // Lọc lấy username đứng sau từ khóa NAP
     const match = rawContent.match(/NAP[\s_]+([a-zA-Z0-9_]+)/i);
 
     if (match && match[1]) {
       const username = match[1].trim();
 
       // 1. Tìm người dùng trên Database Supabase
-      const { data: user, error: userErr } = await supabase
+      const { data: user } = await supabase
         .from('users')
         .select('*')
         .ilike('username', username)
         .single();
 
       if (user) {
-        // 2. Cộng đúng số tiền thực tế khách đã chuyển khoản
+        // 2. Cộng đúng số tiền thực tế khách đã chuyển khoản vào ví
         const newBalance = (Number(user.balance) || 0) + amount;
         await supabase
           .from('users')
           .update({ balance: newBalance })
           .eq('id', user.id);
 
-        // 3. Ghi nhật ký biến động vào bảng transactions trên Cloud
+        // 3. Ghi nhật ký biến động vào bảng transactions trên Cloud (Admin xem tại Tab SePay)
         await supabase.from('transactions').insert([
           {
             username: user.username,
             type: 'RECHARGE',
-            title: `Nạp tiền tự động qua QR SePay`,
+            title: `Nạp tiền tự động qua QR SePay (${rawContent})`,
             amount: amount,
             status: 'Thành công'
           }
