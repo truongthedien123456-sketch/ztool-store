@@ -16,27 +16,16 @@ export default function ProjectsPage() {
   }, []);
 
   const loadProjectsAndFeedbacks = async () => {
-    // 1. Tải danh sách dự án từ Cloud Supabase
+    // 1. Tải danh sách dự án trực tiếp từ Supabase Cloud
     const { data: projectData } = await supabase
       .from('projects')
       .select('*')
       .order('id', { ascending: false });
 
-    if (projectData && projectData.length > 0) {
-      setProjects(projectData);
-    } else {
-      setProjects([
-        {
-          id: 1,
-          title: 'HỆ THỐNG AUTO FARM FIVE M CÔNG TRƯỜNG F17',
-          status: 'Hoạt động tốt',
-          description: 'Hệ thống tự động hóa hoàn toàn thao tác farm tại server F17 City.',
-          image: 'https://i.ibb.co/8L2gsmQ0/logo.jpg'
-        }
-      ]);
-    }
+    // Đồng bộ chính xác dữ liệu từ Database (nếu chưa có dự án sẽ set mảng rỗng)
+    setProjects(projectData || []);
 
-    // 2. Tải danh sách ý kiến đóng góp dự án từ Cloud Supabase
+    // 2. Tải danh sách ý kiến đóng góp dự án từ Supabase Cloud
     const { data: feedbackData } = await supabase
       .from('feedbacks')
       .select('*')
@@ -83,26 +72,36 @@ export default function ProjectsPage() {
           </p>
         </div>
 
-        {/* Danh Sách Dự Án */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((p) => (
-            <div key={p.id} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 space-y-4 shadow-xl hover:border-neonBlue/50 transition duration-300">
-              <div className="w-full aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
-                <img src={p.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={p.title} className="w-full h-full object-cover" />
-                <span className="absolute top-3 right-3 bg-cyan-500/20 border border-cyan-500/40 text-cyanGlow text-[10px] font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md">
-                  {p.status || 'Hoạt động tốt'}
-                </span>
-              </div>
+        {/* Danh Sách Dự Án Thực Tế Đồng Bộ 100% Với Supabase */}
+        {projects.length === 0 ? (
+          <div className="text-center py-16 bg-[#0F141C] border border-[#1A2332] rounded-3xl space-y-3">
+            <FolderKanban className="w-12 h-12 text-cyanGlow/40 mx-auto" />
+            <h3 className="text-sm font-bold text-white">HIỆN TẠI CHƯA CÓ DỰ ÁN NÀO</h3>
+            <p className="text-xs text-gray-400 max-w-sm mx-auto">
+              Chưa có dự án nào được cập nhật trên hệ thống. Hãy quay lại sau hoặc gửi ý kiến góp ý bên dưới!
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projects.map((p) => (
+              <div key={p.id} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 space-y-4 shadow-xl hover:border-neonBlue/50 transition duration-300">
+                <div className="w-full aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
+                  <img src={p.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={p.title} className="w-full h-full object-cover" />
+                  <span className="absolute top-3 right-3 bg-cyan-500/20 border border-cyan-500/40 text-cyanGlow text-[10px] font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md">
+                    {p.status || 'Hoạt động tốt'}
+                  </span>
+                </div>
 
-              <div className="space-y-2">
-                <h3 className="text-base font-bold text-white leading-snug">{p.title}</h3>
-                <p className="text-xs text-gray-400 leading-relaxed whitespace-pre-line">
-                  {p.description || 'Chưa có thông tin chi tiết dự án.'}
-                </p>
+                <div className="space-y-2">
+                  <h3 className="text-base font-bold text-white leading-snug">{p.title}</h3>
+                  <p className="text-xs text-gray-400 leading-relaxed whitespace-pre-line">
+                    {p.description || 'Chưa có thông tin chi tiết dự án.'}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Khung Đóng Góp Ý Kiến Cho Dự Án Tool */}
         <div className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 sm:p-8 space-y-6 max-w-3xl mx-auto shadow-2xl">
