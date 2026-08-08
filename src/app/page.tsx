@@ -36,6 +36,7 @@ export default function HomePage() {
         id: t.id,
         name: t.name,
         image: t.image,
+        status: t.status || 'Đang hoạt động',
         priceDay: t.priceDay || t.price_day || '',
         priceWeek: t.priceWeek || t.price_week || '',
         priceMonth: t.priceMonth || t.price_month || '',
@@ -90,15 +91,21 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Tool Nổi Bật Dạng Khung Đèn Neon */}
+          {/* Tool Nổi Bật Dạng Khung Đèn Neon (Đã Đồng Bộ Trạng Thái) */}
           {featuredTool && (
             <div className="bg-[#06090E] border-2 border-cyan-500/40 hover:border-cyan-400 rounded-3xl p-5 space-y-4 shadow-xl shadow-cyan-500/10 transition relative z-10">
               <div className="flex justify-between items-center border-b border-[#1C2638] pb-3">
                 <span className="text-xs font-extrabold text-cyan-400 flex items-center gap-1.5 uppercase tracking-wider">
                   <Wrench className="w-4 h-4" /> TOOL NỔI BẬT
                 </span>
-                <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-extrabold px-2.5 py-0.5 rounded border border-emerald-500/30">
-                  Hoạt động tốt
+                
+                {/* Huy Hiệu Trạng Thái Tool Nổi Bật */}
+                <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded border ${
+                  featuredTool.status === 'Tạm ngưng'
+                    ? 'text-rose-400 bg-rose-500/10 border-rose-500/30'
+                    : 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30'
+                }`}>
+                  {featuredTool.status ? featuredTool.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
                 </span>
               </div>
 
@@ -139,7 +146,7 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* Grid Khung Tool Auto Nổi Bật Với Viền Cyan Glow */}
+          {/* Grid Khung Tool Auto Đã Đồng Bộ Huy Hiệu Trạng Thái Thay Cho ONLINE 24/7 */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {tools.slice(0, 3).map((tool) => (
               <div 
@@ -147,15 +154,20 @@ export default function HomePage() {
                 className="bg-[#0D121D] border-2 border-[#1C2638] hover:border-cyan-500/60 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-xl hover:shadow-2xl hover:shadow-cyan-500/10 hover:-translate-y-1 transition duration-300 group"
               >
                 <div className="space-y-3">
-                  {/* Khung Ảnh Vuông 1:1 Chuẩn Rõ Nét */}
                   <div className="w-full aspect-square bg-[#06090E] border border-[#1C2638] rounded-2xl overflow-hidden relative">
                     <img 
                       src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
                       alt={tool.name} 
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
                     />
-                    <span className="absolute top-3 right-3 bg-emerald-500/20 text-emerald-400 text-[10px] font-extrabold px-2.5 py-1 rounded-lg border border-emerald-500/30 backdrop-blur-md">
-                      ONLINE 24/7
+                    
+                    {/* Huy Hiệu Trạng Thái Thật Từ Admin */}
+                    <span className={`absolute top-3 right-3 text-[10px] font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md border ${
+                      tool.status === 'Tạm ngưng'
+                        ? 'bg-rose-500/20 text-rose-400 border-rose-500/40'
+                        : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                    }`}>
+                      {tool.status ? tool.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
                     </span>
                   </div>
                   <div>
@@ -171,9 +183,13 @@ export default function HomePage() {
                   </div>
                   <Link 
                     href="/tools" 
-                    className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 font-bold px-4 py-2 rounded-xl text-xs hover:bg-cyan-500 hover:text-slate-950 transition"
+                    className={`font-bold px-4 py-2 rounded-xl text-xs transition ${
+                      tool.status === 'Tạm ngưng'
+                        ? 'bg-slate-800 text-slate-500 border border-slate-700'
+                        : 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 hover:bg-cyan-500 hover:text-slate-950'
+                    }`}
                   >
-                    Mua Ngay
+                    {tool.status === 'Tạm ngưng' ? 'Tạm Ngưng' : 'Mua Ngay'}
                   </Link>
                 </div>
               </div>
