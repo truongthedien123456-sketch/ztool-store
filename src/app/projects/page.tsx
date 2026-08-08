@@ -2,97 +2,70 @@
 
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
-import { FolderKanban, Sparkles, CheckCircle2, Clock, AlertTriangle, MessageSquare, Send, AlertCircle } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { FolderKanban, Sparkles, CheckCircle2, MessageSquare, Send, Clock } from 'lucide-react';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<any[]>([]);
-
-  // State dành cho khung Đóng góp dự án tool
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [feedbackContent, setFeedbackContent] = useState('');
-  const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [msg, setMsg] = useState('');
 
-  // Tải danh sách Dự án từ LocalStorage do Admin cấu hình
   useEffect(() => {
-    loadProjectsData();
+    loadProjectsAndFeedbacks();
   }, []);
 
-  const loadProjectsData = () => {
-    const savedProjects = localStorage.getItem('ztool_projects');
-    if (savedProjects) {
-      try {
-        setProjects(JSON.parse(savedProjects));
-      } catch (e) {
-        setProjects([]);
-      }
+  const loadProjectsAndFeedbacks = async () => {
+    // 1. Tải danh sách dự án từ Cloud Supabase
+    const { data: projectData } = await supabase
+      .from('projects')
+      .select('*')
+      .order('id', { ascending: false });
+
+    if (projectData && projectData.length > 0) {
+      setProjects(projectData);
     } else {
-      // Dữ liệu mẫu ban đầu nếu Admin chưa thêm dự án nào
-      const defaultProjects = [
+      setProjects([
         {
           id: 1,
-          title: 'Hệ thống ZTool FiveM Automation V2',
-          image: '',
+          title: 'HỆ THỐNG AUTO FARM FIVE M CÔNG TRƯỜNG F17',
           status: 'Hoạt động tốt',
-          description: 'Dự án tối ưu hóa các công cụ tự động dành cho game FiveM, cập nhật tính năng chống phát hiện mới nhất.'
+          description: 'Hệ thống tự động hóa hoàn toàn thao tác farm tại server F17 City.',
+          image: 'https://i.ibb.co/8L2gsmQ0/logo.jpg'
         }
-      ];
-      setProjects(defaultProjects);
+      ]);
     }
+
+    // 2. Tải danh sách ý kiến đóng góp dự án từ Cloud Supabase
+    const { data: feedbackData } = await supabase
+      .from('feedbacks')
+      .select('*')
+      .order('id', { ascending: false });
+
+    if (feedbackData) setFeedbacks(feedbackData);
   };
 
-  // Helper hiển thị badge trạng thái dự án
-  const renderStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Hoạt động tốt':
-        return (
-          <span className="inline-flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold px-2.5 py-1 rounded-full">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Hoạt động tốt
-          </span>
-        );
-      case 'Đang bảo trì':
-        return (
-          <span className="inline-flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[11px] font-bold px-2.5 py-1 rounded-full">
-            <AlertTriangle className="w-3.5 h-3.5" /> Đang bảo trì
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[11px] font-bold px-2.5 py-1 rounded-full">
-            <Clock className="w-3.5 h-3.5" /> {status || 'Sắp cập nhật'}
-          </span>
-        );
-    }
-  };
-
-  // Xử lý gửi Đóng góp dự án tool
-  const handleSubmitFeedback = (e: React.FormEvent) => {
+  // Gửi ý kiến đóng góp dự án tool lên Cloud Database
+  const handleSendFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStatusMsg(null);
+    if (!feedbackContent.trim()) return;
 
-    if (!feedbackContent.trim()) {
-      setStatusMsg({ type: 'error', text: 'Vui lòng nhập nội dung ý kiến đóng góp dự án tool!' });
-      return;
-    }
-
-    // Lấy tên người dùng hiện tại (nếu đã đăng nhập)
     const currentUsername = localStorage.getItem('ztool_current_user') || 'Khách ẩn danh';
 
-    // Lấy danh sách đóng góp hiện có từ LocalStorage
-    const existingFeedbacks = JSON.parse(localStorage.getItem('ztool_feedbacks') || '[]');
+    const { error } = await supabase.from('feedbacks').insert([
+      {
+        username: currentUsername,
+        content: feedbackContent.trim()
+      }
+    ]);
 
-    // Tạo bản ghi đóng góp mới
-    const newFeedback = {
-      id: Date.now(),
-      username: currentUsername,
-      content: feedbackContent.trim(),
-      date: new Date().toLocaleString('vi-VN')
-    };
-
-    // Lưu vào LocalStorage đồng bộ tới tab Admin
-    const updatedFeedbacks = [newFeedback, ...existingFeedbacks];
-    localStorage.setItem('ztool_feedbacks', JSON.stringify(updatedFeedbacks));
-
-    setFeedbackContent('');
-    setStatusMsg({ type: 'success', text: 'Cảm ơn bạn! Ý kiến đóng góp dự án tool đã được gửi tới Quản trị viên.' });
+    if (!error) {
+      setFeedbackContent('');
+      setMsg('Gửi ý kiến đóng góp thành công! Cảm ơn bạn đã hỗ trợ dự án.');
+      loadProjectsAndFeedbacks();
+    } else {
+      setMsg('Có lỗi xảy ra khi gửi đóng góp!');
+    }
   };
 
   return (
@@ -100,100 +73,92 @@ export default function ProjectsPage() {
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-12">
-        {/* Header Trang */}
         <div className="text-center space-y-3 border-b border-[#1A2332] pb-8">
           <div className="inline-flex items-center gap-2 bg-neonBlue/10 border border-neonBlue/30 px-4 py-1.5 rounded-full text-xs font-bold text-cyanGlow">
-            <Sparkles className="w-4 h-4" /> DỰ ÁN CỦA CHÚNG TÔI
+            <Sparkles className="w-4 h-4" /> DỰ ÁN & SẢN PHẨM ĐÃ PHÁT TRIỂN
           </div>
-          <h1 className="text-3xl font-black text-white tracking-wide">DANH SÁCH DỰ ÁN & SẢN PHẨM PHÁT TRIỂN</h1>
+          <h1 className="text-3xl font-black text-white tracking-wide">DANH SÁCH DỰ ÁN CỦA SHOP ZTOOL</h1>
           <p className="text-xs text-gray-400 max-w-xl mx-auto">
-            Theo dõi tiến độ, tình trạng hoạt động và các cập nhật mới nhất cho từng dự án do ZTool phát triển.
+            Tổng hợp các hệ thống, mã nguồn tool tự động đã hoàn thiện và đang được bảo trì nâng cấp thường xuyên.
           </p>
         </div>
 
-        {/* 1. DANH SÁCH DỰ ÁN TOOL */}
-        {projects.length === 0 ? (
-          <div className="text-center py-16 bg-[#0F141C] border border-[#1A2332] rounded-3xl">
-            <FolderKanban className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-            <p className="text-sm text-gray-400 font-semibold">Hiện chưa có thông tin dự án nào.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {projects.map((project) => (
-              <div key={project.id} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 space-y-4 shadow-xl hover:border-neonBlue/40 transition duration-300 flex flex-col justify-between">
-                <div className="space-y-4">
-                  {/* Ảnh Dự án */}
-                  <div className="w-full h-48 bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden flex items-center justify-center relative">
-                    {project.image ? (
-                      <img src={project.image} alt={project.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <FolderKanban className="w-14 h-14 text-cyanGlow/30" />
-                    )}
-                    <div className="absolute top-3 right-3">
-                      {renderStatusBadge(project.status)}
-                    </div>
-                  </div>
-
-                  {/* Thông tin */}
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-bold text-white">{project.title}</h3>
-                    <p className="text-xs text-gray-400 leading-relaxed">
-                      {project.description || 'Chưa có thông tin mô tả chi tiết cho dự án này.'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-[#1A2332] flex items-center justify-between text-[11px] text-gray-500">
-                  <span>Trạng thái kết nối: Stable</span>
-                  <span className="text-cyanGlow font-semibold">ZTool Systems</span>
-                </div>
+        {/* Danh Sách Dự Án */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {projects.map((p) => (
+            <div key={p.id} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 space-y-4 shadow-xl hover:border-neonBlue/50 transition duration-300">
+              <div className="w-full aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
+                <img src={p.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={p.title} className="w-full h-full object-cover" />
+                <span className="absolute top-3 right-3 bg-cyan-500/20 border border-cyan-500/40 text-cyanGlow text-[10px] font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md">
+                  {p.status || 'Hoạt động tốt'}
+                </span>
               </div>
-            ))}
-          </div>
-        )}
 
-        {/* 2. KHUNG ĐÓNG GÓP DỰ ÁN TOOL */}
-        <div className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 max-w-2xl mx-auto">
+              <div className="space-y-2">
+                <h3 className="text-base font-bold text-white leading-snug">{p.title}</h3>
+                <p className="text-xs text-gray-400 leading-relaxed whitespace-pre-line">
+                  {p.description || 'Chưa có thông tin chi tiết dự án.'}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Khung Đóng Góp Ý Kiến Cho Dự Án Tool */}
+        <div className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 sm:p-8 space-y-6 max-w-3xl mx-auto shadow-2xl">
           <div className="flex items-center gap-3 border-b border-[#1A2332] pb-4">
-            <div className="w-12 h-12 rounded-2xl bg-neonBlue/10 border border-neonBlue/30 flex items-center justify-center text-cyanGlow shrink-0">
-              <MessageSquare className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-2xl bg-neonBlue/10 border border-neonBlue/30 flex items-center justify-center text-cyanGlow shrink-0">
+              <MessageSquare className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-extrabold text-white uppercase tracking-wider">ĐÓNG GÓP DỰ ÁN TOOL</h3>
-              <p className="text-xs text-gray-400">Đóng góp ý kiến, đề xuất tính năng mới hoặc báo lỗi để phát triển dự án tool tốt hơn</p>
+              <h2 className="text-base font-bold text-white">ĐÓNG GÓP Ý KIẾN PHÁT TRIỂN DỰ ÁN TOOL</h2>
+              <p className="text-xs text-gray-400">Gửi yêu cầu thêm tính năng mới hoặc báo lỗi tool cho Admin</p>
             </div>
           </div>
 
-          {statusMsg && (
-            <div className={`p-4 rounded-2xl text-xs font-bold flex items-center gap-2.5 ${
-              statusMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'
-            }`}>
-              {statusMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
-              <span>{statusMsg.text}</span>
+          {msg && (
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" /> {msg}
             </div>
           )}
 
-          <form onSubmit={handleSubmitFeedback} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-300 mb-2">Nội dung ý kiến đóng góp:</label>
-              <textarea
-                rows={4}
-                value={feedbackContent}
-                onChange={(e) => setFeedbackContent(e.target.value)}
-                placeholder="Nhập ý kiến đóng góp, đề xuất tính năng mới hoặc báo lỗi cho dự án tool tại đây..."
-                className="w-full bg-[#080B10] border border-[#1A2332] focus:border-neonBlue rounded-2xl p-4 text-xs text-white focus:outline-none transition leading-relaxed resize-none"
-              />
-            </div>
-
+          <form onSubmit={handleSendFeedback} className="space-y-4">
+            <textarea
+              required
+              rows={4}
+              value={feedbackContent}
+              onChange={(e) => setFeedbackContent(e.target.value)}
+              placeholder="Nhập nội dung góp ý, báo lỗi hoặc ý tưởng tính năng tool bạn mong muốn..."
+              className="w-full bg-[#080B10] border border-[#1A2332] rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-neonBlue transition"
+            />
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold text-xs py-3.5 rounded-xl shadow-lg shadow-neonBlue/20 hover:opacity-90 transition cursor-pointer flex items-center justify-center gap-2"
+              className="bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold px-6 py-3 rounded-xl text-xs flex items-center gap-2 hover:opacity-90 transition cursor-pointer"
             >
-              <Send className="w-4 h-4" /> GỬI ĐÓNG GÓP DỰ ÁN TOOL
+              <Send className="w-4 h-4" /> GỬI ĐÓNG GÓP TỚI ADMIN
             </button>
           </form>
-        </div>
 
+          {/* Danh sách các góp ý đã gửi */}
+          <div className="space-y-3 pt-4 border-t border-[#1A2332]">
+            <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Ý kiến đóng góp gần đây từ cộng đồng:</h4>
+            {feedbacks.length === 0 ? (
+              <p className="text-xs text-gray-500">Chưa có đóng góp nào. Hãy là người đầu tiên gửi góp ý!</p>
+            ) : (
+              feedbacks.slice(0, 5).map((f) => (
+                <div key={f.id} className="bg-[#080B10] border border-[#1A2332] p-3.5 rounded-2xl space-y-1">
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="font-bold text-cyanGlow">{f.username || 'Khách ẩn danh'}</span>
+                    <span className="text-gray-500 text-[10px] flex items-center gap-1">
+                      <Clock className="w-3 h-3" /> {f.created_at ? new Date(f.created_at).toLocaleDateString('vi-VN') : 'Gần đây'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-300">{f.content}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </main>
   );

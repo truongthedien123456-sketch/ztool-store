@@ -3,156 +3,194 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
+import { supabase } from '@/lib/supabase';
 import { 
-  Wrench, ShieldCheck, Zap, Key, ArrowRight, 
-  Sparkles, ShoppingBag 
+  Sparkles, Wrench, ShieldCheck, Zap, ArrowRight, ShoppingBag, FolderKanban, Info 
 } from 'lucide-react';
 
 export default function HomePage() {
   const [tools, setTools] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
 
   useEffect(() => {
-    const savedTools = localStorage.getItem('ztool_tools');
-    if (savedTools) {
-      try {
-        setTools(JSON.parse(savedTools));
-      } catch (e) {
-        setTools([]);
-      }
-    } else {
-      setTools([
-        {
-          id: 1,
-          name: 'AUTO FARM F17',
-          image: '',
-          priceDay: '5.000',
-          priceLifetime: '100.000',
-          description: 'Tự động chạy nhanh, bấm E nghề công trường F17 City'
-        }
-      ]);
-    }
+    loadHomeSyncData();
   }, []);
 
-  const featuredTool = tools[0];
+  const loadHomeSyncData = async () => {
+    // 1. Tải danh sách Tool mới nhất từ Supabase Cloud
+    const { data: toolData } = await supabase
+      .from('tools')
+      .select('*')
+      .order('id', { ascending: false });
+
+    if (toolData && toolData.length > 0) {
+      const mappedTools = toolData.map((t: any) => ({
+        id: t.id,
+        name: t.name,
+        image: t.image,
+        priceDay: t.priceDay || t.price_day || '',
+        priceWeek: t.priceWeek || t.price_week || '',
+        priceMonth: t.priceMonth || t.price_month || '',
+        priceLifetime: t.priceLifetime || t.price_lifetime || '',
+        description: t.description
+      }));
+      setTools(mappedTools);
+    }
+
+    // 2. Tải danh sách Dự án mới nhất từ Supabase Cloud
+    const { data: projectData } = await supabase
+      .from('projects')
+      .select('*')
+      .order('id', { ascending: false });
+
+    if (projectData && projectData.length > 0) {
+      setProjects(projectData);
+    }
+  };
+
+  const featuredTool = tools.length > 0 ? tools[0] : null;
 
   return (
     <main className="min-h-screen bg-[#080B10] text-white font-sans pb-20">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 py-12 space-y-16">
-        
-        {/* HERO SECTION TRANG CHỦ BÁN HÀNG */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-[#0F141C] border border-[#1A2332] rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden">
-          <div className="lg:col-span-7 space-y-6">
-            <div className="inline-flex items-center gap-2 bg-neonBlue/10 border border-neonBlue/30 px-3.5 py-1.5 rounded-full text-xs font-bold text-cyanGlow">
-              <Sparkles className="w-4 h-4" /> HỆ THỐNG CUNG CẤP TOOL AUTOMATION FIVE M
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-12">
+        {/* Banner Hero Chuyển Động */}
+        <div className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-8 lg:p-12 grid grid-cols-1 lg:grid-cols-3 gap-8 items-center shadow-2xl">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="inline-flex items-center gap-2 bg-neonBlue/10 border border-neonBlue/30 px-4 py-1.5 rounded-full text-xs font-bold text-cyanGlow">
+              <Sparkles className="w-4 h-4" /> HỆ THỐNG CUNG CẤP TOOL AUTOMATION FIVEM
             </div>
-
-            <h1 className="text-3xl sm:text-5xl font-black text-white tracking-wide leading-tight">
+            <h1 className="text-3xl sm:text-5xl font-black text-white leading-tight tracking-wide">
               TỰ ĐỘNG HÓA TRẢI NGHIỆM GAME CỦA BẠN
             </h1>
-
-            <p className="text-xs sm:text-sm text-gray-400 leading-relaxed max-w-xl">
+            <p className="text-sm text-gray-400 max-w-xl leading-relaxed">
               Cung cấp đầy đủ các bản Tool Farm cho mọi server FiveM / Launcher. Key hoạt động tự động 24/7 ngay sau khi thanh toán.
             </p>
-
-            <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-gray-300 pt-2">
+            <div className="flex flex-wrap gap-4 text-xs font-semibold text-gray-300 pt-2">
               <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-400" /> Hoạt động ổn định</span>
               <span className="flex items-center gap-1.5"><Zap className="w-4 h-4 text-amber-400" /> Hỗ trợ Update liên tục</span>
-              <span className="flex items-center gap-1.5"><Key className="w-4 h-4 text-cyanGlow" /> Key cấp tự động 24/7</span>
+              <span className="flex items-center gap-1.5"><Wrench className="w-4 h-4 text-cyanGlow" /> Key cấp tự động 24/7</span>
             </div>
-
-            <div className="flex flex-wrap items-center gap-4 pt-4">
+            <div className="pt-4">
               <Link
                 href="/tools"
-                className="bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold text-xs px-6 py-3.5 rounded-2xl shadow-lg shadow-neonBlue/20 hover:opacity-90 transition flex items-center gap-2"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold px-6 py-3.5 rounded-2xl text-xs shadow-lg shadow-neonBlue/20 hover:opacity-90 transition"
               >
                 <ShoppingBag className="w-4 h-4" /> XEM TẤT CẢ TOOL
               </Link>
             </div>
           </div>
 
-          {/* KHỐI HIGHLIGHT TOOL NỔI BẬT CÓ HIỂN THỊ ẢNH */}
-          <div className="lg:col-span-5 bg-[#080B10] border border-[#1A2332] rounded-3xl p-6 space-y-4 shadow-xl">
-            <div className="flex items-center justify-between border-b border-[#1A2332] pb-3">
-              <span className="text-xs font-bold text-cyanGlow flex items-center gap-1.5">
-                <Wrench className="w-4 h-4" /> TOOL NỔI BẬT
-              </span>
-              <span className="text-[10px] bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold px-2 py-0.5 rounded">
-                Hoạt động tốt
-              </span>
-            </div>
-
-            {featuredTool && (
-              <div className="space-y-4">
-                {/* Ảnh Tool Nổi Bật */}
-                <div className="w-full h-44 bg-[#0F141C] border border-[#1A2332] rounded-2xl overflow-hidden flex items-center justify-center relative">
-                  {featuredTool.image ? (
-                    <img src={featuredTool.image} alt={featuredTool.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center text-gray-500">
-                      <Wrench className="w-10 h-10 mb-1 text-cyanGlow/40" />
-                      <span className="text-[10px]">ZTOOL SYSTEM</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="text-base font-black text-white">{featuredTool.name}</h3>
-                  <p className="text-xs text-gray-400 leading-relaxed line-clamp-2">{featuredTool.description}</p>
-                </div>
-
-                <div className="pt-2 flex items-center justify-between border-t border-[#1A2332]">
-                  <span className="text-xs text-gray-400">
-                    Giá chỉ từ: <b className="text-emerald-400 font-extrabold">{featuredTool.priceDay || '5.000'} VNĐ</b>
-                  </span>
-                  <Link href="/tools" className="text-xs text-cyanGlow font-bold flex items-center gap-1 hover:underline">
-                    Xem chi tiết <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
+          {/* Tool Nổi Bật Tải Realtime */}
+          {featuredTool && (
+            <div className="bg-[#080B10] border border-[#1A2332] rounded-3xl p-5 space-y-4 shadow-xl">
+              <div className="flex justify-between items-center border-b border-[#1A2332] pb-3">
+                <span className="text-xs font-bold text-cyanGlow flex items-center gap-1.5">
+                  <Wrench className="w-4 h-4" /> TOOL NỔI BẬT
+                </span>
+                <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-extrabold px-2 py-0.5 rounded border border-emerald-500/30">
+                  Hoạt động tốt
+                </span>
               </div>
-            )}
-          </div>
+
+              <div className="w-full aspect-square bg-[#0F141C] border border-[#1A2332] rounded-2xl overflow-hidden">
+                <img 
+                  src={featuredTool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
+                  alt={featuredTool.name} 
+                  className="w-full h-full object-cover" 
+                />
+              </div>
+
+              <div className="space-y-1">
+                <h3 className="font-bold text-white text-sm">{featuredTool.name}</h3>
+                <p className="text-xs text-gray-400 line-clamp-1">{featuredTool.description}</p>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-[#1A2332]">
+                <span className="text-xs text-emerald-400 font-extrabold">Giá chỉ từ: {featuredTool.priceDay || '5.000'} VNĐ</span>
+                <Link href="/tools" className="text-xs font-bold text-cyanGlow hover:underline flex items-center gap-1">
+                  Xem chi tiết <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* DANH SÁCH TOOL XEM NHANH TRANG CHỦ */}
+        {/* Section Danh Sách Tool Sản Phẩm */}
         <div className="space-y-6">
           <div className="flex items-center justify-between border-b border-[#1A2332] pb-4">
             <div>
               <h2 className="text-xl font-black text-white flex items-center gap-2">
                 <Wrench className="w-5 h-5 text-cyanGlow" /> SẢN PHẨM TOOL AUTO
               </h2>
-              <p className="text-xs text-gray-400">Danh sách các bản hack/tool tự động mới nhất</p>
+              <p className="text-xs text-gray-400 mt-1">Danh sách các bản hack/tool tự động mới nhất</p>
             </div>
-
-            <Link href="/tools" className="text-xs text-cyanGlow font-bold flex items-center gap-1 hover:underline">
+            <Link href="/tools" className="text-xs font-bold text-cyanGlow hover:underline flex items-center gap-1">
               Xem tất cả <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {tools.map((tool) => (
-              <div key={tool.id} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 space-y-4 shadow-xl">
-                <div className="w-full h-36 bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden flex items-center justify-center">
-                  {tool.image ? (
-                    <img src={tool.image} alt={tool.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <Wrench className="w-8 h-8 text-cyanGlow/30" />
-                  )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {tools.slice(0, 3).map((tool) => (
+              <div key={tool.id} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-5 flex flex-col justify-between space-y-4 hover:border-neonBlue/50 transition">
+                <div className="space-y-3">
+                  <div className="w-full aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
+                    <img src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={tool.name} className="w-full h-full object-cover" />
+                    <span className="absolute top-3 right-3 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/30 backdrop-blur-md">
+                      ONLINE 24/7
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-base">{tool.name}</h3>
+                    <p className="text-xs text-gray-400 mt-1 line-clamp-1">{tool.description}</p>
+                  </div>
                 </div>
-                <h3 className="text-base font-bold text-white">{tool.name}</h3>
-                <p className="text-xs text-gray-400 line-clamp-2">{tool.description}</p>
-                <Link
-                  href="/tools"
-                  className="block text-center bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold py-2.5 rounded-xl text-xs"
-                >
-                  XEM SẢN PHẨM
-                </Link>
+
+                <div className="flex items-center justify-between pt-2 border-t border-[#1A2332]">
+                  <span className="text-xs text-emerald-400 font-extrabold">{tool.priceDay ? `${tool.priceDay} VNĐ/Ngày` : '---'}</span>
+                  <Link href="/tools" className="bg-neonBlue/10 border border-neonBlue/30 text-cyanGlow font-bold px-3 py-1.5 rounded-xl text-xs hover:bg-neonBlue/20 transition">
+                    Mua Ngay
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
         </div>
 
+        {/* Section Dự Án Đã Thực Hiện */}
+        {projects.length > 0 && (
+          <div className="space-y-6 pt-4">
+            <div className="flex items-center justify-between border-b border-[#1A2332] pb-4">
+              <div>
+                <h2 className="text-xl font-black text-white flex items-center gap-2">
+                  <FolderKanban className="w-5 h-5 text-cyanGlow" /> DỰ ÁN CỦA SHOP
+                </h2>
+                <p className="text-xs text-gray-400 mt-1">Các sản phẩm và dịch vụ đã phát triển thành công</p>
+              </div>
+              <Link href="/projects" className="text-xs font-bold text-cyanGlow hover:underline flex items-center gap-1">
+                Xem tất cả dự án <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {projects.slice(0, 3).map((p) => (
+                <div key={p.id} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-5 space-y-3">
+                  {p.image && (
+                    <div className="w-full aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden">
+                      <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-bold text-white text-sm">{p.title}</h3>
+                    <span className="text-[10px] text-cyanGlow bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 font-bold">{p.status || 'Hoạt động tốt'}</span>
+                  </div>
+                  <p className="text-xs text-gray-400 line-clamp-2">{p.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );
