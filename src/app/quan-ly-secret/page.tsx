@@ -17,7 +17,7 @@ export default function AdminPage() {
 
   const [activeTab, setActiveTab] = useState<'users' | 'tools' | 'projects' | 'keys' | 'sepay' | 'feedback'>('users');
 
-  // Dữ liệu Realtime từ Cloud Supabase
+  // Dữ liệu Realtime
   const [users, setUsers] = useState<any[]>([]);
   const [tools, setTools] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
@@ -128,7 +128,7 @@ export default function AdminPage() {
     }
   };
 
-  // --- 1. QUẢN LÝ NGƯỜI DÙNG ---
+  // QUẢN LÝ NGƯỜI DÙNG
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUserForm.username || !newUserForm.password) return alert('Nhập đủ username/password!');
@@ -185,7 +185,7 @@ export default function AdminPage() {
     }
   };
 
-  // --- 2. QUẢN LÝ TOOL AUTO & UPLOAD FILE ---
+  // QUẢN LÝ TOOL
   const handleSaveTool = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!toolForm.name) return alert('Nhập tên Tool!');
@@ -204,7 +204,7 @@ export default function AdminPage() {
 
       if (uploadError) {
         setIsUploading(false);
-        return alert('Lỗi tải ảnh lên Storage: ' + uploadError.message + '\n(Đảm bảo bạn đã tạo bucket public "tool-images" trên Supabase)');
+        return alert('Lỗi tải ảnh lên Storage: ' + uploadError.message);
       }
 
       const { data: urlData } = supabase.storage
@@ -241,7 +241,7 @@ export default function AdminPage() {
       setPreviewUrl('');
       setToolForm({ id: 0, name: '', image: '', priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '' });
       setIsEditingTool(false);
-      alert('Tải ảnh từ máy lên Server và lưu sản phẩm thành công!');
+      alert('Lưu sản phẩm thành công!');
       loadAllSyncData();
     }
   };
@@ -252,7 +252,7 @@ export default function AdminPage() {
     if (!error) loadAllSyncData();
   };
 
-  // --- 3. DỰ ÁN SHOP ---
+  // DỰ ÁN SHOP
   const handleSaveProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectForm.title) return alert('Nhập tên dự án!');
@@ -281,7 +281,7 @@ export default function AdminPage() {
     if (!error) loadAllSyncData();
   };
 
-  // --- 4. KEY VÀ Ý KIẾN ---
+  // KEY VÀ Ý KIẾN
   const handleAddKey = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newKeyForm.keyString) return alert('Nhập chuỗi Key!');
@@ -538,7 +538,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 2. TAB TOOL AUTO (CHỌN FILE VÀ TỰ ĐỘNG UPLOAD LÊN SUPABASE STORAGE) */}
+        {/* 2. TAB TOOL AUTO (HIỂN THỊ ĐẦY ĐỦ ẢNH KHÔNG BỊ CẮT) */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
@@ -551,7 +551,7 @@ export default function AdminPage() {
                 <input type="text" required value={toolForm.name} onChange={e => setToolForm({ ...toolForm, name: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="vd: AUTO FARM F17" />
               </div>
 
-              {/* KHUNG CHỌN FILE ẢNH TỪ MÁY */}
+              {/* KHUNG CHỌN FILE ẢNH & HIỂN THỊ ĐẦY ĐỦ ẢNH PREVIEW */}
               <div className="space-y-2">
                 <label className="block text-[11px] text-slate-400">Ảnh Minh Họa Sản Phẩm</label>
                 
@@ -562,8 +562,8 @@ export default function AdminPage() {
                 </label>
 
                 {(previewUrl || toolForm.image) && (
-                  <div className="w-full h-28 bg-[#06090E] border border-[#1C2638] rounded-xl overflow-hidden relative">
-                    <img src={previewUrl || toolForm.image} alt="Preview" className="w-full h-full object-cover" />
+                  <div className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl overflow-hidden p-2 flex items-center justify-center">
+                    <img src={previewUrl || toolForm.image} alt="Preview" className="w-full h-auto max-h-48 object-contain rounded-lg" />
                   </div>
                 )}
               </div>
@@ -618,10 +618,18 @@ export default function AdminPage() {
               <div className="space-y-3">
                 {tools.length === 0 ? <p className="text-xs text-slate-500">Chưa có dữ liệu Tool trên Cloud Database</p> : tools.map((t) => (
                   <div key={t.id} className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl flex items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <h4 className="font-bold text-white text-xs">{t.name}</h4>
-                      <p className="text-[10px] text-emerald-400 font-medium">Giá: Ngày {t.priceDay || 0}đ | Tuần {t.priceWeek || 0}đ | Tháng {t.priceMonth || 0}đ | VV {t.priceLifetime || 0}đ</p>
-                      <p className="text-[11px] text-slate-400 line-clamp-1">{t.description}</p>
+                    <div className="flex items-center gap-4 flex-1">
+                      {/* Ảnh minh họa trong danh sách Admin */}
+                      {t.image && (
+                        <div className="w-24 h-16 bg-[#0D121D] border border-[#1C2638] rounded-lg overflow-hidden flex items-center justify-center shrink-0">
+                          <img src={t.image} alt={t.name} className="w-full h-full object-contain" />
+                        </div>
+                      )}
+                      <div className="space-y-1">
+                        <h4 className="font-bold text-white text-xs">{t.name}</h4>
+                        <p className="text-[10px] text-emerald-400 font-medium">Giá: Ngày {t.priceDay || 0}đ | Tuần {t.priceWeek || 0}đ | Tháng {t.priceMonth || 0}đ | VV {t.priceLifetime || 0}đ</p>
+                        <p className="text-[11px] text-slate-400 line-clamp-1">{t.description}</p>
+                      </div>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => { setToolForm(t); setPreviewUrl(t.image); setIsEditingTool(true); }} className="text-cyan-400 p-2 hover:bg-cyan-500/10 rounded-lg"><Edit className="w-4 h-4" /></button>

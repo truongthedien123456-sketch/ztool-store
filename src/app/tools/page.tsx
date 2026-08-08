@@ -22,14 +22,12 @@ export default function ToolsPage() {
     loadToolsData();
   }, []);
 
-  // Tải dữ liệu Realtime từ Cloud Supabase
   const loadToolsData = async () => {
     const { data, error } = await supabase.from('tools').select('*').order('id', { ascending: false });
     
     if (data && data.length > 0) {
       setTools(data);
     } else {
-      // Dữ liệu mẫu ban đầu nếu Cloud chưa có sản phẩm
       setTools([
         {
           id: 1,
@@ -41,23 +39,11 @@ export default function ToolsPage() {
           priceLifetime: '100.000',
           description: 'Tự động chạy nhanh, bấm E nghề công trường F17 City.',
           downloadLink: ''
-        },
-        {
-          id: 2,
-          name: 'AUTO CÂU CÁ LŨ QUỶ',
-          image: 'https://i.ibb.co/8L2gsmQ0/logo.jpg',
-          priceDay: '20.000',
-          priceWeek: '50.000',
-          priceMonth: '150.000',
-          priceLifetime: '300.000',
-          description: 'Tự quăng cần câu, giải minigame mũi tên, tự ngồi lên thuyền.',
-          downloadLink: ''
         }
       ]);
     }
   };
 
-  // Mua Tool
   const handleBuyTool = async () => {
     setPurchaseMsg(null);
     if (!selectedToolForBuy) return;
@@ -68,7 +54,6 @@ export default function ToolsPage() {
       return;
     }
 
-    // Đọc thông tin user từ Supabase Cloud
     const { data: userData } = await supabase.from('users').select('*').eq('username', currentUsername).single();
 
     if (!userData) {
@@ -92,11 +77,9 @@ export default function ToolsPage() {
       return;
     }
 
-    // Trừ tiền tài khoản người dùng trên Supabase
     const newBalance = userData.balance - priceNum;
     await supabase.from('users').update({ balance: newBalance }).eq('id', userData.id);
 
-    // Lấy key tự động
     const savedKeys = JSON.parse(localStorage.getItem('ztool_keys') || '[]');
     const availableKeyIndex = savedKeys.findIndex((k: any) => k.toolName === selectedToolForBuy.name && !k.isUsed);
 
@@ -133,19 +116,18 @@ export default function ToolsPage() {
           {tools.map((tool) => (
             <div key={tool.id} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-xl hover:border-neonBlue/50 transition duration-300">
               <div className="space-y-4">
-                {/* Ảnh Tool hiển thị chuẩn cho máy khách */}
-                <div className="w-full h-44 bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden flex items-center justify-center relative">
+                {/* Khung hiển thị TRỌN VẸN ĐẦY ĐỦ ẢNH KHÔNG BỊ CẮT XÉN */}
+                <div className="w-full h-48 bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden flex items-center justify-center p-2 relative">
                   <img 
                     src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
                     alt={tool.name} 
-                    className="w-full h-full object-cover" 
+                    className="w-full h-full object-contain" 
                   />
                   <span className="absolute top-3 right-3 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-extrabold px-2.5 py-1 rounded-lg">
                     ONLINE 24/7
                   </span>
                 </div>
 
-                {/* Tên & Mô tả cắt gọn đúng 1 dòng ở ngoài */}
                 <div>
                   <h3 className="text-lg font-bold text-white">{tool.name}</h3>
                   <p className="text-xs text-gray-400 mt-1 line-clamp-1 truncate" title={tool.description}>
@@ -213,11 +195,11 @@ export default function ToolsPage() {
                 </div>
               </div>
 
-              <div className="w-full h-64 bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden flex items-center justify-center">
+              <div className="w-full h-72 bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden p-2 flex items-center justify-center">
                 <img 
                   src={selectedToolForDetail.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
                   alt={selectedToolForDetail.name} 
-                  className="w-full h-full object-cover" 
+                  className="w-full h-full object-contain" 
                 />
               </div>
 
