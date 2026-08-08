@@ -81,12 +81,45 @@ export default function AdminPage() {
       loadAllSyncData();
     }
 
-    // Timer cập nhật đếm ngược mỗi 1 giây
+    // 1. LẮNG NGHE ĐỒNG BỘ REALTIME TỪ SUPABASE (CÁCH 1)
+    const channel = supabase
+      .channel('admin_realtime_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'users' },
+        () => loadAllSyncData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'transactions' },
+        () => loadAllSyncData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'feedbacks' },
+        () => loadAllSyncData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tools' },
+        () => loadAllSyncData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'projects' },
+        () => loadAllSyncData()
+      )
+      .subscribe();
+
+    // 2. Timer cập nhật đếm ngược mỗi 1 giây
     const timer = setInterval(() => {
       setNowTime(Date.now());
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(timer);
+    };
   }, []);
 
   // TẢI DỮ LIỆU TỪ GITHUB GIST ACCOUNTS.JSON REALTIME
@@ -1047,7 +1080,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 4. TAB KHO ACC TOOL (ĐỌC TỪ GITHUB GIST ACCOUNTS.JSON) */}
+        {/* 4. TAB KHO ACC TOOL (ĐỌC TỪ GITHUB GIST ACCOUNTS.JSON REALTIME) */}
         {activeTab === 'gist_accounts' && (
           <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-[#1C2638] pb-3">
