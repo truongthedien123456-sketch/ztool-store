@@ -51,27 +51,31 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // CƠ CHẾ HEARTBEAT CẬP NHẬT TRẠNG THÁI ONLINE / OFFLINE REALTIME
+  // CƠ CHẾ HEARTBEAT CẬP NHẬT TRẠNG THÁI ONLINE / OFFLINE REALTIME DỰA TRÊN USERNAME
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser?.username) return;
 
     const updateOnlineStatus = async (status: boolean) => {
-      await supabase
-        .from('users')
-        .update({ 
-          is_online: status,
-          last_seen: new Date().toISOString() 
-        })
-        .eq('id', currentUser.id);
+      try {
+        await supabase
+          .from('users')
+          .update({ 
+            is_online: status,
+            last_seen: new Date().toISOString() 
+          })
+          .eq('username', currentUser.username);
+      } catch (err) {
+        console.error('Lỗi cập nhật Online status:', err);
+      }
     };
 
-    // 1. Gửi tín hiệu Online ngay khi vào web
+    // 1. Gửi tín hiệu Online ngay khi user vừa xuất hiện
     updateOnlineStatus(true);
 
-    // 2. Định kỳ bắn Heartbeat giữ Online mỗi 15 giây
+    // 2. Định kỳ bắn Heartbeat giữ Online mỗi 10 giây
     const interval = setInterval(() => {
       updateOnlineStatus(true);
-    }, 15000);
+    }, 10000);
 
     // 3. Tự động chuyển Offline khi đóng tab / tắt trình duyệt
     const handleUnload = () => {
@@ -85,7 +89,7 @@ export default function Navbar() {
       window.removeEventListener('beforeunload', handleUnload);
       updateOnlineStatus(false);
     };
-  }, [currentUser]);
+  }, [currentUser?.username]);
 
   const checkLoggedInUser = async () => {
     const savedUser = localStorage.getItem('ztool_current_user');
@@ -223,8 +227,8 @@ export default function Navbar() {
   };
 
   const handleLogout = async () => {
-    if (currentUser) {
-      await supabase.from('users').update({ is_online: false }).eq('id', currentUser.id);
+    if (currentUser?.username) {
+      await supabase.from('users').update({ is_online: false }).eq('username', currentUser.username);
     }
     localStorage.removeItem('ztool_current_user');
     setCurrentUser(null);

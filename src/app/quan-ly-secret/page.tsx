@@ -613,8 +613,8 @@ export default function AdminPage() {
                   </thead>
                   <tbody className="divide-y divide-[#1C2638]">
                     {users.filter(u => u.username?.toLowerCase().includes(userSearch.toLowerCase())).map((u, i) => {
-                      // Tính toán trạng thái Online dựa trên Heartbeat (last_seen trong vòng 30 giây)
-                      const isUserOnline = u.is_online && u.last_seen && (new Date().getTime() - new Date(u.last_seen).getTime() < 30000);
+                      // Kiểm tra trực tiếp cờ is_online kết hợp thời gian nạp tin nhắn heartbeat trong vòng 25s
+                      const isUserOnline = u.is_online && u.last_seen && (new Date().getTime() - new Date(u.last_seen).getTime() < 25000);
 
                       return (
                         <tr key={i} className="hover:bg-[#06090E]/50 transition">
@@ -638,11 +638,11 @@ export default function AdminPage() {
                           {/* 1. HIỂN THỊ ONLINE / OFFLINE REALTIME */}
                           <td className="p-3">
                             {isUserOnline ? (
-                              <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 text-[10px] inline-flex items-center gap-1.5">
+                              <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 text-[10px] inline-flex items-center gap-1.5 shadow-sm shadow-emerald-500/10">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Online
                               </span>
                             ) : (
-                              <span className="text-slate-500 font-medium bg-slate-500/10 px-2 py-0.5 rounded border border-slate-500/20 text-[10px] inline-flex items-center gap-1.5">
+                              <span className="text-slate-500 font-medium bg-slate-500/10 px-2.5 py-1 rounded-full border border-slate-500/20 text-[10px] inline-flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Offline
                               </span>
                             )}
