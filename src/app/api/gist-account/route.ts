@@ -33,30 +33,55 @@ export async function POST(request: Request) {
     const currentContentRaw = gistData.files['accounts.json']?.content || '{}';
     const accountsJson = JSON.parse(currentContentRaw);
 
-    // 2. Tính toán expire_timestamp (0 = Vĩnh Viễn)
-    let expireTimestamp = 0;
-    if (durationDays && Number(durationDays) > 0) {
-      const nowSec = Math.floor(Date.now() / 1000);
-      const addedSec = Number(durationDays) * 86400; // 1 ngày = 86400 giây
+    // Chuẩn hóa mã tool mới mua
+    const targetToolCode = tool_code ? tool_code.trim() : '';
 
-      const currentExpire = accountsJson[username]?.expire_timestamp || 0;
+    // 2. Kiểm tra xem user đã sở hữu tài khoản nào có cùng tool_code hay chưa
+    let targetAccountKey = username;
+    const matchedAccount = Object.keys(accountsJson).find(key => {
+      const acc = accountsJson[key];
+      const accToolCode = (acc.tool_code || acc.toolCode || '').trim();
+      const isOwner = key === username || key.startsWith(`${username}_`);
+      return isOwner && accToolCode === targetToolCode;
+    });
+
+    if (matchedAccount) {
+      // Đã có tài khoản mang đúng mã tool này -> Dùng lại để cộng dồn thời gian
+      targetAccountKey = matchedAccount;
+    } else if (accountsJson[username] && (!accountsJson[username].tool_code && !accountsJson[username].toolCode)) {
+      // Nếu user gốc chưa gán mã tool nào, gán luôn cho user gốc
+      targetAccountKey = username;
+    } else {
+      // Nếu user gốc đã có mã tool khác -> Tự động tạo tài khoản phụ mới (ví dụ: abc_congtruongf17)
+      const cleanToolCode = targetToolCode ? targetToolCode.replace(/[^a-zA-Z0-9]/g, '_') : 'tool';
+      targetAccountKey = `${username}_${cleanToolCode}`;
+    }
+
+    // 3. Tính toán expire_timestamp (0 = Vĩnh Viễn)
+    let expireTimestamp = 0;
+    const nowSec = Math.floor(Date.now() / 1000);
+
+    if (durationDays && Number(durationDays) > 0) {
+      const addedSec = Number(durationDays) * 86400; // 1 ngày = 86400 giây
+      const currentExpire = accountsJson[targetAccountKey]?.expire_timestamp || 0;
+
       if (currentExpire > nowSec) {
-        expireTimestamp = currentExpire + addedSec; // Gia hạn nối tiếp
+        expireTimestamp = currentExpire + addedSec; // Gia hạn nối tiếp nếu chưa hết hạn
       } else {
-        expireTimestamp = nowSec + addedSec; // Tính từ hiện tại
+        expireTimestamp = nowSec + addedSec; // Tính từ thời điểm hiện tại
       }
     }
 
-    // 3. Cập nhật tài khoản vào JSON kèm theo tool_code
-    accountsJson[username] = {
+    // 4. Cập nhật hoặc tạo mới tài khoản vào JSON kèm theo tool_code
+    accountsJson[targetAccountKey] = {
       password: password,
-      role: accountsJson[username]?.role || 'user',
-      tool_code: tool_code ? tool_code.trim() : (accountsJson[username]?.tool_code || ''),
+      role: accountsJson[targetAccountKey]?.role || 'user',
+      tool_code: targetToolCode,
       expire_timestamp: expireTimestamp,
-      device_id: accountsJson[username]?.device_id || ''
+      device_id: accountsJson[targetAccountKey]?.device_id || ''
     };
 
-    // 4. Đẩy JSON mới lên GitHub Gist
+    // 5. Đẩy JSON mới lên GitHub Gist
     const patchGistRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
       method: 'PATCH',
       headers: {
@@ -79,8 +104,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Đã cập nhật tài khoản ${username} thành công trên Gist`,
-      account: accountsJson[username]
+      message: `Đã xử lý thành công tài khoản ${targetAccountKey} trên Gist`,
+      accountKey: targetAccountKey,
+      account: accountsJson[targetAccountKey]
     });
 
   } catch (error: any) {
