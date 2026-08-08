@@ -81,7 +81,7 @@ export default function AdminPage() {
       loadAllSyncData();
     }
 
-    // 1. LẮNG NGHE ĐỒNG BỘ REALTIME TỪ SUPABASE (CÁCH 1)
+    // 1. LẮNG NGHE ĐỒNG BỘ REALTIME TỪ SUPABASE
     const channel = supabase
       .channel('admin_realtime_changes')
       .on(
@@ -122,28 +122,32 @@ export default function AdminPage() {
     };
   }, []);
 
-  // TẢI DỮ LIỆU TỪ GITHUB GIST ACCOUNTS.JSON REALTIME
+  // TẢI DỮ LIỆU TỪ GITHUB GIST THÔNG QUA API NỘI BỘ (CHỐNG CACHE TRIỆT ĐỂ)
   const fetchGistAccountsData = async () => {
     setLoadingGist(true);
     try {
-      const gistId = '21f0a39cbc434e5033d89f06e2c7d26e';
-      const res = await fetch(`https://api.github.com/gists/${gistId}`, {
-        cache: 'no-store'
+      const res = await fetch('/api/get-gist', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
       });
-      if (res.ok) {
-        const data = await res.json();
-        const contentRaw = data.files['accounts.json']?.content || '{}';
-        const parsed = JSON.parse(contentRaw);
 
-        // Chuyển cấu trúc Object JSON thành mảng danh sách tài khoản
-        const list = Object.keys(parsed).map((accName) => ({
-          username: accName,
-          ...parsed[accName]
-        }));
-        setGistAccounts(list);
+      if (res.ok) {
+        const result = await res.json();
+        if (result.success && result.data) {
+          const parsed = result.data;
+          // Chuyển cấu trúc Object JSON thành mảng danh sách tài khoản
+          const list = Object.keys(parsed).map((accName) => ({
+            username: accName,
+            ...parsed[accName]
+          }));
+          setGistAccounts(list);
+        }
       }
     } catch (err) {
-      console.error('Lỗi tải tài khoản Gist:', err);
+      console.error('Lỗi tải tài khoản Gist qua API:', err);
     } finally {
       setLoadingGist(false);
     }
