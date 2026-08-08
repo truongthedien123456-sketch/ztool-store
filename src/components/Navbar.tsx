@@ -37,15 +37,17 @@ export default function Navbar() {
   const [rechargeAmount, setRechargeAmount] = useState('50000');
   const [copied, setCopied] = useState(false);
 
-  // Dữ liệu Gist và Lịch sử
+  // Dữ liệu Gist, Tools và Lịch sử
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
-  const [userGistData, setUserGistData] = useState<any[] | null>(null); // Đã chuyển thành Mảng để chứa nhiều tài khoản tool
+  const [userGistData, setUserGistData] = useState<any[] | null>(null);
+  const [toolsList, setToolsList] = useState<any[]>([]);
   const [loadingPurchasedTools, setLoadingPurchasedTools] = useState(false);
   const [nowTime, setNowTime] = useState(Date.now());
 
   useEffect(() => {
     checkLoggedInUser();
+    loadAllToolsMeta();
 
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -61,6 +63,13 @@ export default function Navbar() {
       clearInterval(timer);
     };
   }, []);
+
+  const loadAllToolsMeta = async () => {
+    const { data } = await supabase.from('tools').select('*');
+    if (data) {
+      setToolsList(data);
+    }
+  };
 
   // CƠ CHẾ HEARTBEAT CẬP NHẬT TRẠNG THÁI ONLINE / OFFLINE REALTIME
   useEffect(() => {
@@ -132,18 +141,22 @@ export default function Navbar() {
         const contentRaw = data.files['accounts.json']?.content || '{}';
         const parsed = JSON.parse(contentRaw);
         
-        // Lọc tất cả các key trùng với username gốc hoặc bắt đầu bằng username_
         const matchedKeys = Object.keys(parsed).filter(
           k => k.trim().toLowerCase() === username.trim().toLowerCase() ||
                k.trim().toLowerCase().startsWith(`${username.trim().toLowerCase()}_`)
         );
 
         if (matchedKeys.length > 0) {
-          const purchasedList = matchedKeys.map(k => ({
-            accountName: k,
-            toolCode: parsed[k].tool_code || parsed[k].toolCode || 'Chung',
-            ...parsed[k]
-          }));
+          const purchasedList = matchedKeys.map(k => {
+            const tCode = parsed[k].tool_code || parsed[k].toolCode || '';
+            const foundTool = toolsList.find(t => (t.toolCode || t.tool_code || '').trim().toLowerCase() === tCode.trim().toLowerCase());
+            return {
+              accountName: k,
+              toolCode: tCode,
+              toolName: foundTool ? foundTool.name : (tCode ? `AUTO ${tCode.toUpperCase()}` : 'TOOL AUTO CHUNG'),
+              ...parsed[k]
+            };
+          });
           setUserGistData(purchasedList);
         } else {
           setUserGistData(null);
@@ -172,11 +185,11 @@ export default function Navbar() {
     }
   };
 
-  // RENDER ĐỒNG HỒ ĐẾM NGƯỢC HOẶC VĨNH VIỄN
+  // RENDER ĐỒNG HỒ ĐẾM NGƯỢC HOẶC VĨNH VIỄN NỔI BẬT & CHUYÊN NGHIỆP
   const renderRemainingTime = (expireTimestamp: number) => {
     if (!expireTimestamp || expireTimestamp === 0) {
       return (
-        <span className="text-cyan-400 font-black bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/30 text-xs">
+        <span className="text-cyan-300 font-black bg-gradient-to-r from-cyan-500/20 to-blue-500/20 px-3.5 py-1.5 rounded-xl border border-cyan-400/40 text-xs shadow-[0_0_12px_rgba(6,182,212,0.2)] inline-flex items-center gap-1.5">
           ♾️ Vĩnh Viễn
         </span>
       );
@@ -187,7 +200,7 @@ export default function Navbar() {
 
     if (diffSec <= 0) {
       return (
-        <span className="text-rose-400 font-bold bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/30 text-xs">
+        <span className="text-rose-400 font-bold bg-rose-500/20 px-3.5 py-1.5 rounded-xl border border-rose-500/40 text-xs inline-flex items-center gap-1.5">
           ⚠️ Đã Hết Hạn
         </span>
       );
@@ -199,8 +212,8 @@ export default function Navbar() {
     const seconds = diffSec % 60;
 
     return (
-      <span className="text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/30 text-xs flex items-center gap-1.5 w-fit">
-        <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+      <span className="text-emerald-300 font-mono font-black bg-gradient-to-r from-emerald-500/20 to-teal-500/20 px-3.5 py-1.5 rounded-xl border border-emerald-400/40 text-xs inline-flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.25)]">
+        <Clock className="w-4 h-4 text-emerald-400 shrink-0 animate-pulse" />
         {days > 0 && `${days}d `}{hours}h {minutes}m {seconds}s
       </span>
     );
@@ -481,7 +494,7 @@ export default function Navbar() {
       {/* MODAL TOOL ĐÃ MUA & GIA HẠN */}
       {showPurchasedToolsModal && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0D121D] border-2 border-cyan-400 w-full max-w-lg rounded-3xl p-6 space-y-5 relative shadow-2xl shadow-cyan-500/35 max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#0D121D] border-2 border-cyan-400 w-full max-w-xl rounded-3xl p-6 space-y-5 relative shadow-2xl shadow-cyan-500/35 max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setShowPurchasedToolsModal(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-[#1C2638] cursor-pointer"
@@ -495,7 +508,7 @@ export default function Navbar() {
               </div>
               <div>
                 <h3 className="text-base font-black text-white">DANH SÁCH TOOL ĐÃ MUA</h3>
-                <p className="text-xs text-slate-400">Quản lý thời hạn và gia hạn trực tiếp cho {currentUser.username}</p>
+                <p className="text-xs text-slate-400">Quản lý tài khoản, mật khẩu và thời hạn cho {currentUser.username}</p>
               </div>
             </div>
 
@@ -514,30 +527,44 @@ export default function Navbar() {
                   </div>
                 ) : (
                   userGistData.map((toolAcc: any, idx: number) => (
-                    <div key={idx} className="bg-[#06090E] border border-[#1C2638] p-4 rounded-2xl space-y-4">
+                    <div key={idx} className="bg-[#06090E] border border-[#1C2638] p-5 rounded-2xl space-y-4 shadow-lg">
+                      {/* Tiêu đề Tên tool và Thời gian nổi bật */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#1C2638] pb-3">
-                        <div>
-                          <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider block">Tài khoản Tool: {toolAcc.accountName}</span>
-                          <h4 className="font-black text-white text-base uppercase">Mã Tool: {toolAcc.toolCode}</h4>
+                        <div className="space-y-0.5">
+                          <span className="text-[10px] text-cyan-400 font-extrabold uppercase tracking-widest block">TÊN TOOL SỬ DỤNG</span>
+                          <h4 className="font-black text-white text-base tracking-wide uppercase">{toolAcc.toolName}</h4>
                         </div>
                         <div>
-                          <span className="text-[10px] text-slate-400 block mb-1">Thời hạn sử dụng:</span>
+                          <span className="text-[10px] text-slate-400 block mb-1 font-bold">THỜI HẠN SỬ DỤNG:</span>
                           {renderRemainingTime(toolAcc.expire_timestamp)}
                         </div>
                       </div>
 
+                      {/* Khung Tài khoản & Mật khẩu tool */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-[#0D121D] p-3.5 rounded-xl border border-[#1C2638]">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-slate-400 font-bold mb-0.5">TÀI KHOẢN TOOL:</span>
+                          <span className="font-mono font-bold text-cyan-300">{toolAcc.accountName}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-slate-400 font-bold mb-0.5">MẬT KHẨU TOOL:</span>
+                          <span className="font-mono font-bold text-emerald-400">{toolAcc.password || '---'}</span>
+                        </div>
+                      </div>
+
+                      {/* Nút gia hạn với hiệu ứng hover rực rỡ */}
                       {toolAcc.expire_timestamp > 0 ? (
                         <div className="space-y-2 pt-1">
                           <div className="flex items-center justify-between pt-1">
                             <span className="text-xs font-bold text-amber-400 flex items-center gap-1">
-                              <RefreshCw className="w-3.5 h-3.5" /> Cần gia hạn tool này?
+                              <RefreshCw className="w-3.5 h-3.5" /> Cần gia hạn thêm thời gian?
                             </span>
                             <button 
                               onClick={() => {
                                 setShowPurchasedToolsModal(false);
                                 router.push('/tools');
                               }}
-                              className="bg-gradient-to-r from-emerald-400 to-teal-300 hover:brightness-110 text-slate-950 font-black py-2.5 px-6 rounded-xl text-xs shadow-md shadow-emerald-500/20 transition cursor-pointer flex items-center gap-1.5 border-2 border-emerald-200"
+                              className="bg-gradient-to-r from-emerald-400 to-teal-300 text-slate-950 font-black py-2.5 px-6 rounded-xl text-xs shadow-md shadow-emerald-500/20 border-2 border-emerald-200 cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-emerald-400/50 hover:brightness-110 active:scale-95 flex items-center gap-1.5"
                             >
                               <RefreshCw className="w-3.5 h-3.5 text-slate-950 stroke-[2.5]" /> GIA HẠN NGAY
                             </button>
@@ -545,7 +572,7 @@ export default function Navbar() {
                         </div>
                       ) : (
                         <div className="text-center bg-cyan-500/10 border border-cyan-500/30 p-3 rounded-xl text-xs text-cyan-300 font-bold">
-                          🎉 Gói bản quyền Vĩnh Viễn. Không cần gia hạn!
+                          🎉 Bạn đang sở hữu gói bản quyền Vĩnh Viễn. Không cần gia hạn!
                         </div>
                       )}
                     </div>
