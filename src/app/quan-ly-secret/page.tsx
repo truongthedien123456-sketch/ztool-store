@@ -5,7 +5,8 @@ import { supabase } from '@/lib/supabase';
 import { 
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
-  Ban, CheckCircle, CreditCard, KeyRound, Search, DollarSign, Settings
+  Ban, CheckCircle, CreditCard, KeyRound, Search, DollarSign, Settings,
+  Upload, Image as ImageIcon, Loader2
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -30,6 +31,7 @@ export default function AdminPage() {
   const [editUserPass, setEditUserPass] = useState<{ username: string; newPass: string } | null>(null);
   const [adjustBal, setAdjustBal] = useState<{ username: string; amount: number; isAdd: boolean } | null>(null);
 
+  // States Tool Auto & Upload File
   const [toolForm, setToolForm] = useState({
     id: 0,
     name: '',
@@ -41,6 +43,9 @@ export default function AdminPage() {
     description: '',
     downloadLink: ''
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [isUploading, setIsUploading] = useState(false);
   const [isEditingTool, setIsEditingTool] = useState(false);
 
   const [projectForm, setProjectForm] = useState({
@@ -69,9 +74,8 @@ export default function AdminPage() {
       if (userData) setUsers(userData);
 
       // 2. Tải Tools
-      const { data: toolData, error: toolErr } = await supabase.from('tools').select('*').order('id', { ascending: false });
+      const { data: toolData } = await supabase.from('tools').select('*').order('id', { ascending: false });
       if (toolData) {
-        // Chuẩn hóa mapping dữ liệu từ Supabase về dạng Frontend
         const mappedTools = toolData.map((t: any) => ({
           id: t.id,
           name: t.name,
@@ -120,6 +124,15 @@ export default function AdminPage() {
   const handleAdminLogout = () => {
     localStorage.removeItem('ztool_admin_authenticated');
     setIsAuthenticated(false);
+  };
+
+  // Xử lý chọn File từ máy
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
   };
 
   // --- 1. QUẢN LÝ NGƯỜI DÙNG ---
@@ -179,14 +192,40 @@ export default function AdminPage() {
     }
   };
 
-  // --- 2. QUẢN LÝ TOOL AUTO (GỬI ĐỒNG THỜI CẢ CAMELCASE VÀ SNAKE_CASE ĐỂ KHÔNG BỊ TRỐNG BẢNG) ---
+  // --- 2. QUẢN LÝ TOOL AUTO (TỰ ĐỘNG UPLOAD FILE LÊN SUPABASE STORAGE) ---
   const handleSaveTool = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!toolForm.name) return alert('Nhập tên Tool!');
 
+    setIsUploading(true);
+    let finalImageUrl = toolForm.image;
+
+    // Upload file ảnh từ máy nếu người dùng có chọn
+    if (imageFile) {
+      const fileExt = imageFile.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `tools/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('tool-images')
+        .upload(filePath, imageFile);
+
+      if (uploadError) {
+        setIsUploading(false);
+        return alert('Lỗi tải ảnh lên Supabase Storage: ' + uploadError.message + '\n(Hãy đảm bảo bạn đã tạo bucket public "tool-images")');
+      }
+
+      // Lấy link public của ảnh vừa upload
+      const { data: urlData } = supabase.storage
+        .from('tool-images')
+        .getPublicUrl(filePath);
+
+      finalImageUrl = urlData.publicUrl;
+    }
+
     const payload = {
       name: toolForm.name,
-      image: toolForm.image,
+      image: finalImageUrl,
       priceDay: toolForm.priceDay,
       priceWeek: toolForm.priceWeek,
       priceMonth: toolForm.priceMonth,
@@ -202,12 +241,16 @@ export default function AdminPage() {
       result = await supabase.from('tools').insert([payload]);
     }
 
+    setIsUploading(false);
+
     if (result.error) {
-      alert('Lỗi lưu Tool: ' + result.error.message);
+      alert('Lỗi lưu Tool vào Database: ' + result.error.message);
     } else {
+      setImageFile(null);
+      setPreviewUrl('');
       setToolForm({ id: 0, name: '', image: '', priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '' });
       setIsEditingTool(false);
-      alert('Lưu sản phẩm thành công! Đã đẩy dữ liệu Realtime tới máy khách.');
+      alert('Đã tải ảnh từ máy lên Server và lưu sản phẩm thành công!');
       loadAllSyncData();
     }
   };
@@ -504,21 +547,36 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 2. TAB TOOL AUTO */}
+        {/* 2. TAB TOOL AUTO (ĐÃ CÓ KHUNG CHỌN FILE ÁNH TỪ MÁY TÍNH) */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
               <h3 className="text-xs font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
                 <Plus className="w-4 h-4 text-cyan-400" /> {isEditingTool ? 'Cập nhật Tool' : 'Thêm Tool mới'}
               </h3>
+              
               <div>
                 <label className="block text-[11px] text-slate-400 mb-1">Tên Tool</label>
-                <input type="text" required value={toolForm.name} onChange={e => setToolForm({ ...toolForm, name: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="vd: AUTO FARM F17" />
+                <input type="text" required value={toolForm.name} onChange={e => setToolForm({ ...toolForm, name: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="vd: AUTO FARM F17" />
               </div>
-              <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Link Ảnh Minh Họa</label>
-                <input type="text" value={toolForm.image} onChange={e => setToolForm({ ...toolForm, image: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="https://i.ibb.co/..." />
+
+              {/* Ô CHỌN FILE ẢNH TỪ MÁY TÍNH */}
+              <div className="space-y-2">
+                <label className="block text-[11px] text-slate-400">Ảnh Minh Họa Sản Phẩm</label>
+                
+                <label className="flex items-center justify-center gap-2 bg-[#06090E] border border-dashed border-[#1C2638] hover:border-cyan-500 text-slate-300 p-3 rounded-xl text-xs cursor-pointer transition">
+                  <Upload className="w-4 h-4 text-cyan-400" />
+                  <span className="truncate">{imageFile ? imageFile.name : 'Chọn file ảnh từ máy tính...'}</span>
+                  <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                </label>
+
+                {(previewUrl || toolForm.image) && (
+                  <div className="w-full h-28 bg-[#06090E] border border-[#1C2638] rounded-xl overflow-hidden relative">
+                    <img src={previewUrl || toolForm.image} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
               </div>
+
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-[10px] text-slate-400">Giá Ngày (VNĐ)</label>
@@ -537,15 +595,31 @@ export default function AdminPage() {
                   <input type="text" value={toolForm.priceLifetime} onChange={e => setToolForm({ ...toolForm, priceLifetime: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="100.000" />
                 </div>
               </div>
+
               <div>
                 <label className="block text-[11px] text-slate-400 mb-1">Mô tả sản phẩm</label>
                 <textarea value={toolForm.description} onChange={e => setToolForm({ ...toolForm, description: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="Chi tiết tính năng..." />
               </div>
+
               <div>
                 <label className="block text-[11px] text-slate-400 mb-1">Link Tải Tool</label>
                 <input type="text" value={toolForm.downloadLink} onChange={e => setToolForm({ ...toolForm, downloadLink: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="https://..." />
               </div>
-              <button type="submit" className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer">LƯU TỚI KHÁCH HÀNG (SUPABASE)</button>
+
+              <button 
+                type="submit" 
+                disabled={isUploading}
+                className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer flex items-center justify-center gap-2"
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+                    <span>ĐANG UPLOAD ẢNH & LƯU...</span>
+                  </>
+                ) : (
+                  <span>LƯU TỚI KHÁCH HÀNG (SUPABASE)</span>
+                )}
+              </button>
             </form>
 
             <div className="lg:col-span-2 bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
@@ -559,7 +633,7 @@ export default function AdminPage() {
                       <p className="text-[11px] text-slate-400 line-clamp-1">{t.description}</p>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => { setToolForm(t); setIsEditingTool(true); }} className="text-cyan-400 p-2 hover:bg-cyan-500/10 rounded-lg"><Edit className="w-4 h-4" /></button>
+                      <button onClick={() => { setToolForm(t); setPreviewUrl(t.image); setIsEditingTool(true); }} className="text-cyan-400 p-2 hover:bg-cyan-500/10 rounded-lg"><Edit className="w-4 h-4" /></button>
                       <button onClick={() => handleDeleteTool(t.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
