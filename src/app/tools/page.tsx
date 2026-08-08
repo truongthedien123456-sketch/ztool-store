@@ -116,14 +116,14 @@ export default function ToolsPage() {
           {tools.map((tool) => (
             <div key={tool.id} className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-xl hover:border-neonBlue/50 transition duration-300">
               <div className="space-y-4">
-                {/* Khung hiển thị TRỌN VẸN ĐẦY ĐỦ ẢNH KHÔNG BỊ CẮT XÉN */}
-                <div className="w-full h-48 bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden flex items-center justify-center p-2 relative">
+                {/* Khung chứa ảnh TỈ LỆ DỌC khít 100% không bị thừa nền đen */}
+                <div className="w-full aspect-[4/5] bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
                   <img 
                     src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
                     alt={tool.name} 
-                    className="w-full h-full object-contain" 
+                    className="w-full h-full object-cover" 
                   />
-                  <span className="absolute top-3 right-3 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-extrabold px-2.5 py-1 rounded-lg">
+                  <span className="absolute top-3 right-3 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md">
                     ONLINE 24/7
                   </span>
                 </div>
@@ -177,7 +177,7 @@ export default function ToolsPage() {
         {/* Modal Chi tiết */}
         {selectedToolForDetail && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-            <div className="bg-[#0F141C] border border-[#1A2332] w-full max-w-2xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="bg-[#0F141C] border border-[#1A2332] w-full max-w-xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-2xl max-h-[90vh] overflow-y-auto">
               <button
                 onClick={() => setSelectedToolForDetail(null)}
                 className="absolute top-4 right-4 text-gray-400 hover:text-white p-1.5 rounded-xl bg-[#080B10] border border-[#1A2332]"
@@ -195,11 +195,12 @@ export default function ToolsPage() {
                 </div>
               </div>
 
-              <div className="w-full h-72 bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden p-2 flex items-center justify-center">
+              {/* Khung xem chi tiết ảnh tỉ lệ dọc khít toàn bộ */}
+              <div className="w-full max-w-sm mx-auto aspect-[4/5] bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden">
                 <img 
                   src={selectedToolForDetail.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
                   alt={selectedToolForDetail.name} 
-                  className="w-full h-full object-contain" 
+                  className="w-full h-full object-cover" 
                 />
               </div>
 
