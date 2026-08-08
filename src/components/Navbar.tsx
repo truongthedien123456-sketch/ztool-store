@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { 
   User, Lock, LogIn, UserPlus, LogOut, Wallet, X, AlertCircle, CheckCircle2,
-  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key
+  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -35,10 +35,12 @@ export default function Navbar() {
   const [rechargeAmount, setRechargeAmount] = useState('50000');
   const [copied, setCopied] = useState(false);
 
+  // Danh sách nhật ký giao dịch
+  const [userTransactions, setUserTransactions] = useState<any[]>([]);
+
   useEffect(() => {
     checkLoggedInUser();
 
-    // Lắng nghe click bên ngoài để đóng Dropdown
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowUserDropdown(false);
@@ -59,8 +61,15 @@ export default function Navbar() {
           return;
         }
         setCurrentUser(data);
+        loadUserTransactions(data.username);
       }
     }
+  };
+
+  // Tải tổng hợp nhật ký mua key, nạp tiền và biến động số dư
+  const loadUserTransactions = (username: string) => {
+    const allLogs = JSON.parse(localStorage.getItem('ztool_user_logs_' + username) || '[]');
+    setUserTransactions(allLogs);
   };
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -113,6 +122,18 @@ export default function Navbar() {
       } else {
         localStorage.setItem('ztool_current_user', newUser.username);
         setCurrentUser(newUser);
+        
+        // Ghi log khởi tạo
+        const initLogs = [{
+          id: Date.now(),
+          type: 'INIT',
+          title: 'Khởi tạo tài khoản thành công',
+          amount: 0,
+          time: new Date().toLocaleString('vi-VN')
+        }];
+        localStorage.setItem('ztool_user_logs_' + newUser.username, JSON.stringify(initLogs));
+        setUserTransactions(initLogs);
+
         setAuthMsg({ type: 'success', text: 'Đăng ký tài khoản thành công!' });
         setTimeout(() => {
           setShowAuthModal(false);
@@ -141,6 +162,8 @@ export default function Navbar() {
 
       localStorage.setItem('ztool_current_user', user.username);
       setCurrentUser(user);
+      loadUserTransactions(user.username);
+
       setAuthMsg({ type: 'success', text: 'Đăng nhập thành công!' });
       setTimeout(() => {
         setShowAuthModal(false);
@@ -171,7 +194,6 @@ export default function Navbar() {
   return (
     <>
       <nav className="bg-[#0D121D]/90 backdrop-blur-md border-b border-[#1C2638] sticky top-0 z-40 px-4 lg:px-10 py-3 flex items-center justify-between">
-        {/* LOGO SHOP */}
         <Link href="/" className="flex items-center gap-3 group">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-emerald-400 p-0.5 flex items-center justify-center font-black text-slate-950 text-xl shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition">
             Z
@@ -182,7 +204,6 @@ export default function Navbar() {
           </div>
         </Link>
 
-        {/* MENU ĐIỀU HƯỚNG */}
         <div className="hidden md:flex items-center gap-1 bg-[#06090E] p-1.5 rounded-2xl border border-[#1C2638]">
           <Link 
             href="/" 
@@ -210,11 +231,9 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* USER PROFILE & ACTION BUTTONS */}
         <div className="flex items-center gap-3">
           {currentUser ? (
             <div className="flex items-center gap-3">
-              {/* Nút Nạp Tiền Nổi Bật */}
               <button
                 onClick={() => setShowRechargeModal(true)}
                 className="bg-gradient-to-r from-emerald-500 to-teal-400 hover:opacity-90 text-slate-950 font-extrabold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-emerald-500/20 transition cursor-pointer"
@@ -222,7 +241,6 @@ export default function Navbar() {
                 <PlusCircle className="w-4 h-4" /> Nạp tiền
               </button>
 
-              {/* Profile Card & Dropdown */}
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setShowUserDropdown(!showUserDropdown)}
@@ -242,7 +260,6 @@ export default function Navbar() {
                   <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition duration-200 mr-1 ${showUserDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
-                {/* Dropdown Menu Mở Ra */}
                 {showUserDropdown && (
                   <div className="absolute right-0 mt-2 w-56 bg-[#0D121D] border border-[#1C2638] rounded-2xl p-2 shadow-2xl space-y-1 z-50">
                     <button
@@ -253,7 +270,11 @@ export default function Navbar() {
                     </button>
 
                     <button
-                      onClick={() => { setShowHistoryModal(true); setShowUserDropdown(false); }}
+                      onClick={() => { 
+                        if (currentUser) loadUserTransactions(currentUser.username);
+                        setShowHistoryModal(true); 
+                        setShowUserDropdown(false); 
+                      }}
                       className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-[#141C2B] transition cursor-pointer"
                     >
                       <History className="w-4 h-4 text-emerald-400" /> Lịch sử giao dịch
@@ -290,7 +311,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* MODAL 1: BẢNG NẠP TIỀN TỰ ĐỘNG BẰNG QR SEPAY */}
+      {/* MODAL NẠP TIỀN */}
       {showRechargeModal && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
           <div className="bg-[#0D121D] border border-[#1C2638] w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-2xl">
@@ -328,7 +349,6 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Mã QR Tự Động */}
             <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-2xl flex flex-col items-center space-y-3 text-center">
               <img
                 src={`https://qr.sepay.vn/img?bank=MBBank&acc=0389178917&template=compact&amount=${rechargeAmount}&des=NAP%20${currentUser.username}`}
@@ -355,7 +375,7 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* MODAL 2: BẢNG LỊCH SỬ GIAO DỊCH */}
+      {/* MODAL LỊCH SỬ GIAO DỊCH HIỂN THỊ ĐẦY ĐỦ 3 LOẠI CỘNG/TRỪ/MUA TOOL */}
       {showHistoryModal && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
           <div className="bg-[#0D121D] border border-[#1C2638] w-full max-w-lg rounded-3xl p-6 space-y-5 relative shadow-2xl">
@@ -372,28 +392,58 @@ export default function Navbar() {
               </div>
               <div>
                 <h3 className="text-base font-black text-white">LỊCH SỬ GIAO DỊCH TÀI KHOẢN</h3>
-                <p className="text-xs text-slate-400">Nhật ký nạp tiền và mua Key của {currentUser.username}</p>
+                <p className="text-xs text-slate-400">Nhật ký nạp tiền, biến động số dư & mua Key của {currentUser.username}</p>
               </div>
             </div>
 
-            <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-              <div className="bg-[#06090E] border border-[#1C2638] p-3 rounded-2xl flex items-center justify-between text-xs">
-                <div>
-                  <span className="font-bold text-white block">Tài khoản được khởi tạo</span>
-                  <span className="text-[10px] text-slate-500">
-                    {currentUser.created_at ? new Date(currentUser.created_at).toLocaleString('vi-VN') : 'Gần đây'}
-                  </span>
+            <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+              {userTransactions.length === 0 ? (
+                <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-2xl text-center text-slate-500 text-xs">
+                  Chưa có lịch sử mua tool hay biến động số dư nào.
                 </div>
-                <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
-                  Thành công
-                </span>
-              </div>
+              ) : (
+                userTransactions.map((log: any, idx: number) => (
+                  <div key={idx} className="bg-[#06090E] border border-[#1C2638] p-3.5 rounded-2xl flex items-center justify-between text-xs gap-3">
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center gap-2">
+                        {log.type === 'BUY' && <ArrowDownLeft className="w-4 h-4 text-rose-400 shrink-0" />}
+                        {log.type === 'RECHARGE' && <ArrowUpRight className="w-4 h-4 text-emerald-400 shrink-0" />}
+                        {log.type === 'ADMIN_ADD' && <ArrowUpRight className="w-4 h-4 text-emerald-400 shrink-0" />}
+                        {log.type === 'ADMIN_SUB' && <ArrowDownLeft className="w-4 h-4 text-rose-400 shrink-0" />}
+                        {log.type === 'INIT' && <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />}
+                        
+                        <span className="font-bold text-white leading-snug">{log.title}</span>
+                      </div>
+
+                      {log.key && (
+                        <div className="bg-[#0D121D] border border-[#1C2638] px-2.5 py-1 rounded-lg text-[11px] text-cyan-400 font-mono w-fit">
+                          Key: {log.key}
+                        </div>
+                      )}
+
+                      <span className="text-[10px] text-slate-500 block">{log.time}</span>
+                    </div>
+
+                    {log.amount > 0 ? (
+                      <span className="text-emerald-400 font-black text-xs shrink-0">
+                        +{(log.amount).toLocaleString('vi-VN')}đ
+                      </span>
+                    ) : log.amount < 0 ? (
+                      <span className="text-rose-400 font-black text-xs shrink-0">
+                        {(log.amount).toLocaleString('vi-VN')}đ
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 font-bold text-xs shrink-0">0đ</span>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL 3: XEM THÔNG TIN TÀI KHOẢN */}
+      {/* MODAL THÔNG TIN TÀI KHOẢN */}
       {showAccountInfoModal && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
           <div className="bg-[#0D121D] border border-[#1C2638] w-full max-w-sm rounded-3xl p-6 space-y-5 relative shadow-2xl">
