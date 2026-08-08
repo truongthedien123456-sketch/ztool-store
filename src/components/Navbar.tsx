@@ -576,13 +576,15 @@ export default function Navbar() {
                           </div>
                         </div>
 
-                        {/* KHUNG THÔNG BÁO VĨNH VIỄN CÓ HIỆU ỨNG NHẢY LÊN RƠI XUỐNG CHO TOÀN BỘ KHUNG */}
+                        {/* KHUNG THÔNG BÁO VĨNH VIỄN CỐ ĐỊNH KHUNG, CHỈ NỘI DUNG BÊN TRONG NHẢY LÊN RƠI XUỐNG */}
                         {isLifetime ? (
-                          <div className="relative overflow-hidden bg-gradient-to-r from-cyan-500/20 via-teal-500/20 to-blue-500/20 border-2 border-cyan-400/60 p-4 rounded-2xl text-center shadow-[0_0_20px_rgba(6,182,212,0.25)] flex items-center justify-center gap-2.5 animate-bounce">
-                            <Crown className="w-5 h-5 text-cyan-300 shrink-0" />
-                            <span className="text-xs font-black text-cyan-200 tracking-wide">
-                              Bạn đang sở hữu gói bản quyền Vĩnh Viễn. Không cần gia hạn!
-                            </span>
+                          <div className="bg-gradient-to-r from-cyan-500/20 via-teal-500/20 to-blue-500/20 border-2 border-cyan-400/60 p-4 rounded-2xl text-center shadow-[0_0_20px_rgba(6,182,212,0.25)] flex items-center justify-center">
+                            <div className="inline-flex items-center gap-2.5 animate-bounce">
+                              <Crown className="w-5 h-5 text-cyan-300 shrink-0" />
+                              <span className="text-xs font-black text-cyan-200 tracking-wide">
+                                Bạn đang sở hữu gói bản quyền Vĩnh Viễn. Không cần gia hạn!
+                              </span>
+                            </div>
                           </div>
                         ) : (
                           <div className="space-y-2 pt-1">
