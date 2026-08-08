@@ -323,7 +323,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* MODAL NẠP TIỀN */}
+      {/* MODAL NẠP TIỀN ĐÃ ĐỌC CHÍNH XÁC NGÂN HÀNG BIDV & SỐ TÀI KHOẢN SEPAY */}
       {showRechargeModal && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
           <div className="bg-[#0D121D] border border-[#1C2638] w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-2xl">
@@ -361,11 +361,12 @@ export default function Navbar() {
               </div>
             </div>
 
+            {/* MÃ QR SEPAY VỚI THÔNG TIN BIDV VÀ SỐ TÀI KHOẢN 1490055207 CHUẨN XÁC */}
             <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-2xl flex flex-col items-center space-y-3 text-center">
               <img
-                src={`https://qr.sepay.vn/img?bank=MBBank&acc=0389178917&template=compact&amount=${rechargeAmount}&des=NAP%20${currentUser.username}`}
+                src={`https://qr.sepay.vn/img?bank=BIDV&acc=1490055207&template=compact&amount=${rechargeAmount}&des=${encodeURIComponent(`NAP ${currentUser.username}`)}`}
                 alt="QR SePay"
-                className="w-48 h-48 rounded-xl bg-white p-2"
+                className="w-48 h-48 rounded-xl bg-white p-2 shadow-lg"
               />
               <div className="space-y-1 w-full text-xs">
                 <div className="flex justify-between items-center bg-[#0D121D] p-2.5 rounded-xl border border-[#1C2638]">
