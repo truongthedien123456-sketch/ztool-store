@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { supabase } from '@/lib/supabase';
 import { 
-  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2
+  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag
 } from 'lucide-react';
 
 export default function ToolsPage() {
@@ -15,6 +15,11 @@ export default function ToolsPage() {
   const [selectedDuration, setSelectedDuration] = useState<'day' | 'week' | 'month' | 'lifetime'>('day');
   const [purchaseMsg, setPurchaseMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [loadingBuy, setLoadingBuy] = useState(false);
+
+  // States Mã giảm giá
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
+  const [couponMsg, setCouponMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Modal Xem Chi Tiết Tool
   const [selectedToolForDetail, setSelectedToolForDetail] = useState<any | null>(null);
@@ -30,6 +35,9 @@ export default function ToolsPage() {
         if (found) {
           setSelectedToolForBuy(found);
           setPurchaseMsg(null);
+          setCouponInput('');
+          setAppliedCoupon(null);
+          setCouponMsg(null);
         }
       }
     };
@@ -82,6 +90,42 @@ export default function ToolsPage() {
         }
       ]);
     }
+  };
+
+  // HÀM XỬ LÝ ÁP DỤNG MÃ GIẢM GIÁ
+  const handleApplyCoupon = async () => {
+    setCouponMsg(null);
+    if (!couponInput.trim()) {
+      setCouponMsg({ type: 'error', text: 'Vui lòng nhập mã giảm giá!' });
+      return;
+    }
+
+    const { data: couponData, error } = await supabase
+      .from('coupons')
+      .select('*')
+      .eq('code', couponInput.trim().toUpperCase())
+      .single();
+
+    if (error || !couponData) {
+      setCouponMsg({ type: 'error', text: 'Mã giảm giá không tồn tại hoặc đã hết hạn!' });
+      return;
+    }
+
+    if (couponData.quantity <= 0) {
+      setCouponMsg({ type: 'error', text: 'Mã giảm giá này đã được sử dụng hết số lượng!' });
+      return;
+    }
+
+    const currentToolCode = (selectedToolForBuy?.toolCode || selectedToolForBuy?.tool_code || '').trim().toLowerCase();
+    const couponToolCode = (couponData.tool_code || '').trim().toLowerCase();
+
+    if (couponToolCode !== 'all' && couponToolCode !== currentToolCode) {
+      setCouponMsg({ type: 'error', text: 'Mã giảm giá này không áp dụng cho sản phẩm tool này!' });
+      return;
+    }
+
+    setAppliedCoupon(couponData);
+    setCouponMsg({ type: 'success', text: `Áp dụng mã thành công! Giảm trực tiếp ${Number(couponData.discount_amount).toLocaleString('en-US')}đ` });
   };
 
   const handleBuyTool = async () => {
@@ -156,7 +200,9 @@ export default function ToolsPage() {
       durationDays = 0;
     }
 
-    const priceNum = Number(String(priceStr).replace(/[^0-9]/g, '')) || 0;
+    const basePriceNum = Number(String(priceStr).replace(/[^0-9]/g, '')) || 0;
+    const discountNum = appliedCoupon ? Number(appliedCoupon.discount_amount) || 0 : 0;
+    const priceNum = Math.max(0, basePriceNum - discountNum);
 
     if ((userData.balance || 0) < priceNum) {
       setLoadingBuy(false);
@@ -190,14 +236,24 @@ export default function ToolsPage() {
         return;
       }
 
+      // Giảm số lượng mã giảm giá trên CSDL nếu có sử dụng
+      if (appliedCoupon) {
+        const newQty = Math.max(0, appliedCoupon.quantity - 1);
+        await supabase.from('coupons').update({ quantity: newQty }).eq('id', appliedCoupon.id);
+      }
+
       const newBalance = userData.balance - priceNum;
       await supabase.from('users').update({ balance: newBalance }).eq('id', userData.id);
+
+      const logTitle = appliedCoupon 
+        ? `Mua ${selectedToolForBuy.name} (${durationText}) - Giảm giá mã ${appliedCoupon.code}`
+        : `Mua ${selectedToolForBuy.name} (${durationText})`;
 
       const { error: logError } = await supabase.from('transactions').insert([
         {
           username: currentUsername,
           type: 'BUY',
-          title: `Mua ${selectedToolForBuy.name} (${durationText})`,
+          title: logTitle,
           amount: -priceNum,
           status: 'Thành công'
         }
@@ -295,7 +351,7 @@ export default function ToolsPage() {
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <button
                   disabled={tool.status === 'Tạm ngưng'}
-                  onClick={() => { setSelectedToolForBuy(tool); setPurchaseMsg(null); }}
+                  onClick={() => { setSelectedToolForBuy(tool); setPurchaseMsg(null); setCouponInput(''); setAppliedCoupon(null); setCouponMsg(null); }}
                   className={`font-black py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-md ${
                     tool.status === 'Tạm ngưng' 
                       ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' 
@@ -392,7 +448,7 @@ export default function ToolsPage() {
           </div>
         )}
 
-        {/* Modal Mua / Xác nhận gia hạn (CÓ ẢNH VÀ MÔ TẢ PHÍA TRÊN) */}
+        {/* Modal Mua / Xác nhận gia hạn (CÓ ẢNH, MÔ TẢ VÀ MÃ GIẢM GIÁ) */}
         {selectedToolForBuy && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
             <div className="bg-[#0F141C] border border-[#1A2332] w-full max-w-lg rounded-3xl p-6 space-y-6 relative shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -419,6 +475,33 @@ export default function ToolsPage() {
                 </div>
               </div>
 
+              {/* PHẦN NHẬP MÃ GIẢM GIÁ */}
+              <div className="space-y-2 bg-[#080B10] border border-[#1A2332] p-3.5 rounded-2xl">
+                <label className="block text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <Tag className="w-3.5 h-3.5 text-cyan-400" /> Mã giảm giá (nếu có):
+                </label>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="Nhập mã giảm giá..." 
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value)}
+                    className="flex-1 bg-[#0F141C] border border-[#1C2638] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 uppercase font-mono"
+                  />
+                  <button 
+                    onClick={handleApplyCoupon}
+                    className="bg-cyan-500/20 border border-cyan-500/40 hover:bg-cyan-500/30 text-cyan-300 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer"
+                  >
+                    Áp dụng
+                  </button>
+                </div>
+                {couponMsg && (
+                  <p className={`text-[11px] font-bold ${couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {couponMsg.text}
+                  </p>
+                )}
+              </div>
+
               {purchaseMsg && (
                 <div className={`p-3.5 rounded-xl text-xs font-bold flex items-start gap-2 ${
                   purchaseMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'
@@ -431,45 +514,38 @@ export default function ToolsPage() {
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-slate-300">Chọn gói thời hạn sử dụng:</label>
                 <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setSelectedDuration('day')}
-                    className={`p-3 rounded-2xl border text-left text-xs space-y-1 transition ${
-                      selectedDuration === 'day' ? 'bg-cyan-500/10 border-cyan-400 text-cyan-400' : 'bg-[#080B10] border-[#1A2332] text-slate-400'
-                    }`}
-                  >
-                    <div className="font-bold">Gói 1 Ngày</div>
-                    <div className="text-emerald-400 font-extrabold">{formatPrice(selectedToolForBuy.priceDay)} VNĐ</div>
-                  </button>
+                  {[
+                    { key: 'day', name: 'Gói 1 Ngày', price: selectedToolForBuy.priceDay },
+                    { key: 'week', name: 'Gói 7 Ngày', price: selectedToolForBuy.priceWeek },
+                    { key: 'month', name: 'Gói 30 Ngày', price: selectedToolForBuy.priceMonth },
+                    { key: 'lifetime', name: 'Gói Vĩnh Viễn', price: selectedToolForBuy.priceLifetime },
+                  ].map((pkg) => {
+                    const originalPrice = Number(String(pkg.price || '0').replace(/[^0-9]/g, '')) || 0;
+                    const discountAmt = appliedCoupon ? Number(appliedCoupon.discount_amount) || 0 : 0;
+                    const finalPkgPrice = Math.max(0, originalPrice - discountAmt);
 
-                  <button
-                    onClick={() => setSelectedDuration('week')}
-                    className={`p-3 rounded-2xl border text-left text-xs space-y-1 transition ${
-                      selectedDuration === 'week' ? 'bg-cyan-500/10 border-cyan-400 text-cyan-400' : 'bg-[#080B10] border-[#1A2332] text-slate-400'
-                    }`}
-                  >
-                    <div className="font-bold">Gói 7 Ngày</div>
-                    <div className="text-emerald-400 font-extrabold">{formatPrice(selectedToolForBuy.priceWeek)} VNĐ</div>
-                  </button>
-
-                  <button
-                    onClick={() => setSelectedDuration('month')}
-                    className={`p-3 rounded-2xl border text-left text-xs space-y-1 transition ${
-                      selectedDuration === 'month' ? 'bg-cyan-500/10 border-cyan-400 text-cyan-400' : 'bg-[#080B10] border-[#1A2332] text-slate-400'
-                    }`}
-                  >
-                    <div className="font-bold">Gói 30 Ngày</div>
-                    <div className="text-emerald-400 font-extrabold">{formatPrice(selectedToolForBuy.priceMonth)} VNĐ</div>
-                  </button>
-
-                  <button
-                    onClick={() => setSelectedDuration('lifetime')}
-                    className={`p-3 rounded-2xl border text-left text-xs space-y-1 transition ${
-                      selectedDuration === 'lifetime' ? 'bg-cyan-500/10 border-cyan-400 text-cyan-400' : 'bg-[#080B10] border-[#1A2332] text-slate-400'
-                    }`}
-                  >
-                    <div className="font-bold">Gói Vĩnh Viễn</div>
-                    <div className="text-cyan-400 font-extrabold">{formatPrice(selectedToolForBuy.priceLifetime)} VNĐ</div>
-                  </button>
+                    return (
+                      <button
+                        key={pkg.key}
+                        onClick={() => setSelectedDuration(pkg.key as any)}
+                        className={`p-3 rounded-2xl border text-left text-xs space-y-1 transition ${
+                          selectedDuration === pkg.key ? 'bg-cyan-500/10 border-cyan-400 text-cyan-400' : 'bg-[#080B10] border-[#1A2332] text-slate-400'
+                        }`}
+                      >
+                        <div className="font-bold">{pkg.name}</div>
+                        <div>
+                          {appliedCoupon && discountAmt > 0 && originalPrice > 0 ? (
+                            <div className="flex items-center gap-2">
+                              <span className="line-through text-slate-500 text-[10px]">{formatPrice(originalPrice)}đ</span>
+                              <span className="text-emerald-400 font-extrabold">{formatPrice(finalPkgPrice)} VNĐ</span>
+                            </div>
+                          ) : (
+                            <span className="text-emerald-400 font-extrabold">{formatPrice(originalPrice)} VNĐ</span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

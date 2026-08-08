@@ -6,7 +6,7 @@ import {
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
   Ban, CheckCircle, CreditCard, KeyRound, Search, DollarSign, Settings,
-  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock
+  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -15,7 +15,7 @@ export default function AdminPage() {
   const [passwordInput, setPasswordInput] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'users' | 'tools' | 'projects' | 'gist_accounts' | 'sepay' | 'feedback'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'tools' | 'projects' | 'gist_accounts' | 'sepay' | 'feedback' | 'coupons'>('users');
 
   // Dữ liệu Realtime
   const [users, setUsers] = useState<any[]>([]);
@@ -23,6 +23,7 @@ export default function AdminPage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [sepayLogs, setSepayLogs] = useState<any[]>([]);
+  const [coupons, setCoupons] = useState<any[]>([]);
 
   // Dữ liệu Tài khoản đọc từ GitHub Gist
   const [gistAccounts, setGistAccounts] = useState<any[]>([]);
@@ -75,6 +76,14 @@ export default function AdminPage() {
   const [projectPreviewUrl, setProjectPreviewUrl] = useState<string>('');
   const [isUploadingProject, setIsUploadingProject] = useState(false);
 
+  // State Mã Giảm Giá Form
+  const [couponForm, setCouponForm] = useState({
+    code: '',
+    toolCode: 'ALL',
+    quantity: 50,
+    discountAmount: 5000
+  });
+
   useEffect(() => {
     const isLogged = localStorage.getItem('ztool_admin_authenticated');
     if (isLogged === 'true') {
@@ -89,6 +98,7 @@ export default function AdminPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'feedbacks' }, () => loadAllSyncData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tools' }, () => loadAllSyncData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => loadAllSyncData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'coupons' }, () => loadAllSyncData())
       .subscribe();
 
     const timer = setInterval(() => {
@@ -158,6 +168,9 @@ export default function AdminPage() {
 
       const { data: sepayData } = await supabase.from('transactions').select('*').eq('type', 'RECHARGE').order('id', { ascending: false });
       if (sepayData) setSepayLogs(sepayData);
+
+      const { data: couponData } = await supabase.from('coupons').select('*').order('id', { ascending: false });
+      if (couponData) setCoupons(couponData);
 
       fetchGistAccountsData();
     } catch (e) {
@@ -418,6 +431,33 @@ export default function AdminPage() {
     if (!error) loadAllSyncData();
   };
 
+  // HÀM TẠO MÃ GIẢM GIÁ
+  const handleCreateCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!couponForm.code.trim()) return alert('Vui lòng nhập mã giảm giá!');
+
+    const { error } = await supabase.from('coupons').insert([{
+      code: couponForm.code.trim().toUpperCase(),
+      tool_code: couponForm.toolCode,
+      quantity: Number(couponForm.quantity),
+      discount_amount: Number(couponForm.discountAmount)
+    }]);
+
+    if (error) {
+      alert('Lỗi tạo mã giảm giá: ' + error.message);
+    } else {
+      alert('Tạo mã giảm giá thành công!');
+      setCouponForm({ code: '', toolCode: 'ALL', quantity: 50, discountAmount: 5000 });
+      loadAllSyncData();
+    }
+  };
+
+  const handleDeleteCoupon = async (id: number) => {
+    if (!confirm('Xóa mã giảm giá này khỏi hệ thống?')) return;
+    const { error } = await supabase.from('coupons').delete().eq('id', id);
+    if (!error) loadAllSyncData();
+  };
+
   if (!isAuthenticated) {
     return (
       <main className="min-h-screen bg-[#06090E] text-white font-sans flex flex-col justify-center items-center px-4">
@@ -492,6 +532,9 @@ export default function AdminPage() {
           </button>
           <button onClick={() => setActiveTab('tools')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'tools' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}>
             <Wrench className="w-4 h-4" /> SẢN PHẨM TOOL ({tools.length})
+          </button>
+          <button onClick={() => setActiveTab('coupons')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'coupons' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}>
+            <Tag className="w-4 h-4" /> MÃ GIẢM GIÁ ({coupons.length})
           </button>
           <button onClick={() => setActiveTab('projects')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'projects' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}>
             <FolderKanban className="w-4 h-4" /> DỰ ÁN CỦA SHOP ({projects.length})
@@ -797,7 +840,106 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 3. TAB DỰ ÁN */}
+        {/* 3. TAB MÃ GIẢM GIÁ (COUPONS) */}
+        {activeTab === 'coupons' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <form onSubmit={handleCreateCoupon} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
+              <h3 className="text-xs font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
+                <Plus className="w-4 h-4 text-cyan-400" /> Tạo Mã Giảm Giá Mới
+              </h3>
+              
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1">Mã Giảm Giá (Code)</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={couponForm.code} 
+                  onChange={e => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })} 
+                  className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none font-mono uppercase" 
+                  placeholder="VD: GIAM5K" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1">Áp dụng cho sản phẩm Tool</label>
+                <select 
+                  value={couponForm.toolCode} 
+                  onChange={e => setCouponForm({ ...couponForm, toolCode: e.target.value })} 
+                  className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none"
+                >
+                  <option value="ALL">Tất cả sản phẩm (ALL)</option>
+                  {tools.map((t) => (
+                    <option key={t.id} value={t.toolCode || t.tool_code}>
+                      {t.name} ({t.toolCode || t.tool_code || 'Chưa có mã'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1">Số lượng mã khả dụng</label>
+                <input 
+                  type="number" 
+                  min="1" 
+                  required 
+                  value={couponForm.quantity} 
+                  onChange={e => setCouponForm({ ...couponForm, quantity: Number(e.target.value) })} 
+                  className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none" 
+                  placeholder="50" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1">Số tiền được giảm (VNĐ)</label>
+                <input 
+                  type="number" 
+                  min="1000" 
+                  required 
+                  value={couponForm.discountAmount} 
+                  onChange={e => setCouponForm({ ...couponForm, discountAmount: Number(e.target.value) })} 
+                  className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2.5 text-xs text-white focus:outline-none" 
+                  placeholder="5000" 
+                />
+              </div>
+
+              <button type="submit" className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer flex items-center justify-center gap-2">
+                + PHÁT HÀNH MÃ GIẢM GIÁ
+              </button>
+            </form>
+
+            <div className="lg:col-span-2 bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
+              <h3 className="text-xs font-bold text-white border-b border-[#1C2638] pb-3 uppercase">DANH SÁCH MÃ GIẢM GIÁ ĐANG KHẢ DỤNG</h3>
+              <div className="space-y-3">
+                {coupons.length === 0 ? (
+                  <p className="text-xs text-slate-500 py-4 text-center">Chưa có mã giảm giá nào được tạo trên hệ thống Supabase.</p>
+                ) : (
+                  coupons.map((c) => (
+                    <div key={c.id} className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl flex items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-black text-cyan-400 text-sm bg-cyan-500/10 border border-cyan-500/30 px-2.5 py-0.5 rounded-lg">
+                            {c.code}
+                          </span>
+                          <span className="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
+                            Tool: {c.tool_code === 'ALL' ? 'TẤT CẢ SẢN PHẨM' : c.tool_code}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-300">
+                          Giảm: <b className="text-emerald-400 font-bold">{Number(c.discount_amount).toLocaleString('vi-VN')} VNĐ</b> | Còn lại: <b className="text-amber-400 font-bold">{c.quantity} mã</b>
+                        </div>
+                      </div>
+                      <button onClick={() => handleDeleteCoupon(c.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg cursor-pointer">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 4. TAB DỰ ÁN */}
         {activeTab === 'projects' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveProject} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
@@ -862,7 +1004,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 4. TAB KHO ACC TOOL */}
+        {/* 5. TAB KHO ACC TOOL */}
         {activeTab === 'gist_accounts' && (
           <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-[#1C2638] pb-3">
@@ -919,7 +1061,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 5. TAB SEPAY */}
+        {/* 6. TAB SEPAY */}
         {activeTab === 'sepay' && (
           <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
             <h2 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
@@ -954,7 +1096,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 6. TAB ĐÓNG GÓP DỰ ÁN TOOL */}
+        {/* 7. TAB ĐÓNG GÓP DỰ ÁN TOOL */}
         {activeTab === 'feedback' && (
           <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
             <h2 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
