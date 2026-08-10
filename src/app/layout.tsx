@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-// IMPORT THÊM NAVBAR VÀO ĐÂY
-import Navbar from "@/components/Navbar"; 
+
+// Navbar
+import Navbar from "@/components/Navbar";
+
+// Footer
+import Footer from "@/components/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,7 +23,6 @@ export const metadata: Metadata = {
   description: "Hệ thống tự động hóa trải nghiệm game của bạn",
 };
 
-// Đã cập nhật tham số children cho đúng cú pháp TypeScript của Layout
 export default function RootLayout({
   children,
 }: {
@@ -27,13 +30,22 @@ export default function RootLayout({
 }) {
   return (
     <html
-      lang="en"
+      lang="vi"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#080B10] text-white">
-        {/* ĐẶT NAVBAR Ở ĐÂY ĐỂ NÓ LUÔN ĐỨNG YÊN KHI CHUYỂN TRANG */}
+      <body className="min-h-screen bg-[#05080d] text-white">
+        
+        {/* NAVBAR */}
         <Navbar />
-        {children}
+
+        {/* NỘI DUNG TRANG */}
+        <main className="min-h-screen">
+          {children}
+        </main>
+
+        {/* FOOTER */}
+        <Footer />
+
       </body>
     </html>
   );
