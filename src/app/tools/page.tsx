@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Navbar from '@/components/Navbar';
 import { supabase } from '@/lib/supabase';
 import { 
   Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag
@@ -283,10 +282,8 @@ export default function ToolsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#080B10] text-white font-sans pb-20">
-      <Navbar />
-
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <main className="font-sans pb-20">
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 animate-slide-up">
         <div className="text-center space-y-3 border-b border-[#1A2332] pb-8">
           <div className="inline-flex items-center gap-2 bg-[#06090E] border border-cyan-500/30 px-4 py-1.5 rounded-full text-xs font-bold text-cyan-400">
             <Sparkles className="w-4 h-4" /> BẢNG HÃNG TOOL AUTO HIGH-QUALITY
