@@ -43,6 +43,7 @@ export default function Navbar() {
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [checkInLoading, setCheckInLoading] = useState(false);
   const [checkInMsg, setCheckInMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [hasCheckedInToday, setHasCheckedInToday] = useState(false); // <--- Trạng thái đã điểm danh
 
   const [rechargeAmount, setRechargeAmount] = useState('50000');
   const [copied, setCopied] = useState(false);
@@ -123,6 +124,34 @@ export default function Navbar() {
     };
   }, [currentUser?.username]);
 
+  // KIỂM TRA XEM HÔM NAY ĐÃ ĐIỂM DANH CHƯA ĐỂ XÁM NÚT
+  const checkTodayCheckInStatus = async (username: string) => {
+    try {
+      const { data: lastCheckIn } = await supabase
+        .from('transactions')
+        .select('created_at')
+        .eq('username', username)
+        .eq('type', 'CHECKIN')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (lastCheckIn) {
+        const today = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+        const lastCheckInDate = new Date(lastCheckIn.created_at).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+        if (lastCheckInDate === today) {
+          setHasCheckedInToday(true);
+        } else {
+          setHasCheckedInToday(false);
+        }
+      } else {
+        setHasCheckedInToday(false);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const checkLoggedInUser = async () => {
     const savedUser = localStorage.getItem('ztool_current_user');
     if (savedUser) {
@@ -134,6 +163,7 @@ export default function Navbar() {
           return;
         }
         setCurrentUser(data);
+        checkTodayCheckInStatus(data.username); // Kiểm tra điểm danh ngay khi đăng nhập
       } else {
         localStorage.removeItem('ztool_current_user');
       }
@@ -297,6 +327,7 @@ export default function Navbar() {
         setTimeout(() => {
           setShowAuthModal(false);
           resetForm();
+          checkTodayCheckInStatus(newUser.username);
         }, 500);
       }
     } else {
@@ -327,6 +358,7 @@ export default function Navbar() {
       setTimeout(() => {
         setShowAuthModal(false);
         resetForm();
+        checkTodayCheckInStatus(user.username);
       }, 500);
     }
   };
@@ -338,6 +370,7 @@ export default function Navbar() {
     localStorage.removeItem('ztool_current_user');
     setCurrentUser(null);
     setShowUserDropdown(false);
+    setHasCheckedInToday(false);
   };
 
   // HÀM XỬ LÝ ĐIỂM DANH HÀNG NGÀY
@@ -360,6 +393,7 @@ export default function Navbar() {
       if (lastCheckIn) {
         const lastCheckInDate = new Date(lastCheckIn.created_at).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
         if (lastCheckInDate === today) {
+          setHasCheckedInToday(true);
           setCheckInMsg({ type: 'error', text: 'Bạn đã điểm danh hôm nay rồi. Hãy quay lại vào ngày mai nhé!' });
           setCheckInLoading(false);
           return;
@@ -387,6 +421,7 @@ export default function Navbar() {
       ]);
 
       setCurrentUser({ ...currentUser, balance: newBalance });
+      setHasCheckedInToday(true); // Khóa nút ngay lập tức
       setCheckInMsg({ type: 'success', text: 'Điểm danh thành công! Bạn nhận được +1,000 VNĐ.' });
 
     } catch (err: any) {
@@ -457,20 +492,37 @@ export default function Navbar() {
           {currentUser ? (
             <div className="flex items-center gap-3">
               
-              {/* NÚT ĐIỂM DANH MỚI - CHẤM ĐỎ BÊN TRONG TINH TẾ */}
+              {/* NÚT ĐIỂM DANH (XÁM KHI ĐÃ ĐIỂM DANH, PHÁT SÁNG KHI CHƯA ĐIỂM DANH) */}
               <button
+                disabled={hasCheckedInToday}
                 onClick={() => { setShowCheckInModal(true); setCheckInMsg(null); }}
-                className="relative group overflow-hidden bg-gradient-to-r from-[#0D121D] to-[#141C2B] border-2 border-cyan-500/60 hover:border-cyan-300 text-cyan-300 font-black px-4 py-2.5 rounded-2xl text-sm flex items-center gap-2 shadow-[0_0_15px_rgba(6,182,212,0.2)] hover:shadow-[0_0_20px_rgba(6,182,212,0.5)] transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
+                className={`relative group overflow-hidden border-2 px-4 py-2.5 rounded-2xl text-sm flex items-center gap-2 transition-all duration-300 ${
+                  hasCheckedInToday
+                    ? 'bg-[#0D121D] border-[#1C2638] text-slate-500 cursor-not-allowed opacity-90'
+                    : 'bg-gradient-to-r from-[#0D121D] to-[#141C2B] border-cyan-500/60 hover:border-cyan-300 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)] hover:shadow-[0_0_20px_rgba(6,182,212,0.5)] hover:-translate-y-0.5 cursor-pointer'
+                }`}
               >
-                <div className="absolute inset-0 bg-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <Gift className="w-4 h-4 text-cyan-400 group-hover:animate-bounce relative z-10" />
-                <span className="relative z-10 flex items-center gap-1.5">
-                  Điểm danh
-                  {/* Chấm đỏ lồng ghép gọn gàng bên trong */}
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]"></span>
-                  </span>
+                {!hasCheckedInToday && (
+                  <div className="absolute inset-0 bg-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                )}
+                
+                <Gift className={`w-4 h-4 relative z-10 ${hasCheckedInToday ? 'text-slate-500' : 'text-cyan-400 group-hover:animate-bounce'}`} />
+                
+                <span className="relative z-10 flex items-center gap-1.5 font-black">
+                  {hasCheckedInToday ? 'Đã điểm danh' : 'Điểm danh'}
+                  
+                  {/* Chấm đỏ lồng ghép gọn gàng bên trong (chỉ hiện khi CHƯA điểm danh) */}
+                  {!hasCheckedInToday && (
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]"></span>
+                    </span>
+                  )}
+
+                  {/* Icon Check khi ĐÃ điểm danh */}
+                  {hasCheckedInToday && (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-500" />
+                  )}
                 </span>
               </button>
 
@@ -602,17 +654,17 @@ export default function Navbar() {
             )}
 
             <button 
-              disabled={checkInLoading || checkInMsg?.type === 'success'}
+              disabled={checkInLoading || checkInMsg?.type === 'success' || hasCheckedInToday}
               onClick={handleDailyCheckIn} 
               className={`w-full font-black py-3.5 rounded-2xl text-xs shadow-lg transition flex items-center justify-center gap-2 ${
-                checkInMsg?.type === 'success' 
+                (checkInMsg?.type === 'success' || hasCheckedInToday)
                   ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
                   : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-cyan-500/20 cursor-pointer hover:-translate-y-0.5'
               }`}
             >
               {checkInLoading ? (
                 <><Loader2 className="w-4 h-4 animate-spin text-slate-950" /> ĐANG XỬ LÝ...</>
-              ) : checkInMsg?.type === 'success' ? (
+              ) : (checkInMsg?.type === 'success' || hasCheckedInToday) ? (
                 <><CheckCircle2 className="w-4 h-4" /> ĐÃ ĐIỂM DANH HÔM NAY</>
               ) : (
                 <><Gift className="w-4 h-4" /> ĐIỂM DANH NGAY</>
