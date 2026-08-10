@@ -347,7 +347,6 @@ export default function Navbar() {
     setCheckInLoading(true);
 
     try {
-      // 1. Lấy giao dịch điểm danh gần nhất của user
       const { data: lastCheckIn } = await supabase
         .from('transactions')
         .select('created_at')
@@ -357,7 +356,6 @@ export default function Navbar() {
         .limit(1)
         .single();
 
-      // 2. Kiểm tra xem hôm nay đã điểm danh chưa
       const today = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
       if (lastCheckIn) {
         const lastCheckInDate = new Date(lastCheckIn.created_at).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
@@ -368,7 +366,6 @@ export default function Navbar() {
         }
       }
 
-      // 3. Nếu chưa điểm danh -> Cộng tiền
       const rewardAmount = 1000;
       const newBalance = (currentUser.balance || 0) + rewardAmount;
       
@@ -379,7 +376,6 @@ export default function Navbar() {
 
       if (updateErr) throw updateErr;
 
-      // 4. Ghi lại lịch sử
       await supabase.from('transactions').insert([
         {
           username: currentUser.username,
@@ -390,7 +386,6 @@ export default function Navbar() {
         }
       ]);
 
-      // 5. Cập nhật giao diện
       setCurrentUser({ ...currentUser, balance: newBalance });
       setCheckInMsg({ type: 'success', text: 'Điểm danh thành công! Bạn nhận được +1,000 VNĐ.' });
 
@@ -416,11 +411,11 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="bg-[#080B10]/95 backdrop-blur-md border-b-2 border-cyan-400/50 sticky top-0 z-40 px-4 lg:px-8 py-3.5 flex items-center justify-between shadow-lg shadow-cyan-500/15">
+      <nav className="bg-[#080B10]/95 backdrop-blur-md border-b-2 border-cyan-400/50 sticky top-0 z-40 px-4 lg:px-8 py-3 flex items-center justify-between shadow-lg shadow-cyan-500/15">
         
         {/* LOGO ZTOOL */}
         <Link href="/" className="flex items-center gap-3.5 group">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#06090E] p-1 border-2 border-cyan-400 shadow-xl shadow-cyan-400/60 group-hover:scale-105 group-hover:border-cyan-300 transition duration-300 overflow-hidden shrink-0">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#06090E] p-1 border-2 border-cyan-400 shadow-lg shadow-cyan-400/40 group-hover:scale-105 group-hover:border-cyan-300 transition duration-300 overflow-hidden shrink-0">
             <img 
               src="/logo.jpg" 
               alt="ZTool Logo" 
@@ -429,12 +424,12 @@ export default function Navbar() {
           </div>
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-white tracking-wider leading-none group-hover:text-cyan-300 transition drop-shadow-[0_0_12px_rgba(6,182,212,0.8)]">ZTOOL</h1>
-            <span className="text-xs font-bold text-cyan-300 tracking-wide block mt-1">Chuyên Cung Cấp Tool FiveM</span>
+            <span className="text-[11px] font-bold text-cyan-300 tracking-wide block mt-1">Chuyên Cung Cấp Tool FiveM</span>
           </div>
         </Link>
 
         {/* MENU ĐIỀU HƯỚNG */}
-        <div className="hidden md:flex items-center gap-2.5 bg-[#06090E] p-2 rounded-2xl border-2 border-cyan-400/50 shadow-2xl shadow-cyan-500/25">
+        <div className="hidden md:flex items-center gap-2 bg-[#06090E] p-1.5 rounded-2xl border-2 border-[#1C2638] shadow-xl">
           {[
             { name: 'Trang chủ', path: '/' },
             { name: 'TOOL AUTO', path: '/tools' },
@@ -445,10 +440,10 @@ export default function Navbar() {
               <Link 
                 key={item.path}
                 href={item.path} 
-                className={`min-w-[120px] text-center px-4 py-2.5 rounded-xl text-sm font-black transition-all duration-300 border-2 cursor-pointer flex items-center justify-center select-none ${
+                className={`min-w-[110px] text-center px-4 py-2.5 rounded-xl text-sm font-black transition-all duration-300 cursor-pointer flex items-center justify-center select-none ${
                   isActive 
-                    ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.5)]' 
-                    : 'text-slate-100 border-transparent hover:border-cyan-500/40 hover:text-cyan-300 hover:bg-[#0D121D] hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]'
+                    ? 'bg-cyan-500 text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.4)]' 
+                    : 'text-slate-300 hover:text-cyan-300 hover:bg-[#0D121D]'
                 }`}
               >
                 {item.name}
@@ -458,48 +453,59 @@ export default function Navbar() {
         </div>
 
         {/* NẠP TIỀN, ĐIỂM DANH & VÍ TIỀN */}
-        <div className="flex items-center gap-3.5">
+        <div className="flex items-center gap-3">
           {currentUser ? (
-            <div className="flex items-center gap-3.5">
+            <div className="flex items-center gap-3">
               
-              {/* NÚT ĐIỂM DANH */}
+              {/* NÚT ĐIỂM DANH MỚI - ĐẸP & PHÁT SÁNG */}
               <button
                 onClick={() => { setShowCheckInModal(true); setCheckInMsg(null); }}
-                className="bg-[#0D121D] border-2 border-cyan-500/50 hover:border-cyan-400 text-cyan-400 font-black px-4 py-2.5 rounded-2xl text-sm flex items-center gap-2 shadow-lg shadow-cyan-500/20 transition cursor-pointer hover:scale-105"
+                className="relative group overflow-hidden bg-gradient-to-r from-[#0D121D] to-[#141C2B] border-2 border-cyan-500/60 hover:border-cyan-300 text-cyan-300 font-black px-4 py-2.5 rounded-2xl text-sm flex items-center gap-2 shadow-[0_0_15px_rgba(6,182,212,0.2)] hover:shadow-[0_0_20px_rgba(6,182,212,0.5)] transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
               >
-                <CalendarCheck className="w-5 h-5" /> Điểm danh
+                <div className="absolute inset-0 bg-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <Gift className="w-4 h-4 text-cyan-400 group-hover:animate-bounce relative z-10" />
+                <span className="relative z-10">Điểm danh</span>
+                {/* Dấu chấm đỏ thông báo nổi bật */}
+                <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-500 border-2 border-[#080B10]"></span>
+                </span>
               </button>
 
+              {/* NÚT NẠP TIỀN */}
               <button
                 onClick={() => setShowRechargeModal(true)}
-                className="bg-gradient-to-r from-emerald-400 to-teal-300 hover:brightness-110 text-slate-950 font-black px-5 py-3 rounded-2xl text-sm flex items-center gap-2 shadow-xl shadow-emerald-400/50 transition cursor-pointer hover:scale-105 border-2 border-emerald-200"
+                className="bg-gradient-to-r from-emerald-400 to-teal-300 hover:brightness-110 text-slate-950 font-black px-5 py-2.5 rounded-2xl text-sm flex items-center gap-2 shadow-lg shadow-emerald-400/40 transition cursor-pointer hover:-translate-y-0.5 border-2 border-emerald-200"
               >
-                <PlusCircle className="w-5 h-5 text-slate-950 stroke-[2.5]" /> Nạp tiền
+                <PlusCircle className="w-4 h-4 text-slate-950 stroke-[2.5]" /> Nạp tiền
               </button>
 
+              {/* KHUNG TÀI KHOẢN & SỐ DƯ MỚI (DẠNG PILL) */}
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setShowUserDropdown(!showUserDropdown)}
-                  className="flex items-center gap-4 bg-[#06090E] border-2 border-emerald-400 hover:border-emerald-300 p-2.5 pl-4 rounded-2xl transition cursor-pointer shadow-xl shadow-emerald-400/30 group hover:-translate-y-0.5"
+                  className="flex items-center gap-3 bg-[#0D121D] border-2 border-[#1C2638] hover:border-cyan-500/60 p-1.5 pr-4 rounded-full transition-all duration-300 shadow-lg hover:shadow-cyan-500/20 group cursor-pointer"
                 >
-                  <div className="text-right leading-tight">
-                    <span className="text-base font-black text-white block group-hover:text-cyan-300 transition">{currentUser.username}</span>
-                    <span className="text-xs font-black text-emerald-300 bg-emerald-500/20 px-3 py-1 rounded-lg border-2 border-emerald-400 inline-block mt-1 shadow-inner">
-                      {(currentUser.balance || 0).toLocaleString('vi-VN')} VNĐ
+                  {/* AVATAR TRÒN BÊN TRÁI */}
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-lg shrink-0 relative shadow-inner">
+                    {currentUser.username.substring(0, 1).toUpperCase()}
+                    <span className="w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#0D121D] absolute bottom-0 right-0 animate-pulse"></span>
+                  </div>
+
+                  {/* THÔNG TIN BÊN PHẢI */}
+                  <div className="text-left leading-none flex flex-col justify-center">
+                    <span className="text-sm font-black text-white group-hover:text-cyan-300 transition truncate max-w-[100px]">{currentUser.username}</span>
+                    <span className="text-[11px] font-bold text-emerald-400 mt-1 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/20 w-fit">
+                      <Wallet className="w-3 h-3" /> {(currentUser.balance || 0).toLocaleString('vi-VN')} đ
                     </span>
                   </div>
 
-                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-500/30 to-emerald-500/30 border-2 border-cyan-300 flex items-center justify-center text-cyan-300 font-black text-lg shrink-0 relative shadow-md shadow-cyan-400/50">
-                    {currentUser.username.substring(0, 1).toUpperCase()}
-                    <span className="w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-[#06090E] absolute -bottom-0.5 -right-0.5 animate-pulse"></span>
-                  </div>
-
-                  <ChevronDown className={`w-4 h-4 text-slate-300 transition duration-200 mr-1 ${showUserDropdown ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-300 ml-1 ${showUserDropdown ? 'rotate-180 text-cyan-400' : 'group-hover:text-cyan-400'}`} />
                 </button>
 
                 {/* USER DROPDOWN MENU */}
                 {showUserDropdown && (
-                  <div className="absolute right-0 mt-2 w-64 bg-[#0D121D] border-2 border-cyan-400 rounded-2xl p-2.5 shadow-2xl shadow-cyan-500/35 space-y-1 z-50">
+                  <div className="absolute right-0 mt-3 w-64 bg-[#0D121D] border-2 border-cyan-400 rounded-2xl p-2.5 shadow-2xl shadow-cyan-500/35 space-y-1 z-50">
                     <button
                       onClick={() => { setShowAccountInfoModal(true); setShowUserDropdown(false); }}
                       className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-[#141C2B] transition cursor-pointer"
@@ -507,7 +513,6 @@ export default function Navbar() {
                       <User className="w-4 h-4 text-cyan-400" /> Thông tin tài khoản
                     </button>
 
-                    {/* MỤC TOOL ĐÃ MUA */}
                     <button
                       onClick={() => { 
                         if (currentUser) loadUserGistData(currentUser.username);
@@ -546,13 +551,13 @@ export default function Navbar() {
             <div className="flex items-center gap-2.5">
               <button
                 onClick={() => { setAuthModalMode('login'); resetForm(); setShowAuthModal(true); }}
-                className="bg-[#06090E] border-2 border-cyan-500/60 hover:border-cyan-400 text-slate-100 text-xs font-black px-5 py-3 rounded-2xl transition cursor-pointer flex items-center gap-2 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-cyan-400/40"
+                className="bg-[#0D121D] border-2 border-cyan-500/60 hover:border-cyan-400 text-slate-100 text-xs font-black px-5 py-2.5 rounded-2xl transition cursor-pointer flex items-center gap-2 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-cyan-400/40"
               >
                 <LogIn className="w-4 h-4 text-cyan-400" /> ĐĂNG NHẬP
               </button>
               <button
                 onClick={() => { setAuthModalMode('register'); resetForm(); setShowAuthModal(true); }}
-                className="bg-cyan-400 hover:bg-cyan-300 text-slate-950 text-xs font-black px-5 py-3 rounded-2xl transition cursor-pointer flex items-center gap-2 shadow-lg shadow-cyan-400/50 hover:-translate-y-0.5"
+                className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black px-5 py-2.5 rounded-2xl transition cursor-pointer flex items-center gap-2 shadow-lg shadow-cyan-500/40 hover:-translate-y-0.5"
               >
                 <UserPlus className="w-4 h-4" /> ĐĂNG KÝ
               </button>
@@ -602,7 +607,7 @@ export default function Navbar() {
               className={`w-full font-black py-3.5 rounded-2xl text-xs shadow-lg transition flex items-center justify-center gap-2 ${
                 checkInMsg?.type === 'success' 
                   ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                  : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-cyan-500/20 cursor-pointer'
+                  : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-cyan-500/20 cursor-pointer hover:-translate-y-0.5'
               }`}
             >
               {checkInLoading ? (
@@ -701,7 +706,7 @@ export default function Navbar() {
                           </div>
                         </div>
 
-                        {/* KHUNG THÔNG BÁO VĨNH VIỄN - HIỆU ỨNG NHỊP ĐẬP (PULSE) ĐỒNG BỘ VỚI TRANG */}
+                        {/* KHUNG THÔNG BÁO VĨNH VIỄN */}
                         {isLifetime ? (
                           <div className="bg-[#080B10] border-2 border-cyan-500/50 p-4 rounded-2xl text-center shadow-[0_0_15px_rgba(6,182,212,0.2)] flex items-center justify-center">
                             <div className="inline-flex items-center gap-2.5 animate-pulse">
