@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { 
   User, Lock, LogIn, UserPlus, LogOut, Wallet, X, AlertCircle, CheckCircle2,
-  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift
+  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift, Bell
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -57,6 +57,9 @@ export default function Navbar() {
   const [rechargeAmount, setRechargeAmount] = useState('50000');
   const [copied, setCopied] = useState(false);
 
+  // Dữ liệu Thông báo Chung từ Admin
+  const [announcement, setAnnouncement] = useState<{ text: string, active: boolean } | null>(null);
+
   // Dữ liệu Gist và Lịch sử
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -68,6 +71,7 @@ export default function Navbar() {
   useEffect(() => {
     checkLoggedInUser();
     loadAllToolsMeta();
+    loadAnnouncement();
 
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -88,6 +92,17 @@ export default function Navbar() {
     const { data } = await supabase.from('tools').select('*');
     if (data) {
       setToolsList(data);
+    }
+  };
+
+  const loadAnnouncement = async () => {
+    try {
+      const { data } = await supabase.from('settings').select('*').eq('id', 1).single();
+      if (data) {
+        setAnnouncement({ text: data.notice_text, active: data.is_active });
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -392,6 +407,14 @@ export default function Navbar() {
 
   return (
     <>
+      {/* THÔNG BÁO CHUNG HIỂN THỊ TRÊN CÙNG CỦA NAVBAR */}
+      {announcement?.active && announcement?.text && (
+        <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 text-slate-950 font-black text-xs py-2 px-4 text-center relative z-50 shadow-md flex items-center justify-center gap-2 overflow-hidden">
+          <Bell className="w-4 h-4 text-slate-950 animate-bounce shrink-0" />
+          <span className="tracking-wide uppercase truncate">THÔNG BÁO: {announcement.text}</span>
+        </div>
+      )}
+
       <nav className="bg-[#080B10]/95 backdrop-blur-md border-b-2 border-cyan-400/50 sticky top-0 z-40 px-4 lg:px-8 py-3 flex items-center justify-between shadow-lg shadow-cyan-500/15">
         
         {/* LOGO ZTOOL */}

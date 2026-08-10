@@ -26,6 +26,7 @@ export default function AdminPage() {
   
   // State Thông báo
   const [noticeForm, setNoticeForm] = useState({ text: '', active: false });
+  const [currentActiveNotice, setCurrentActiveNotice] = useState<{ text: string, active: boolean } | null>(null);
 
   const [gistAccounts, setGistAccounts] = useState<any[]>([]);
   const [loadingGist, setLoadingGist] = useState(false);
@@ -122,8 +123,12 @@ export default function AdminPage() {
       const { data: couponData } = await supabase.from('coupons').select('*').order('id', { ascending: false });
       if (couponData) setCoupons(couponData);
 
+      // Load Thông Báo từ bảng settings
       const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
-      if (settingsData) setNoticeForm({ text: settingsData.notice_text || '', active: settingsData.is_active });
+      if (settingsData) {
+        setNoticeForm({ text: settingsData.notice_text || '', active: settingsData.is_active });
+        setCurrentActiveNotice({ text: settingsData.notice_text || '', active: settingsData.is_active });
+      }
 
       fetchGistAccountsData();
     } catch (e) { console.error('Lỗi đồng bộ dữ liệu Supabase:', e); }
@@ -244,14 +249,19 @@ export default function AdminPage() {
 
   const handleDeleteCoupon = async (id: number) => { if (!confirm('Xóa mã giảm giá này khỏi hệ thống?')) return; const { error } = await supabase.from('coupons').delete().eq('id', id); if (!error) loadAllSyncData(); };
 
+  // HÀM LƯU THÔNG BÁO VÀ ĐƯA RA Ô HIỂN THỊ KẾ BÊN
   const handleSaveNotice = async () => {
     const { error } = await supabase.from('settings').upsert({ 
       id: 1, 
       notice_text: noticeForm.text, 
       is_active: noticeForm.active 
     });
-    if (error) alert('Lỗi lưu thông báo: ' + error.message);
-    else alert('Đã lưu cài đặt thông báo thành công!');
+    if (error) {
+      alert('Lỗi lưu thông báo: ' + error.message);
+    } else {
+      setCurrentActiveNotice({ text: noticeForm.text, active: noticeForm.active });
+      alert('Đã lưu và cập nhật thông báo thành công!');
+    }
   };
 
   if (!isAuthenticated) {
@@ -318,43 +328,74 @@ export default function AdminPage() {
           <button onClick={() => setActiveTab('settings')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'settings' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-amber-400 hover:text-amber-300 hover:bg-[#141C2B]'}`}><Bell className="w-4 h-4" /> THÔNG BÁO CHUNG</button>
         </div>
 
-        {/* TAB CÀI ĐẶT THÔNG BÁO */}
+        {/* TAB CÀI ĐẶT THÔNG BÁO (HIỆN Ô CHỈNH SỬA VÀ Ô HIỂN THỊ KẾ BÊN) */}
         {activeTab === 'settings' && (
-          <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
-              <Bell className="w-4 h-4 text-amber-400" /> Cài đặt Thông báo Trang chủ
-            </h3>
-            <div className="space-y-4 max-w-2xl">
-              <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl space-y-3">
-                <label className="block text-xs font-bold text-slate-300">Nội dung thông báo gửi đến khách hàng:</label>
-                <textarea 
-                  rows={4}
-                  value={noticeForm.text} 
-                  onChange={e => setNoticeForm({ ...noticeForm, text: e.target.value })} 
-                  className="w-full bg-[#0D121D] border border-[#1C2638] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-500/50 transition leading-relaxed" 
-                  placeholder="Nhập nội dung thông báo hiển thị ở trang chủ..." 
-                />
-              </div>
-              <div className="flex items-center justify-between bg-[#06090E] border border-[#1C2638] p-4 rounded-xl">
-                <label className="text-xs font-bold text-slate-300">Trạng thái bật/tắt hiển thị:</label>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Cột Trái: Form chỉnh sửa */}
+            <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
+                <Bell className="w-4 h-4 text-amber-400" /> Soạn thảo / Chỉnh sửa thông báo
+              </h3>
+              <div className="space-y-4">
+                <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl space-y-3">
+                  <label className="block text-xs font-bold text-slate-300">Nội dung thông báo:</label>
+                  <textarea 
+                    rows={4}
+                    value={noticeForm.text} 
+                    onChange={e => setNoticeForm({ ...noticeForm, text: e.target.value })} 
+                    className="w-full bg-[#0D121D] border border-[#1C2638] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-500/50 transition leading-relaxed" 
+                    placeholder="Nhập nội dung thông báo..." 
+                  />
+                </div>
+                <div className="flex items-center justify-between bg-[#06090E] border border-[#1C2638] p-4 rounded-xl">
+                  <label className="text-xs font-bold text-slate-300">Trạng thái bật/tắt hiển thị trên Navbar:</label>
+                  <button 
+                    onClick={() => setNoticeForm({ ...noticeForm, active: !noticeForm.active })}
+                    className={`px-4 py-2 rounded-xl text-xs font-black border transition cursor-pointer flex items-center gap-2 ${noticeForm.active ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
+                  >
+                    {noticeForm.active ? <><CheckCircle className="w-4 h-4"/> ĐANG BẬT</> : <><Ban className="w-4 h-4"/> ĐANG TẮT</>}
+                  </button>
+                </div>
                 <button 
-                  onClick={() => setNoticeForm({ ...noticeForm, active: !noticeForm.active })}
-                  className={`px-5 py-2.5 rounded-xl text-xs font-black border transition cursor-pointer flex items-center gap-2 ${noticeForm.active ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
+                  onClick={handleSaveNotice}
+                  className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-6 py-3.5 rounded-xl text-xs transition shadow-lg shadow-amber-500/20 cursor-pointer flex items-center justify-center gap-2"
                 >
-                  {noticeForm.active ? <><CheckCircle className="w-4 h-4"/> ĐANG BẬT HIỂN THỊ</> : <><Ban className="w-4 h-4"/> ĐANG TẮT</>}
+                  <Upload className="w-4 h-4" /> LƯU VÀ CẬP NHẬT THÔNG BÁO
                 </button>
               </div>
-              <button 
-                onClick={handleSaveNotice}
-                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-6 py-3.5 rounded-xl text-xs transition shadow-lg shadow-amber-500/20 cursor-pointer flex items-center gap-2"
-              >
-                <Upload className="w-4 h-4" /> LƯU THIẾT LẬP THÔNG BÁO
-              </button>
+            </div>
+
+            {/* Cột Phải: Ô kế bên hiển thị thông báo đang hoạt động kèm nút Chỉnh sửa nhanh */}
+            <div className="bg-[#0D121D] border border-amber-500/40 rounded-2xl p-6 space-y-4 h-fit shadow-xl shadow-amber-500/5">
+              <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
+                <CheckCircle className="w-4 h-4 text-amber-400" /> Thông báo đang hoạt động thực tế
+              </h3>
+              <div className="bg-[#06090E] border border-[#1C2638] p-5 rounded-xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">TRẠNG THÁI TRÊN NAVBAR:</span>
+                  <span className={`text-[10px] font-black px-2.5 py-1 rounded border ${currentActiveNotice?.active ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-rose-500/20 text-rose-400 border-rose-500/40'}`}>
+                    {currentActiveNotice?.active ? 'ĐANG HIỂN THỊ' : 'ĐANG ẨN'}
+                  </span>
+                </div>
+                <div className="bg-[#0D121D] border border-[#1C2638] p-4 rounded-xl text-xs text-slate-200 leading-relaxed whitespace-pre-line min-h-[90px]">
+                  {currentActiveNotice?.text ? currentActiveNotice.text : <span className="text-slate-500 italic">Chưa có thông báo nào được lưu hoặc đang trống.</span>}
+                </div>
+                <button
+                  onClick={() => {
+                    if (currentActiveNotice) {
+                      setNoticeForm({ text: currentActiveNotice.text, active: currentActiveNotice.active });
+                    }
+                  }}
+                  className="w-full bg-[#141C2B] border border-cyan-500/40 hover:border-cyan-400 text-cyan-400 font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                >
+                  <Edit className="w-3.5 h-3.5" /> CHỈNH SỬA LẠI NỘI DUNG NÀY
+                </button>
+              </div>
             </div>
           </div>
         )}
 
-        {/* TAB USERS */}
+        {/* CÁC TAB KHÁC... */}
         {activeTab === 'users' && (
           <div className="space-y-6">
             <form onSubmit={handleCreateUser} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
@@ -473,7 +514,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB GIST ACCOUNTS (ĐÃ BỔ SUNG LẠI CỘT DEVICE_ID) */}
+        {/* GIST ACCOUNTS TAB */}
         {activeTab === 'gist_accounts' && (
           <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-[#1C2638] pb-3">
@@ -519,7 +560,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* CÁC TAB KHÁC (Tools, Coupons, Projects, Sepay, Feedback)... */}
+        {/* CÁC TAB KHÁC... */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
@@ -530,7 +571,7 @@ export default function AdminPage() {
               <div className="space-y-2"><label className="block text-[11px] text-slate-400">Ảnh</label><label className="flex items-center justify-center gap-2 bg-[#06090E] border border-dashed border-[#1C2638] text-slate-300 p-3 rounded-xl text-xs cursor-pointer"><Upload className="w-4 h-4 text-cyan-400" /><span className="truncate">{imageFile ? imageFile.name : 'Chọn ảnh...'}</span><input type="file" accept="image/*" onChange={handleFileChange} className="hidden" /></label>{(previewUrl || toolForm.image) && (<div className="w-full aspect-square bg-[#06090E] border border-[#1C2638] rounded-xl overflow-hidden relative"><img src={previewUrl || toolForm.image} alt="Preview" className="w-full h-full object-cover" /></div>)}</div>
               <div className="grid grid-cols-2 gap-2"><div><label className="block text-[10px] text-slate-400">Giá Ngày</label><input type="text" value={toolForm.priceDay} onChange={e => setToolForm({ ...toolForm, priceDay: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="5000" /></div><div><label className="block text-[10px] text-slate-400">Giá Tuần</label><input type="text" value={toolForm.priceWeek} onChange={e => setToolForm({ ...toolForm, priceWeek: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="20000" /></div><div><label className="block text-[10px] text-slate-400">Giá Tháng</label><input type="text" value={toolForm.priceMonth} onChange={e => setToolForm({ ...toolForm, priceMonth: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="50000" /></div><div><label className="block text-[10px] text-slate-400">Giá Vĩnh Viễn</label><input type="text" value={toolForm.priceLifetime} onChange={e => setToolForm({ ...toolForm, priceLifetime: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="100000" /></div></div>
               <div><label className="block text-[11px] text-slate-400 mb-1">Mô tả</label><textarea value={toolForm.description} onChange={e => setToolForm({ ...toolForm, description: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" /></div>
-              <div><label className="block text-[11px] text-slate-400 mb-1">Link Tải</label><input type="text" value={toolForm.downloadLink} onChange={e => setToolForm({ ...toolForm, downloadLink: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" /></div>
+              <div><label className="block text-[11px] text-slate-400 mb-1">Link Tải</label><input type="text" value={toolForm.downloadLink} onChange={e => setToolForm({ ...toolForm, downloadLink: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="https://..." /></div>
               <button type="submit" disabled={isUploading} className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer">{isUploading ? 'ĐANG UPLOAD...' : 'LƯU SẢN PHẨM'}</button>
             </form>
             <div className="lg:col-span-2 bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
