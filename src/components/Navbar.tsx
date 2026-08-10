@@ -6,17 +6,13 @@ import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { 
   User, Lock, LogIn, UserPlus, LogOut, Wallet, X, AlertCircle, CheckCircle2,
-  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown
+  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift
 } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // ==========================================
-  // LỆNH ẨN NAVBAR Ở TRANG QUẢN TRỊ
-  // Nếu đường dẫn bắt đầu bằng /quan-ly-secret, Navbar sẽ tự động "tàng hình" (return null)
-  // ==========================================
   if (pathname?.startsWith('/quan-ly-secret')) {
     return null;
   }
@@ -43,6 +39,11 @@ export default function Navbar() {
   const [showAccountInfoModal, setShowAccountInfoModal] = useState(false);
   const [showPurchasedToolsModal, setShowPurchasedToolsModal] = useState(false);
   
+  // Tính năng Điểm danh
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [checkInLoading, setCheckInLoading] = useState(false);
+  const [checkInMsg, setCheckInMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   const [rechargeAmount, setRechargeAmount] = useState('50000');
   const [copied, setCopied] = useState(false);
 
@@ -339,6 +340,67 @@ export default function Navbar() {
     setShowUserDropdown(false);
   };
 
+  // HÀM XỬ LÝ ĐIỂM DANH HÀNG NGÀY
+  const handleDailyCheckIn = async () => {
+    if (!currentUser) return;
+    setCheckInMsg(null);
+    setCheckInLoading(true);
+
+    try {
+      // 1. Lấy giao dịch điểm danh gần nhất của user
+      const { data: lastCheckIn } = await supabase
+        .from('transactions')
+        .select('created_at')
+        .eq('username', currentUser.username)
+        .eq('type', 'CHECKIN')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      // 2. Kiểm tra xem hôm nay đã điểm danh chưa
+      const today = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+      if (lastCheckIn) {
+        const lastCheckInDate = new Date(lastCheckIn.created_at).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+        if (lastCheckInDate === today) {
+          setCheckInMsg({ type: 'error', text: 'Bạn đã điểm danh hôm nay rồi. Hãy quay lại vào ngày mai nhé!' });
+          setCheckInLoading(false);
+          return;
+        }
+      }
+
+      // 3. Nếu chưa điểm danh -> Cộng tiền
+      const rewardAmount = 1000;
+      const newBalance = (currentUser.balance || 0) + rewardAmount;
+      
+      const { error: updateErr } = await supabase
+        .from('users')
+        .update({ balance: newBalance })
+        .eq('username', currentUser.username);
+
+      if (updateErr) throw updateErr;
+
+      // 4. Ghi lại lịch sử
+      await supabase.from('transactions').insert([
+        {
+          username: currentUser.username,
+          type: 'CHECKIN',
+          title: 'Điểm danh hàng ngày',
+          amount: rewardAmount,
+          status: 'Thành công'
+        }
+      ]);
+
+      // 5. Cập nhật giao diện
+      setCurrentUser({ ...currentUser, balance: newBalance });
+      setCheckInMsg({ type: 'success', text: 'Điểm danh thành công! Bạn nhận được +1,000 VNĐ.' });
+
+    } catch (err: any) {
+      setCheckInMsg({ type: 'error', text: `Lỗi hệ thống: ${err.message}` });
+    } finally {
+      setCheckInLoading(false);
+    }
+  };
+
   const resetForm = () => {
     setUsernameInput('');
     setPasswordInput('');
@@ -395,10 +457,19 @@ export default function Navbar() {
           })}
         </div>
 
-        {/* NẠP TIỀN & VÍ TIỀN */}
+        {/* NẠP TIỀN, ĐIỂM DANH & VÍ TIỀN */}
         <div className="flex items-center gap-3.5">
           {currentUser ? (
             <div className="flex items-center gap-3.5">
+              
+              {/* NÚT ĐIỂM DANH */}
+              <button
+                onClick={() => { setShowCheckInModal(true); setCheckInMsg(null); }}
+                className="bg-[#0D121D] border-2 border-cyan-500/50 hover:border-cyan-400 text-cyan-400 font-black px-4 py-2.5 rounded-2xl text-sm flex items-center gap-2 shadow-lg shadow-cyan-500/20 transition cursor-pointer hover:scale-105"
+              >
+                <CalendarCheck className="w-5 h-5" /> Điểm danh
+              </button>
+
               <button
                 onClick={() => setShowRechargeModal(true)}
                 className="bg-gradient-to-r from-emerald-400 to-teal-300 hover:brightness-110 text-slate-950 font-black px-5 py-3 rounded-2xl text-sm flex items-center gap-2 shadow-xl shadow-emerald-400/50 transition cursor-pointer hover:scale-105 border-2 border-emerald-200"
@@ -489,6 +560,62 @@ export default function Navbar() {
           )}
         </div>
       </nav>
+
+      {/* MODAL ĐIỂM DANH */}
+      {showCheckInModal && currentUser && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+          <div className="bg-[#0D121D] border-2 border-cyan-400 w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-2xl shadow-cyan-500/30">
+            <button onClick={() => setShowCheckInModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-[#1C2638] cursor-pointer">
+              <X className="w-5 h-5" />
+            </button>
+            
+            <div className="flex items-center gap-3 border-b border-[#1C2638] pb-4">
+              <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                <CalendarCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white">ĐIỂM DANH MỖI NGÀY</h3>
+                <p className="text-xs text-slate-400">Nhận quà tặng từ ZTOOL để trải nghiệm dịch vụ</p>
+              </div>
+            </div>
+
+            <div className="bg-[#06090E] border border-[#1C2638] p-6 rounded-2xl flex flex-col items-center space-y-4 text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-2 border-cyan-400 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.4)] animate-pulse">
+                <Gift className="w-10 h-10 text-cyan-300" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-lg font-black text-white">Phần thưởng hôm nay</h4>
+                <p className="text-2xl font-black text-emerald-400">+ 1,000 VNĐ</p>
+              </div>
+            </div>
+
+            {checkInMsg && (
+              <div className={`p-3.5 rounded-xl text-xs font-bold flex items-start gap-2 ${checkInMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'}`}>
+                {checkInMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                <span>{checkInMsg.text}</span>
+              </div>
+            )}
+
+            <button 
+              disabled={checkInLoading || checkInMsg?.type === 'success'}
+              onClick={handleDailyCheckIn} 
+              className={`w-full font-black py-3.5 rounded-2xl text-xs shadow-lg transition flex items-center justify-center gap-2 ${
+                checkInMsg?.type === 'success' 
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                  : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-cyan-500/20 cursor-pointer'
+              }`}
+            >
+              {checkInLoading ? (
+                <><Loader2 className="w-4 h-4 animate-spin text-slate-950" /> ĐANG XỬ LÝ...</>
+              ) : checkInMsg?.type === 'success' ? (
+                <><CheckCircle2 className="w-4 h-4" /> ĐÃ ĐIỂM DANH HÔM NAY</>
+              ) : (
+                <><Gift className="w-4 h-4" /> ĐIỂM DANH NGAY</>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* MODAL TOOL ĐÃ MUA & GIA HẠN */}
       {showPurchasedToolsModal && currentUser && (
@@ -698,6 +825,7 @@ export default function Navbar() {
                           {(log.type === 'RECHARGE' || log.type === 'ADMIN_ADD') && <ArrowUpRight className="w-4 h-4 text-emerald-400 shrink-0" />}
                           {log.type === 'ADMIN_SUB' && <ArrowDownLeft className="w-4 h-4 text-rose-400 shrink-0" />}
                           {log.type === 'INIT' && <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />}
+                          {log.type === 'CHECKIN' && <CalendarCheck className="w-4 h-4 text-cyan-400 shrink-0" />}
                           <span className="font-bold text-white leading-snug">{log.title}</span>
                         </div>
                         {log.key_code && (
