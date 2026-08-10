@@ -58,7 +58,8 @@ export default function HomePage() {
 
   return (
     <main className="font-sans pb-20">
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-12 animate-slide-up">
+      {/* Áp dụng animation mượt mà chuẩn xác */}
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-12 animate-fade-slide-up">
         {/* Banner Hero Chuyển Động */}
         <div className="bg-[#0D121D] border border-[#1C2638] rounded-3xl p-8 lg:p-12 grid grid-cols-1 lg:grid-cols-3 gap-8 items-center shadow-2xl relative overflow-hidden">
           <div className="lg:col-span-2 space-y-6 relative z-10">
@@ -136,7 +137,6 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* Grid Danh Sách Sản Phẩm Tool Auto VỚI HIỆU ỨNG HOVER GLOW CYAN */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {tools.slice(0, 3).map((tool) => (
               <div 
