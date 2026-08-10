@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+// IMPORT THÊM Framer Motion
+import { motion } from 'framer-motion';
 import { 
   Sparkles, Wrench, ShieldCheck, Zap, ArrowRight, ShoppingBag, FolderKanban, ChevronRight
 } from 'lucide-react';
@@ -58,8 +60,13 @@ export default function HomePage() {
 
   return (
     <main className="font-sans pb-20">
-      {/* Áp dụng animation mượt mà chuẩn xác */}
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-12 animate-fade-slide-up">
+      {/* THAY THẾ THẺ DIV BẰNG MOTION.DIV ĐỂ TẠO HIỆU ỨNG MƯỢT MÀ */}
+      <motion.div 
+        initial={{ opacity: 0, y: 15 }} // Bắt đầu ở dưới 15px và trong suốt
+        animate={{ opacity: 1, y: 0 }}   // Nổi dần lên và rõ ràng
+        transition={{ duration: 0.3, ease: 'easeOut' }} // Tốc độ nhanh gọn (0.3s) y hệt video
+        className="max-w-7xl mx-auto px-4 py-8 space-y-12"
+      >
         {/* Banner Hero Chuyển Động */}
         <div className="bg-[#0D121D] border border-[#1C2638] rounded-3xl p-8 lg:p-12 grid grid-cols-1 lg:grid-cols-3 gap-8 items-center shadow-2xl relative overflow-hidden">
           <div className="lg:col-span-2 space-y-6 relative z-10">
@@ -219,7 +226,7 @@ export default function HomePage() {
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
     </main>
   );
 }

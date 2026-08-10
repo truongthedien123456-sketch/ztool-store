@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { motion } from 'framer-motion';
 import { 
   Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag
 } from 'lucide-react';
@@ -212,8 +213,12 @@ export default function ToolsPage() {
 
   return (
     <main className="font-sans pb-20">
-      {/* Áp dụng animation mượt mà chuẩn xác */}
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 animate-fade-slide-up">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+        className="max-w-7xl mx-auto px-4 py-8 space-y-8"
+      >
         <div className="text-center space-y-3 border-b border-[#1A2332] pb-8">
           <div className="inline-flex items-center gap-2 bg-[#06090E] border border-cyan-500/30 px-4 py-1.5 rounded-full text-xs font-bold text-cyan-400">
             <Sparkles className="w-4 h-4" /> BẢNG HÃNG TOOL AUTO HIGH-QUALITY
@@ -353,7 +358,7 @@ export default function ToolsPage() {
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
     </main>
   );
 }

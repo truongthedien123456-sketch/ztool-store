@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { motion } from 'framer-motion';
 import { FolderKanban, Sparkles, CheckCircle2, MessageSquare, Send, Clock, Server, Briefcase } from 'lucide-react';
 
 export default function ProjectsPage() {
@@ -70,8 +71,13 @@ export default function ProjectsPage() {
 
   return (
     <main className="font-sans pb-20">
-      {/* Áp dụng animation mượt mà chuẩn xác */}
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-12 animate-fade-slide-up">
+      {/* Áp dụng Framer Motion cho trải nghiệm mượt mà */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+        className="max-w-7xl mx-auto px-4 py-8 space-y-12"
+      >
         <div className="text-center space-y-3 border-b border-[#1A2332] pb-8">
           <div className="inline-flex items-center gap-2 bg-neonBlue/10 border border-neonBlue/30 px-4 py-1.5 rounded-full text-xs font-bold text-cyanGlow">
             <Sparkles className="w-4 h-4" /> DỰ ÁN & SẢN PHẨM ĐÃ PHÁT TRIỂN
@@ -206,7 +212,7 @@ export default function ProjectsPage() {
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
     </main>
   );
 }
