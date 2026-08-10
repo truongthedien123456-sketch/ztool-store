@@ -284,10 +284,12 @@ export default function Navbar() {
         ]);
 
         setAuthMsg({ type: 'success', text: 'Đăng ký tài khoản thành công!' });
+        
+        // Chờ 0.5s rồi tắt modal
         setTimeout(() => {
           setShowAuthModal(false);
           resetForm();
-        }, 1200);
+        }, 500);
       }
     } else {
       const { data: user, error } = await supabase
@@ -313,10 +315,12 @@ export default function Navbar() {
       setCurrentUser(user);
 
       setAuthMsg({ type: 'success', text: 'Đăng nhập thành công!' });
+      
+      // Chờ 0.5s rồi tắt modal
       setTimeout(() => {
         setShowAuthModal(false);
         resetForm();
-      }, 1000);
+      }, 500);
     }
   };
 
@@ -363,38 +367,26 @@ export default function Navbar() {
 
         {/* MENU ĐIỀU HƯỚNG */}
         <div className="hidden md:flex items-center gap-2.5 bg-[#06090E] p-2 rounded-2xl border-2 border-cyan-400/50 shadow-2xl shadow-cyan-500/25">
-          <Link 
-            href="/" 
-            className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 border-2 cursor-pointer ${
-              pathname === '/' 
-                ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-lg shadow-cyan-400/70 -translate-y-0.5' 
-                : 'text-slate-100 border-cyan-500/40 hover:border-cyan-300 hover:text-cyan-300 hover:bg-[#0D121D] hover:shadow-lg hover:shadow-cyan-400/50 hover:-translate-y-1'
-            }`}
-          >
-            Trang chủ
-          </Link>
-
-          <Link 
-            href="/tools" 
-            className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 border-2 cursor-pointer ${
-              pathname === '/tools' 
-                ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-lg shadow-cyan-400/70 -translate-y-0.5' 
-                : 'text-slate-100 border-cyan-500/40 hover:border-cyan-300 hover:text-cyan-300 hover:bg-[#0D121D] hover:shadow-lg hover:shadow-cyan-400/50 hover:-translate-y-1'
-            }`}
-          >
-            TOOL AUTO
-          </Link>
-
-          <Link 
-            href="/projects" 
-            className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 border-2 cursor-pointer ${
-              pathname === '/projects' 
-                ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-lg shadow-cyan-400/70 -translate-y-0.5' 
-                : 'text-slate-100 border-cyan-500/40 hover:border-cyan-300 hover:text-cyan-300 hover:bg-[#0D121D] hover:shadow-lg hover:shadow-cyan-400/50 hover:-translate-y-1'
-            }`}
-          >
-            Dự án
-          </Link>
+          {[
+            { name: 'Trang chủ', path: '/' },
+            { name: 'TOOL AUTO', path: '/tools' },
+            { name: 'Dự án', path: '/projects' }
+          ].map((item) => {
+            const isActive = pathname === item.path;
+            return (
+              <Link 
+                key={item.path}
+                href={item.path} 
+                className={`min-w-[120px] text-center px-4 py-2.5 rounded-xl text-sm font-black transition-all duration-300 border-2 cursor-pointer flex items-center justify-center select-none ${
+                  isActive 
+                    ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.5)]' 
+                    : 'text-slate-100 border-transparent hover:border-cyan-500/40 hover:text-cyan-300 hover:bg-[#0D121D] hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]'
+                }`}
+              >
+                {item.name}
+              </Link>
+            )
+          })}
         </div>
 
         {/* NẠP TIỀN & VÍ TIỀN */}

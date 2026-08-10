@@ -61,7 +61,8 @@ export default function HomePage() {
     <main className="min-h-screen bg-[#080B10] text-white font-sans pb-20">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-12">
+      {/* Áp dụng animation cho nội dung */}
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-12 animate-slide-up">
         {/* Banner Hero Chuyển Động */}
         <div className="bg-[#0D121D] border border-[#1C2638] rounded-3xl p-8 lg:p-12 grid grid-cols-1 lg:grid-cols-3 gap-8 items-center shadow-2xl relative overflow-hidden">
           <div className="lg:col-span-2 space-y-6 relative z-10">
