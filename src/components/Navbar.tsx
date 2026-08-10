@@ -13,7 +13,10 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // ĐOẠN CODE KIỂM TRA ĐỂ ẨN NAVBAR TRÊN TRANG QUẢN TRỊ
+  // ==========================================
+  // LỆNH ẨN NAVBAR Ở TRANG QUẢN TRỊ
+  // Nếu đường dẫn bắt đầu bằng /quan-ly-secret, Navbar sẽ tự động "tàng hình" (return null)
+  // ==========================================
   if (pathname?.startsWith('/quan-ly-secret')) {
     return null;
   }
@@ -136,7 +139,7 @@ export default function Navbar() {
     }
   };
 
-  // TẢI TẤT CẢ CÁC TOOL ĐÃ MUA (QUÉT CẢ TÀI KHOẢN GỐC VÀ TÀI KHOẢN PHỤ TÁCH THEO MÃ TOOL)
+  // TẢI TẤT CẢ CÁC TOOL ĐÃ MUA
   const loadUserGistData = async (username: string) => {
     setLoadingPurchasedTools(true);
     try {
@@ -192,7 +195,6 @@ export default function Navbar() {
     }
   };
 
-  // RENDER ĐỒNG HỒ ĐẾM NGƯỢC HOẶC VĨNH VIỄN NỔI BẬT & CHUYÊN NGHIỆP
   const renderRemainingTime = (expireTimestamp: number) => {
     if (!expireTimestamp || expireTimestamp === 0) {
       return (
@@ -291,7 +293,6 @@ export default function Navbar() {
 
         setAuthMsg({ type: 'success', text: 'Đăng ký tài khoản thành công!' });
         
-        // Chờ 0.5s rồi tắt modal
         setTimeout(() => {
           setShowAuthModal(false);
           resetForm();
@@ -322,7 +323,6 @@ export default function Navbar() {
 
       setAuthMsg({ type: 'success', text: 'Đăng nhập thành công!' });
       
-      // Chờ 0.5s rồi tắt modal
       setTimeout(() => {
         setShowAuthModal(false);
         resetForm();
@@ -828,4 +828,3 @@ export default function Navbar() {
     </>
   );
 }
-hãy cập nhật trang quản trị không bị delay nữa cho tôi
