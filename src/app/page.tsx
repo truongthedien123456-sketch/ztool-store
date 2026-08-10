@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { 
-  Sparkles, Wrench, ShieldCheck, Zap, ArrowRight, ShoppingBag, FolderKanban
+  Sparkles, Wrench, ShieldCheck, Zap, ArrowRight, ShoppingBag, FolderKanban, Bell
 } from 'lucide-react';
 
 export default function HomePage() {
   const [tools, setTools] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
+  const [systemNotice, setSystemNotice] = useState<{ text: string, active: boolean } | null>(null);
+  
   // Thêm trạng thái chờ tải dữ liệu
   const [isLoading, setIsLoading] = useState(true);
 
@@ -55,6 +57,18 @@ export default function HomePage() {
       if (projectData && projectData.length > 0) {
         setProjects(projectData);
       }
+
+      // Tải Thông báo từ Admin (id = 1)
+      const { data: noticeData } = await supabase
+        .from('settings')
+        .select('*')
+        .eq('id', 1)
+        .single();
+        
+      if (noticeData) {
+        setSystemNotice({ text: noticeData.notice_text, active: noticeData.is_active });
+      }
+
     } catch (error) {
       console.error(error);
     } finally {
@@ -69,7 +83,7 @@ export default function HomePage() {
   return (
     <main className="font-sans pb-20 min-h-screen">
       {isLoading ? (
-        // Khoảng trống bảo vệ cấu trúc trong 0.1s chờ data để chống chớp giật
+        // Khoảng trống bảo vệ cấu trúc trong lúc chờ data để chống chớp giật
         <div className="min-h-[60vh]"></div>
       ) : (
         <motion.div 
@@ -78,6 +92,22 @@ export default function HomePage() {
           transition={{ duration: 0.3, ease: 'easeOut' }}
           className="max-w-7xl mx-auto px-4 py-8 space-y-12"
         >
+
+          {/* KHUNG HIỂN THỊ THÔNG BÁO TỪ ADMIN */}
+          {systemNotice?.active && systemNotice?.text && (
+            <div className="bg-amber-500/10 border-2 border-amber-500/30 rounded-2xl p-4 flex items-center gap-4 shadow-[0_0_20px_rgba(245,158,11,0.15)] relative overflow-hidden">
+              <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 border border-amber-500/40">
+                <Bell className="w-5 h-5 text-amber-400 animate-[bounce_2s_infinite]" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-xs font-black text-amber-400 uppercase tracking-wider mb-1 drop-shadow-md">THÔNG BÁO TỪ ADMIN ZTOOL</h4>
+                <p className="text-sm font-bold text-amber-100/90 leading-snug whitespace-pre-line">
+                  {systemNotice.text}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Banner Hero Chuyển Động */}
           <div className="bg-[#0D121D] border border-[#1C2638] rounded-3xl p-8 lg:p-12 grid grid-cols-1 lg:grid-cols-3 gap-8 items-center shadow-2xl relative overflow-hidden">
             <div className="lg:col-span-2 space-y-6 relative z-10">

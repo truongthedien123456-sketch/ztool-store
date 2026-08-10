@@ -6,7 +6,7 @@ import {
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
   Ban, CheckCircle, CreditCard, KeyRound, Search, DollarSign, Settings,
-  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag
+  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -15,7 +15,7 @@ export default function AdminPage() {
   const [passwordInput, setPasswordInput] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'users' | 'tools' | 'projects' | 'gist_accounts' | 'sepay' | 'feedback' | 'coupons'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'tools' | 'projects' | 'gist_accounts' | 'sepay' | 'feedback' | 'coupons' | 'settings'>('users');
 
   // Dữ liệu Realtime
   const [users, setUsers] = useState<any[]>([]);
@@ -24,12 +24,14 @@ export default function AdminPage() {
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [sepayLogs, setSepayLogs] = useState<any[]>([]);
   const [coupons, setCoupons] = useState<any[]>([]);
+  
+  // Dữ liệu Thông báo Admin
+  const [noticeForm, setNoticeForm] = useState({ text: '', active: false });
 
   // Dữ liệu Tài khoản đọc từ GitHub Gist
   const [gistAccounts, setGistAccounts] = useState<any[]>([]);
   const [loadingGist, setLoadingGist] = useState(false);
 
-  // Timer để đếm ngược thời gian thực (1 giây/lần)
   const [nowTime, setNowTime] = useState(Date.now());
 
   // States thao tác
@@ -38,26 +40,14 @@ export default function AdminPage() {
   const [editUserPass, setEditUserPass] = useState<{ username: string; newPass: string } | null>(null);
   const [adjustBal, setAdjustBal] = useState<{ username: string; amount: number; isAdd: boolean } | null>(null);
   
-  // State Ẩn / Hiện mật khẩu
   const [showPasswords, setShowPasswords] = useState<{ [key: string]: boolean }>({});
-
-  // State Modal Lịch sử giao dịch
   const [selectedUserHistory, setSelectedUserHistory] = useState<{ username: string; logs: any[] } | null>(null);
   const [loadingUserHistory, setLoadingUserHistory] = useState(false);
 
   // States Tool Auto
   const [toolForm, setToolForm] = useState({
-    id: 0,
-    name: '',
-    toolCode: '',
-    image: '',
-    status: 'Đang hoạt động',
-    priceDay: '',
-    priceWeek: '',
-    priceMonth: '',
-    priceLifetime: '',
-    description: '',
-    downloadLink: ''
+    id: 0, name: '', toolCode: '', image: '', status: 'Đang hoạt động',
+    priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: ''
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -65,24 +55,13 @@ export default function AdminPage() {
   const [isEditingTool, setIsEditingTool] = useState(false);
 
   // States Dự Án
-  const [projectForm, setProjectForm] = useState({
-    id: 0,
-    title: '',
-    image: '',
-    description: '',
-    status: 'Hoạt động tốt'
-  });
+  const [projectForm, setProjectForm] = useState({ id: 0, title: '', image: '', description: '', status: 'Hoạt động tốt' });
   const [projectImageFile, setProjectImageFile] = useState<File | null>(null);
   const [projectPreviewUrl, setProjectPreviewUrl] = useState<string>('');
   const [isUploadingProject, setIsUploadingProject] = useState(false);
 
   // State Mã Giảm Giá Form
-  const [couponForm, setCouponForm] = useState({
-    code: '',
-    toolCode: 'ALL',
-    quantity: 50,
-    discountAmount: 5000
-  });
+  const [couponForm, setCouponForm] = useState({ code: '', toolCode: 'ALL', quantity: 50, discountAmount: 5000 });
 
   useEffect(() => {
     const isLogged = localStorage.getItem('ztool_admin_authenticated');
@@ -99,11 +78,10 @@ export default function AdminPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tools' }, () => loadAllSyncData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => loadAllSyncData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'coupons' }, () => loadAllSyncData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => loadAllSyncData())
       .subscribe();
 
-    const timer = setInterval(() => {
-      setNowTime(Date.now());
-    }, 1000);
+    const timer = setInterval(() => { setNowTime(Date.now()); }, 1000);
 
     return () => {
       supabase.removeChannel(channel);
@@ -114,27 +92,16 @@ export default function AdminPage() {
   const fetchGistAccountsData = async () => {
     setLoadingGist(true);
     try {
-      const res = await fetch('/api/get-gist', {
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
-      });
-
+      const res = await fetch('/api/get-gist', { cache: 'no-store', headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } });
       if (res.ok) {
         const result = await res.json();
         if (result.success && result.data) {
           const parsed = result.data;
-          const list = Object.keys(parsed).map((accName) => ({
-            username: accName,
-            ...parsed[accName]
-          }));
+          const list = Object.keys(parsed).map((accName) => ({ username: accName, ...parsed[accName] }));
           setGistAccounts(list);
         }
       }
-    } catch (err) {
-      console.error('Lỗi tải tài khoản Gist qua API:', err);
-    } finally {
-      setLoadingGist(false);
-    }
+    } catch (err) { console.error(err); } finally { setLoadingGist(false); }
   };
 
   const loadAllSyncData = async () => {
@@ -144,20 +111,11 @@ export default function AdminPage() {
 
       const { data: toolData } = await supabase.from('tools').select('*').order('id', { ascending: false });
       if (toolData) {
-        const mappedTools = toolData.map((t: any) => ({
-          id: t.id,
-          name: t.name,
-          toolCode: t.toolCode || t.tool_code || '',
-          image: t.image,
-          status: t.status || 'Đang hoạt động',
-          priceDay: t.priceDay || t.price_day || '',
-          priceWeek: t.priceWeek || t.price_week || '',
-          priceMonth: t.priceMonth || t.price_month || '',
-          priceLifetime: t.priceLifetime || t.price_lifetime || '',
-          description: t.description,
-          downloadLink: t.downloadLink || t.download_link || ''
-        }));
-        setTools(mappedTools);
+        setTools(toolData.map((t: any) => ({
+          id: t.id, name: t.name, toolCode: t.toolCode || t.tool_code || '', image: t.image, status: t.status || 'Đang hoạt động',
+          priceDay: t.priceDay || t.price_day || '', priceWeek: t.priceWeek || t.price_week || '', priceMonth: t.priceMonth || t.price_month || '',
+          priceLifetime: t.priceLifetime || t.price_lifetime || '', description: t.description, downloadLink: t.downloadLink || t.download_link || ''
+        })));
       }
 
       const { data: projectData } = await supabase.from('projects').select('*').order('id', { ascending: false });
@@ -172,290 +130,138 @@ export default function AdminPage() {
       const { data: couponData } = await supabase.from('coupons').select('*').order('id', { ascending: false });
       if (couponData) setCoupons(couponData);
 
+      // Load Thông Báo từ bảng settings
+      const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
+      if (settingsData) setNoticeForm({ text: settingsData.notice_text || '', active: settingsData.is_active });
+
       fetchGistAccountsData();
-    } catch (e) {
-      console.error('Lỗi đồng bộ dữ liệu Supabase:', e);
-    }
+    } catch (e) { console.error('Lỗi đồng bộ dữ liệu Supabase:', e); }
   };
 
   const renderRemainingTime = (expireTimestamp: number) => {
-    if (!expireTimestamp || expireTimestamp === 0) {
-      return (
-        <span className="text-cyan-400 font-black bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/30 text-xs">
-          ♾️ Vĩnh Viễn
-        </span>
-      );
-    }
-
-    const nowSec = Math.floor(nowTime / 1000);
-    const diffSec = expireTimestamp - nowSec;
-
-    if (diffSec <= 0) {
-      return (
-        <span className="text-rose-400 font-bold bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/30 text-xs">
-          ⚠️ Hết Hạn Quyền Dùng
-        </span>
-      );
-    }
-
-    const days = Math.floor(diffSec / 86400);
-    const hours = Math.floor((diffSec % 86400) / 3600);
-    const minutes = Math.floor((diffSec % 3600) / 60);
-    const seconds = diffSec % 60;
-
-    return (
-      <span className="text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/30 text-xs flex items-center gap-1.5 w-fit">
-        <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-        {days > 0 && `${days}d `}{hours}h {minutes}m {seconds}s
-      </span>
-    );
+    if (!expireTimestamp || expireTimestamp === 0) return <span className="text-cyan-400 font-black bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/30 text-xs">♾️ Vĩnh Viễn</span>;
+    const nowSec = Math.floor(nowTime / 1000); const diffSec = expireTimestamp - nowSec;
+    if (diffSec <= 0) return <span className="text-rose-400 font-bold bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/30 text-xs">⚠️ Hết Hạn Quyền Dùng</span>;
+    const days = Math.floor(diffSec / 86400); const hours = Math.floor((diffSec % 86400) / 3600); const minutes = Math.floor((diffSec % 3600) / 60); const seconds = diffSec % 60;
+    return <span className="text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/30 text-xs flex items-center gap-1.5 w-fit"><Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />{days > 0 && `${days}d `}{hours}h {minutes}m {seconds}s</span>;
   };
 
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (usernameInput.trim() === 'mienprovip' && passwordInput === 'Vietduc123456@') {
-      localStorage.setItem('ztool_admin_authenticated', 'true');
-      setIsAuthenticated(true);
-      setLoginError('');
-      loadAllSyncData();
-    } else {
-      setLoginError('Tài khoản hoặc mật khẩu Quản trị không chính xác!');
-    }
+      localStorage.setItem('ztool_admin_authenticated', 'true'); setIsAuthenticated(true); setLoginError(''); loadAllSyncData();
+    } else { setLoginError('Tài khoản hoặc mật khẩu Quản trị không chính xác!'); }
   };
 
-  const handleAdminLogout = () => {
-    localStorage.removeItem('ztool_admin_authenticated');
-    setIsAuthenticated(false);
-  };
-
-  const handleToggleShowPass = (username: string) => {
-    setShowPasswords(prev => ({ ...prev, [username]: !prev[username] }));
-  };
+  const handleAdminLogout = () => { localStorage.removeItem('ztool_admin_authenticated'); setIsAuthenticated(false); };
+  const handleToggleShowPass = (username: string) => { setShowPasswords(prev => ({ ...prev, [username]: !prev[username] })); };
 
   const handleViewUserTransactions = async (username: string) => {
-    setLoadingUserHistory(true);
-    setSelectedUserHistory({ username, logs: [] });
-
+    setLoadingUserHistory(true); setSelectedUserHistory({ username, logs: [] });
     const { data, error } = await supabase.from('transactions').select('*').eq('username', username).order('id', { ascending: false });
-
-    setLoadingUserHistory(false);
-    if (!error && data) {
-      setSelectedUserHistory({ username, logs: data });
-    }
+    setLoadingUserHistory(false); if (!error && data) setSelectedUserHistory({ username, logs: data });
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setImageFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
-    }
+  const handleFileChange = (e: React.FormEvent<HTMLInputElement>) => { 
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files[0]) { 
+      const file = target.files[0]; 
+      setImageFile(file); 
+      setPreviewUrl(URL.createObjectURL(file)); 
+    } 
   };
-
-  const handleProjectFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setProjectImageFile(file);
-      setProjectPreviewUrl(URL.createObjectURL(file));
-    }
+  
+  const handleProjectFileChange = (e: React.FormEvent<HTMLInputElement>) => { 
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files[0]) { 
+      const file = target.files[0]; 
+      setProjectImageFile(file); 
+      setProjectPreviewUrl(URL.createObjectURL(file)); 
+    } 
   };
 
   const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUserForm.username || !newUserForm.password) return alert('Nhập đủ username/password!');
-    
-    const { error } = await supabase.from('users').insert([
-      { username: newUserForm.username.trim(), password: newUserForm.password, balance: Number(newUserForm.balance) || 0, isBanned: false, is_online: false }
-    ]);
-
-    if (error) {
-      alert('Lỗi tạo tài khoản: ' + error.message);
-    } else {
-      await supabase.from('transactions').insert([
-        { username: newUserForm.username.trim(), type: 'INIT', title: 'Khởi tạo tài khoản thành công', amount: Number(newUserForm.balance) || 0, status: 'Thành công' }
-      ]);
-      setNewUserForm({ username: '', password: '', balance: 0 });
-      alert('Tạo người dùng thành công trên Cloud Database!');
-      loadAllSyncData();
+    e.preventDefault(); if (!newUserForm.username || !newUserForm.password) return alert('Nhập đủ username/password!');
+    const { error } = await supabase.from('users').insert([{ username: newUserForm.username.trim(), password: newUserForm.password, balance: Number(newUserForm.balance) || 0, isBanned: false, is_online: false }]);
+    if (error) alert('Lỗi tạo tài khoản: ' + error.message);
+    else {
+      await supabase.from('transactions').insert([{ username: newUserForm.username.trim(), type: 'INIT', title: 'Khởi tạo tài khoản thành công', amount: Number(newUserForm.balance) || 0, status: 'Thành công' }]);
+      setNewUserForm({ username: '', password: '', balance: 0 }); alert('Tạo người dùng thành công trên Cloud Database!'); loadAllSyncData();
     }
   };
 
-  const handleToggleBanUser = async (u: any) => {
-    const { error } = await supabase.from('users').update({ isBanned: !u.isBanned }).eq('id', u.id);
-    if (!error) loadAllSyncData();
-  };
-
-  const handleDeleteUser = async (id: number, username: string) => {
-    if (!confirm(`Xóa tài khoản ${username}?`)) return;
-    const { error } = await supabase.from('users').delete().eq('id', id);
-    if (!error) loadAllSyncData();
-  };
-
-  const handleSaveUserPassword = async (id: number) => {
-    if (!editUserPass?.newPass) return;
-    const { error } = await supabase.from('users').update({ password: editUserPass.newPass }).eq('id', id);
-    if (!error) {
-      setEditUserPass(null);
-      alert('Đã cập nhật mật khẩu thành công!');
-      loadAllSyncData();
-    }
-  };
-
+  const handleToggleBanUser = async (u: any) => { const { error } = await supabase.from('users').update({ isBanned: !u.isBanned }).eq('id', u.id); if (!error) loadAllSyncData(); };
+  const handleDeleteUser = async (id: number, username: string) => { if (!confirm(`Xóa tài khoản ${username}?`)) return; const { error } = await supabase.from('users').delete().eq('id', id); if (!error) loadAllSyncData(); };
+  const handleSaveUserPassword = async (id: number) => { if (!editUserPass?.newPass) return; const { error } = await supabase.from('users').update({ password: editUserPass.newPass }).eq('id', id); if (!error) { setEditUserPass(null); alert('Đã cập nhật mật khẩu thành công!'); loadAllSyncData(); } };
+  
   const handleExecAdjustBalance = async (u: any, isAddMode: boolean) => {
     if (!adjustBal || !adjustBal.amount) return alert('Vui lòng nhập số tiền hợp lệ!');
-    const cur = Number(u.balance) || 0;
-    const changeAmt = Number(adjustBal.amount);
-    const next = isAddMode ? cur + changeAmt : Math.max(0, cur - changeAmt);
-    
+    const cur = Number(u.balance) || 0; const changeAmt = Number(adjustBal.amount); const next = isAddMode ? cur + changeAmt : Math.max(0, cur - changeAmt);
     const { error: updateError } = await supabase.from('users').update({ balance: next }).eq('id', u.id);
-    if (updateError) {
-      alert('Lỗi cập nhật số dư: ' + updateError.message);
-    } else {
-      await supabase.from('transactions').insert([
-        { username: u.username, type: isAddMode ? 'ADMIN_ADD' : 'ADMIN_SUB', title: isAddMode ? 'Admin cộng tiền vào ví' : 'Admin trừ tiền khỏi ví', amount: isAddMode ? changeAmt : -changeAmt, status: 'Thành công' }
-      ]);
-      setAdjustBal(null);
-      alert(`${isAddMode ? 'Cộng' : 'Trừ'} tiền thành công cho ${u.username}!`);
-      loadAllSyncData();
+    if (updateError) alert('Lỗi cập nhật số dư: ' + updateError.message);
+    else {
+      await supabase.from('transactions').insert([{ username: u.username, type: isAddMode ? 'ADMIN_ADD' : 'ADMIN_SUB', title: isAddMode ? 'Admin cộng tiền vào ví' : 'Admin trừ tiền khỏi ví', amount: isAddMode ? changeAmt : -changeAmt, status: 'Thành công' }]);
+      setAdjustBal(null); alert(`${isAddMode ? 'Cộng' : 'Trừ'} tiền thành công cho ${u.username}!`); loadAllSyncData();
     }
   };
 
   const handleSaveTool = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!toolForm.name) return alert('Nhập tên Tool!');
-
-    setIsUploading(true);
-    let finalImageUrl = toolForm.image;
-
+    e.preventDefault(); if (!toolForm.name) return alert('Nhập tên Tool!');
+    setIsUploading(true); let finalImageUrl = toolForm.image;
     if (imageFile) {
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `tools/${fileName}`;
-
+      const fileExt = imageFile.name.split('.').pop(); const fileName = `${Date.now()}.${fileExt}`; const filePath = `tools/${fileName}`;
       const { error: uploadError } = await supabase.storage.from('tool-images').upload(filePath, imageFile);
-      if (uploadError) {
-        setIsUploading(false);
-        return alert('Lỗi tải ảnh lên Storage: ' + uploadError.message);
-      }
-
-      const { data: urlData } = supabase.storage.from('tool-images').getPublicUrl(filePath);
-      finalImageUrl = urlData.publicUrl;
+      if (uploadError) { setIsUploading(false); return alert('Lỗi tải ảnh lên Storage: ' + uploadError.message); }
+      const { data: urlData } = supabase.storage.from('tool-images').getPublicUrl(filePath); finalImageUrl = urlData.publicUrl;
     }
-
-    const payload = {
-      name: toolForm.name,
-      toolCode: toolForm.toolCode.trim(),
-      image: finalImageUrl,
-      status: toolForm.status,
-      priceDay: toolForm.priceDay,
-      priceWeek: toolForm.priceWeek,
-      priceMonth: toolForm.priceMonth,
-      priceLifetime: toolForm.priceLifetime,
-      description: toolForm.description,
-      downloadLink: toolForm.downloadLink
-    };
-
+    const payload = { name: toolForm.name, toolCode: toolForm.toolCode.trim(), image: finalImageUrl, status: toolForm.status, priceDay: toolForm.priceDay, priceWeek: toolForm.priceWeek, priceMonth: toolForm.priceMonth, priceLifetime: toolForm.priceLifetime, description: toolForm.description, downloadLink: toolForm.downloadLink };
     let result;
-    if (isEditingTool && toolForm.id) {
-      result = await supabase.from('tools').update(payload).eq('id', toolForm.id);
-    } else {
-      result = await supabase.from('tools').insert([payload]);
-    }
-
+    if (isEditingTool && toolForm.id) result = await supabase.from('tools').update(payload).eq('id', toolForm.id);
+    else result = await supabase.from('tools').insert([payload]);
     setIsUploading(false);
-
-    if (result.error) {
-      alert('Lỗi lưu Tool: ' + result.error.message);
-    } else {
-      setImageFile(null);
-      setPreviewUrl('');
-      setToolForm({ id: 0, name: '', toolCode: '', image: '', status: 'Đang hoạt động', priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '' });
-      setIsEditingTool(false);
-      alert('Lưu sản phẩm thành công!');
-      loadAllSyncData();
-    }
+    if (result.error) alert('Lỗi lưu Tool: ' + result.error.message);
+    else { setImageFile(null); setPreviewUrl(''); setToolForm({ id: 0, name: '', toolCode: '', image: '', status: 'Đang hoạt động', priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '' }); setIsEditingTool(false); alert('Lưu sản phẩm thành công!'); loadAllSyncData(); }
   };
 
-  const handleDeleteTool = async (id: number) => {
-    if (!confirm('Xóa Tool này khỏi hệ thống?')) return;
-    const { error } = await supabase.from('tools').delete().eq('id', id);
-    if (!error) loadAllSyncData();
-  };
+  const handleDeleteTool = async (id: number) => { if (!confirm('Xóa Tool này khỏi hệ thống?')) return; const { error } = await supabase.from('tools').delete().eq('id', id); if (!error) loadAllSyncData(); };
 
   const handleSaveProject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!projectForm.title) return alert('Nhập tên dự án!');
-
-    setIsUploadingProject(true);
-    let finalImageUrl = projectForm.image;
-
+    e.preventDefault(); if (!projectForm.title) return alert('Nhập tên dự án!');
+    setIsUploadingProject(true); let finalImageUrl = projectForm.image;
     if (projectImageFile) {
-      const fileExt = projectImageFile.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `projects/${fileName}`;
-
+      const fileExt = projectImageFile.name.split('.').pop(); const fileName = `${Date.now()}.${fileExt}`; const filePath = `projects/${fileName}`;
       const { error: uploadError } = await supabase.storage.from('tool-images').upload(filePath, projectImageFile);
-      if (uploadError) {
-        setIsUploadingProject(false);
-        return alert('Lỗi tải ảnh dự án lên Storage: ' + uploadError.message);
-      }
-
-      const { data: urlData } = supabase.storage.from('tool-images').getPublicUrl(filePath);
-      finalImageUrl = urlData.publicUrl;
+      if (uploadError) { setIsUploadingProject(false); return alert('Lỗi tải ảnh dự án lên Storage: ' + uploadError.message); }
+      const { data: urlData } = supabase.storage.from('tool-images').getPublicUrl(filePath); finalImageUrl = urlData.publicUrl;
     }
-
     const payload = { title: projectForm.title, image: finalImageUrl, status: projectForm.status, description: projectForm.description };
     const { error } = await supabase.from('projects').insert([payload]);
-
     setIsUploadingProject(false);
-
-    if (error) {
-      alert('Lỗi lưu dự án: ' + error.message);
-    } else {
-      setProjectImageFile(null);
-      setProjectPreviewUrl('');
-      setProjectForm({ id: 0, title: '', image: '', description: '', status: 'Hoạt động tốt' });
-      alert('Thêm dự án mới thành công!');
-      loadAllSyncData();
-    }
+    if (error) alert('Lỗi lưu dự án: ' + error.message);
+    else { setProjectImageFile(null); setProjectPreviewUrl(''); setProjectForm({ id: 0, title: '', image: '', description: '', status: 'Hoạt động tốt' }); alert('Thêm dự án mới thành công!'); loadAllSyncData(); }
   };
 
-  const handleDeleteProject = async (id: number) => {
-    if (!confirm('Xóa dự án này?')) return;
-    const { error } = await supabase.from('projects').delete().eq('id', id);
-    if (!error) loadAllSyncData();
-  };
+  const handleDeleteProject = async (id: number) => { if (!confirm('Xóa dự án này?')) return; const { error } = await supabase.from('projects').delete().eq('id', id); if (!error) loadAllSyncData(); };
+  const handleDeleteFeedback = async (id: number) => { const { error } = await supabase.from('feedbacks').delete().eq('id', id); if (!error) loadAllSyncData(); };
 
-  const handleDeleteFeedback = async (id: number) => {
-    const { error } = await supabase.from('feedbacks').delete().eq('id', id);
-    if (!error) loadAllSyncData();
-  };
-
-  // HÀM TẠO MÃ GIẢM GIÁ
   const handleCreateCoupon = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!couponForm.code.trim()) return alert('Vui lòng nhập mã giảm giá!');
-
-    const { error } = await supabase.from('coupons').insert([{
-      code: couponForm.code.trim().toUpperCase(),
-      tool_code: couponForm.toolCode,
-      quantity: Number(couponForm.quantity),
-      discount_amount: Number(couponForm.discountAmount)
-    }]);
-
-    if (error) {
-      alert('Lỗi tạo mã giảm giá: ' + error.message);
-    } else {
-      alert('Tạo mã giảm giá thành công!');
-      setCouponForm({ code: '', toolCode: 'ALL', quantity: 50, discountAmount: 5000 });
-      loadAllSyncData();
-    }
+    e.preventDefault(); if (!couponForm.code.trim()) return alert('Vui lòng nhập mã giảm giá!');
+    const { error } = await supabase.from('coupons').insert([{ code: couponForm.code.trim().toUpperCase(), tool_code: couponForm.toolCode, quantity: Number(couponForm.quantity), discount_amount: Number(couponForm.discountAmount) }]);
+    if (error) alert('Lỗi tạo mã giảm giá: ' + error.message);
+    else { alert('Tạo mã giảm giá thành công!'); setCouponForm({ code: '', toolCode: 'ALL', quantity: 50, discountAmount: 5000 }); loadAllSyncData(); }
   };
 
-  const handleDeleteCoupon = async (id: number) => {
-    if (!confirm('Xóa mã giảm giá này khỏi hệ thống?')) return;
-    const { error } = await supabase.from('coupons').delete().eq('id', id);
-    if (!error) loadAllSyncData();
+  const handleDeleteCoupon = async (id: number) => { if (!confirm('Xóa mã giảm giá này khỏi hệ thống?')) return; const { error } = await supabase.from('coupons').delete().eq('id', id); if (!error) loadAllSyncData(); };
+
+  // HÀM LƯU THÔNG BÁO ADMIN
+  const handleSaveNotice = async () => {
+    const { error } = await supabase.from('settings').upsert({ 
+      id: 1, 
+      notice_text: noticeForm.text, 
+      is_active: noticeForm.active 
+    });
+    if (error) alert('Lỗi lưu thông báo: ' + error.message);
+    else alert('Đã lưu cài đặt thông báo thành công!');
   };
 
   if (!isAuthenticated) {
@@ -463,19 +269,11 @@ export default function AdminPage() {
       <main className="min-h-screen bg-[#06090E] text-white font-sans flex flex-col justify-center items-center px-4">
         <div className="max-w-md w-full bg-[#0D121D] border border-[#1C2638] rounded-3xl p-8 shadow-2xl">
           <div className="text-center space-y-2 mb-8">
-            <div className="w-14 h-14 bg-cyan-500/10 border border-cyan-500/30 rounded-2xl flex items-center justify-center mx-auto text-cyan-400">
-              <Lock className="w-7 h-7" />
-            </div>
+            <div className="w-14 h-14 bg-cyan-500/10 border border-cyan-500/30 rounded-2xl flex items-center justify-center mx-auto text-cyan-400"><Lock className="w-7 h-7" /></div>
             <h1 className="text-xl font-bold tracking-wider text-white">HỆ THỐNG QUẢN TRỊ ZTOOL</h1>
             <p className="text-xs text-slate-400">Đăng nhập tài khoản Quản trị viên để truy cập</p>
           </div>
-
-          {loginError && (
-            <div className="mb-6 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs text-center font-bold">
-              {loginError}
-            </div>
-          )}
-
+          {loginError && <div className="mb-6 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs text-center font-bold">{loginError}</div>}
           <form onSubmit={handleAdminLogin} className="space-y-4">
             <div>
               <label className="block text-xs text-slate-300 mb-1 font-medium">Tài khoản Quản trị</label>
@@ -484,7 +282,6 @@ export default function AdminPage() {
                 <input type="text" required placeholder="Nhập username..." value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} className="w-full bg-[#06090E] border border-[#1C2638] focus:border-cyan-500 rounded-xl pl-10 pr-4 py-3 text-xs text-white focus:outline-none transition" />
               </div>
             </div>
-
             <div>
               <label className="block text-xs text-slate-300 mb-1 font-medium">Mật khẩu Bảo mật</label>
               <div className="relative">
@@ -492,7 +289,6 @@ export default function AdminPage() {
                 <input type="password" required placeholder="Nhập mật khẩu..." value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full bg-[#06090E] border border-[#1C2638] focus:border-cyan-500 rounded-xl pl-10 pr-4 py-3 text-xs text-white focus:outline-none transition" />
               </div>
             </div>
-
             <button type="submit" className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold text-xs py-3.5 rounded-xl shadow-lg shadow-cyan-500/20 transition flex items-center justify-center gap-2 cursor-pointer mt-2">
               <ShieldCheck className="w-4 h-4" /> XÁC THỰC VÀ ĐĂNG NHẬP
             </button>
@@ -506,15 +302,9 @@ export default function AdminPage() {
     <main className="min-h-screen bg-[#06090E] text-slate-200 font-sans flex flex-col">
       <header className="bg-[#0D121D] border-b border-[#1C2638] px-6 py-4 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-            <Settings className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-sm font-black text-white tracking-wide">CONTROL PANEL DASHBOARD</h1>
-            <p className="text-[11px] text-slate-400">Đồng bộ Cloud Supabase & GitHub Gist Realtime</p>
-          </div>
+          <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400"><Settings className="w-5 h-5" /></div>
+          <div><h1 className="text-sm font-black text-white tracking-wide">CONTROL PANEL DASHBOARD</h1><p className="text-[11px] text-slate-400">Đồng bộ Cloud Supabase & GitHub Gist Realtime</p></div>
         </div>
-
         <div className="flex items-center gap-3">
           <button onClick={loadAllSyncData} className="bg-[#141C2B] border border-[#1C2638] hover:border-slate-600 text-slate-300 text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer">
             <RefreshCw className="w-3.5 h-3.5 text-cyan-400" /> Tải lại dữ liệu Cloud
@@ -526,29 +316,53 @@ export default function AdminPage() {
       </header>
 
       <div className="max-w-7xl w-full mx-auto px-4 py-8 space-y-8 flex-1">
+        {/* THANH MENU TABS */}
         <div className="flex flex-wrap items-center gap-2 bg-[#0D121D] p-2 rounded-2xl border border-[#1C2638]">
-          <button onClick={() => setActiveTab('users')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'users' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}>
-            <Users className="w-4 h-4" /> QUẢN LÝ NGƯỜI DÙNG ({users.length})
-          </button>
-          <button onClick={() => setActiveTab('tools')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'tools' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}>
-            <Wrench className="w-4 h-4" /> SẢN PHẨM TOOL ({tools.length})
-          </button>
-          <button onClick={() => setActiveTab('coupons')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'coupons' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}>
-            <Tag className="w-4 h-4" /> MÃ GIẢM GIÁ ({coupons.length})
-          </button>
-          <button onClick={() => setActiveTab('projects')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'projects' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}>
-            <FolderKanban className="w-4 h-4" /> DỰ ÁN CỦA SHOP ({projects.length})
-          </button>
-          <button onClick={() => { setActiveTab('gist_accounts'); fetchGistAccountsData(); }} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'gist_accounts' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}>
-            <KeyRound className="w-4 h-4" /> KHO ACC TOOL ({gistAccounts.length})
-          </button>
-          <button onClick={() => setActiveTab('sepay')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'sepay' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}>
-            <CreditCard className="w-4 h-4" /> LỊCH SỬ SEPAY ({sepayLogs.length})
-          </button>
-          <button onClick={() => setActiveTab('feedback')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'feedback' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}>
-            <MessageSquare className="w-4 h-4" /> ĐÓNG GÓP DỰ ÁN TOOL ({feedbacks.length})
-          </button>
+          <button onClick={() => setActiveTab('users')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'users' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}><Users className="w-4 h-4" /> QUẢN LÝ NGƯỜI DÙNG ({users.length})</button>
+          <button onClick={() => setActiveTab('tools')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'tools' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}><Wrench className="w-4 h-4" /> SẢN PHẨM TOOL ({tools.length})</button>
+          <button onClick={() => setActiveTab('coupons')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'coupons' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}><Tag className="w-4 h-4" /> MÃ GIẢM GIÁ ({coupons.length})</button>
+          <button onClick={() => setActiveTab('projects')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'projects' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}><FolderKanban className="w-4 h-4" /> DỰ ÁN CỦA SHOP ({projects.length})</button>
+          <button onClick={() => { setActiveTab('gist_accounts'); fetchGistAccountsData(); }} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'gist_accounts' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}><KeyRound className="w-4 h-4" /> KHO ACC TOOL ({gistAccounts.length})</button>
+          <button onClick={() => setActiveTab('sepay')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'sepay' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}><CreditCard className="w-4 h-4" /> LỊCH SỬ SEPAY ({sepayLogs.length})</button>
+          <button onClick={() => setActiveTab('feedback')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'feedback' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white hover:bg-[#141C2B]'}`}><MessageSquare className="w-4 h-4" /> ĐÓNG GÓP ({feedbacks.length})</button>
+          <button onClick={() => setActiveTab('settings')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'settings' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-amber-400 hover:text-amber-300 hover:bg-[#141C2B]'}`}><Bell className="w-4 h-4" /> THÔNG BÁO CHUNG</button>
         </div>
+
+        {/* 0. TAB CÀI ĐẶT THÔNG BÁO */}
+        {activeTab === 'settings' && (
+          <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
+              <Bell className="w-4 h-4 text-amber-400" /> Cài đặt Thông báo Trang chủ
+            </h3>
+            <div className="space-y-4 max-w-2xl">
+              <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl space-y-3">
+                <label className="block text-xs font-bold text-slate-300">Nội dung thông báo gửi đến khách hàng:</label>
+                <textarea 
+                  rows={3}
+                  value={noticeForm.text} 
+                  onChange={e => setNoticeForm({ ...noticeForm, text: e.target.value })} 
+                  className="w-full bg-[#0D121D] border border-[#1C2638] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-500/50 transition" 
+                  placeholder="Nhập thông báo... (Hỗ trợ xuống dòng)" 
+                />
+              </div>
+              <div className="flex items-center gap-4 bg-[#06090E] border border-[#1C2638] p-4 rounded-xl">
+                <label className="text-xs font-bold text-slate-300">Trạng thái hiển thị trên Trang Chủ:</label>
+                <button 
+                  onClick={() => setNoticeForm({ ...noticeForm, active: !noticeForm.active })}
+                  className={`px-4 py-2 rounded-xl text-xs font-black border transition cursor-pointer flex items-center gap-2 ${noticeForm.active ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
+                >
+                  {noticeForm.active ? <><CheckCircle className="w-4 h-4"/> ĐANG BẬT HIỂN THỊ</> : <><Ban className="w-4 h-4"/> ĐANG TẮT</>}
+                </button>
+              </div>
+              <button 
+                onClick={handleSaveNotice}
+                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-6 py-3 rounded-xl text-xs transition shadow-lg shadow-amber-500/20 cursor-pointer flex items-center gap-2"
+              >
+                <Upload className="w-4 h-4" /> LƯU THIẾT LẬP THÔNG BÁO
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* 1. TAB USER */}
         {activeTab === 'users' && (
@@ -1119,7 +933,7 @@ export default function AdminPage() {
               )}
             </div>
           </div>
-        )}
+        </div>
 
       </div>
     </main>
