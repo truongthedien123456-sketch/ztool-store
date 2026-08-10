@@ -12,6 +12,12 @@ import {
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
+
+  // ĐOẠN CODE KIỂM TRA ĐỂ ẨN NAVBAR TRÊN TRANG QUẢN TRỊ
+  if (pathname?.startsWith('/quan-ly-secret')) {
+    return null;
+  }
+
   const [currentUser, setCurrentUser] = useState<any | null>(null);
 
   // States Menu & Dropdown
@@ -822,3 +828,4 @@ export default function Navbar() {
     </>
   );
 }
+hãy cập nhật trang quản trị không bị delay nữa cho tôi
