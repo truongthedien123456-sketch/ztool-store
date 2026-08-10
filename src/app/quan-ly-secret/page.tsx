@@ -24,7 +24,7 @@ export default function AdminPage() {
   const [sepayLogs, setSepayLogs] = useState<any[]>([]);
   const [coupons, setCoupons] = useState<any[]>([]);
   
-  // State Thông báo Admin
+  // State Thông báo
   const [noticeForm, setNoticeForm] = useState({ text: '', active: false });
 
   const [gistAccounts, setGistAccounts] = useState<any[]>([]);
@@ -122,7 +122,6 @@ export default function AdminPage() {
       const { data: couponData } = await supabase.from('coupons').select('*').order('id', { ascending: false });
       if (couponData) setCoupons(couponData);
 
-      // Load Thông Báo từ bảng settings
       const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
       if (settingsData) setNoticeForm({ text: settingsData.notice_text || '', active: settingsData.is_active });
 
@@ -245,7 +244,6 @@ export default function AdminPage() {
 
   const handleDeleteCoupon = async (id: number) => { if (!confirm('Xóa mã giảm giá này khỏi hệ thống?')) return; const { error } = await supabase.from('coupons').delete().eq('id', id); if (!error) loadAllSyncData(); };
 
-  // HÀM LƯU THÔNG BÁO ADMIN
   const handleSaveNotice = async () => {
     const { error } = await supabase.from('settings').upsert({ 
       id: 1, 
@@ -320,7 +318,7 @@ export default function AdminPage() {
           <button onClick={() => setActiveTab('settings')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'settings' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-amber-400 hover:text-amber-300 hover:bg-[#141C2B]'}`}><Bell className="w-4 h-4" /> THÔNG BÁO CHUNG</button>
         </div>
 
-        {/* 0. TAB CÀI ĐẶT THÔNG BÁO */}
+        {/* TAB CÀI ĐẶT THÔNG BÁO */}
         {activeTab === 'settings' && (
           <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
             <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
@@ -356,7 +354,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 1. TAB USER */}
+        {/* TAB USERS */}
         {activeTab === 'users' && (
           <div className="space-y-6">
             <form onSubmit={handleCreateUser} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
@@ -475,28 +473,74 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* CÁC TAB KHÁC (Tools, Coupons, Projects, Gist, Sepay, Feedback)... */}
+        {/* TAB GIST ACCOUNTS (ĐÃ BỔ SUNG LẠI CỘT DEVICE_ID) */}
+        {activeTab === 'gist_accounts' && (
+          <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#1C2638] pb-3">
+              <h2 className="text-sm font-bold text-white uppercase flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-cyan-400" /> KHO TÀI KHOẢN TOOL (GITHUB GIST)
+              </h2>
+              <button onClick={fetchGistAccountsData} className="bg-[#06090E] border border-[#1C2638] text-cyan-400 text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingGist ? 'animate-spin' : ''}`} /> Tải lại
+              </button>
+            </div>
+            {loadingGist ? (
+              <div className="text-center text-xs text-slate-400 py-10">Đang đọc dữ liệu Gist...</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-300">
+                  <thead className="bg-[#06090E] text-slate-400 uppercase text-[10px]">
+                    <tr>
+                      <th className="p-3">Tài khoản</th>
+                      <th className="p-3">Mật khẩu</th>
+                      <th className="p-3">Tool</th>
+                      <th className="p-3">Mã thiết bị (Device ID)</th>
+                      <th className="p-3">Thời gian còn lại</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1C2638]">
+                    {gistAccounts.length === 0 ? (
+                      <tr><td colSpan={5} className="p-4 text-center text-slate-500">Chưa có tài khoản trên Gist.</td></tr>
+                    ) : (
+                      gistAccounts.map((acc, idx) => (
+                        <tr key={idx} className="hover:bg-[#06090E]/50">
+                          <td className="p-3 font-bold text-white">{acc.username}</td>
+                          <td className="p-3 font-mono text-cyan-400">{acc.password}</td>
+                          <td className="p-3 font-mono text-emerald-400">{acc.tool_code || acc.toolCode || 'Chung'}</td>
+                          <td className="p-3 font-mono text-slate-400">{acc.device_id || <span className="text-slate-600">Chưa liên kết</span>}</td>
+                          <td className="p-3">{renderRemainingTime(acc.expire_timestamp)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* CÁC TAB KHÁC (Tools, Coupons, Projects, Sepay, Feedback)... */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
               <h3 className="text-xs font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase"><Plus className="w-4 h-4 text-cyan-400" /> {isEditingTool ? 'Cập nhật Tool' : 'Thêm Tool mới'}</h3>
               <div><label className="block text-[11px] text-slate-400 mb-1">Tên Tool</label><input type="text" required value={toolForm.name} onChange={e => setToolForm({ ...toolForm, name: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none" placeholder="vd: AUTO FARM F17" /></div>
-              <div><label className="block text-[11px] text-cyan-400 mb-1 font-bold">Mã Tool (Dùng xác thực đăng nhập)</label><input type="text" required value={toolForm.toolCode} onChange={e => setToolForm({ ...toolForm, toolCode: e.target.value })} className="w-full bg-[#06090E] border border-cyan-500/50 rounded-xl p-2 text-xs text-white focus:outline-none font-mono" placeholder="vd: auto-f17 hoặc auto-cau-ca" /></div>
-              <div><label className="block text-[11px] text-slate-400 mb-1">Trạng Thái Hoạt Động</label><select value={toolForm.status} onChange={e => setToolForm({ ...toolForm, status: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white focus:outline-none"><option value="Đang hoạt động">Đang hoạt động</option><option value="Tạm ngưng">Tạm ngưng</option></select></div>
-              <div className="space-y-2"><label className="block text-[11px] text-slate-400">Ảnh Minh Họa</label><label className="flex items-center justify-center gap-2 bg-[#06090E] border border-dashed border-[#1C2638] hover:border-cyan-500 text-slate-300 p-3 rounded-xl text-xs cursor-pointer transition"><Upload className="w-4 h-4 text-cyan-400" /><span className="truncate">{imageFile ? imageFile.name : 'Chọn file ảnh...'}</span><input type="file" accept="image/*" onChange={handleFileChange} className="hidden" /></label>{(previewUrl || toolForm.image) && (<div className="w-full aspect-square bg-[#06090E] border border-[#1C2638] rounded-xl overflow-hidden relative"><img src={previewUrl || toolForm.image} alt="Preview" className="w-full h-full object-cover" /></div>)}</div>
+              <div><label className="block text-[11px] text-cyan-400 mb-1 font-bold">Mã Tool (Dùng xác thực đăng nhập)</label><input type="text" required value={toolForm.toolCode} onChange={e => setToolForm({ ...toolForm, toolCode: e.target.value })} className="w-full bg-[#06090E] border border-cyan-500/50 rounded-xl p-2 text-xs text-white focus:outline-none font-mono" placeholder="vd: auto-f17" /></div>
+              <div><label className="block text-[11px] text-slate-400 mb-1">Trạng Thái</label><select value={toolForm.status} onChange={e => setToolForm({ ...toolForm, status: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white"><option value="Đang hoạt động">Đang hoạt động</option><option value="Tạm ngưng">Tạm ngưng</option></select></div>
+              <div className="space-y-2"><label className="block text-[11px] text-slate-400">Ảnh</label><label className="flex items-center justify-center gap-2 bg-[#06090E] border border-dashed border-[#1C2638] text-slate-300 p-3 rounded-xl text-xs cursor-pointer"><Upload className="w-4 h-4 text-cyan-400" /><span className="truncate">{imageFile ? imageFile.name : 'Chọn ảnh...'}</span><input type="file" accept="image/*" onChange={handleFileChange} className="hidden" /></label>{(previewUrl || toolForm.image) && (<div className="w-full aspect-square bg-[#06090E] border border-[#1C2638] rounded-xl overflow-hidden relative"><img src={previewUrl || toolForm.image} alt="Preview" className="w-full h-full object-cover" /></div>)}</div>
               <div className="grid grid-cols-2 gap-2"><div><label className="block text-[10px] text-slate-400">Giá Ngày</label><input type="text" value={toolForm.priceDay} onChange={e => setToolForm({ ...toolForm, priceDay: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="5000" /></div><div><label className="block text-[10px] text-slate-400">Giá Tuần</label><input type="text" value={toolForm.priceWeek} onChange={e => setToolForm({ ...toolForm, priceWeek: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="20000" /></div><div><label className="block text-[10px] text-slate-400">Giá Tháng</label><input type="text" value={toolForm.priceMonth} onChange={e => setToolForm({ ...toolForm, priceMonth: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="50000" /></div><div><label className="block text-[10px] text-slate-400">Giá Vĩnh Viễn</label><input type="text" value={toolForm.priceLifetime} onChange={e => setToolForm({ ...toolForm, priceLifetime: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="100000" /></div></div>
-              <div><label className="block text-[11px] text-slate-400 mb-1">Mô tả sản phẩm</label><textarea value={toolForm.description} onChange={e => setToolForm({ ...toolForm, description: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="Chi tiết..." /></div>
-              <div><label className="block text-[11px] text-slate-400 mb-1">Link Tải Tool</label><input type="text" value={toolForm.downloadLink} onChange={e => setToolForm({ ...toolForm, downloadLink: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" placeholder="https://..." /></div>
-              <button type="submit" disabled={isUploading} className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer flex items-center justify-center gap-2">{isUploading ? <><Loader2 className="w-4 h-4 animate-spin text-cyan-400" /><span>ĐANG UPLOAD...</span></> : <span>LƯU SẢN PHẨM</span>}</button>
+              <div><label className="block text-[11px] text-slate-400 mb-1">Mô tả</label><textarea value={toolForm.description} onChange={e => setToolForm({ ...toolForm, description: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" /></div>
+              <div><label className="block text-[11px] text-slate-400 mb-1">Link Tải</label><input type="text" value={toolForm.downloadLink} onChange={e => setToolForm({ ...toolForm, downloadLink: e.target.value })} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl p-2 text-xs text-white" /></div>
+              <button type="submit" disabled={isUploading} className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer">{isUploading ? 'ĐANG UPLOAD...' : 'LƯU SẢN PHẨM'}</button>
             </form>
             <div className="lg:col-span-2 bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
-              <h3 className="text-xs font-bold text-white border-b border-[#1C2638] pb-3 uppercase">DANH SÁCH TOOL AUTO</h3>
+              <h3 className="text-xs font-bold text-white border-b border-[#1C2638] pb-3 uppercase">DANH SÁCH TOOL</h3>
               <div className="space-y-3">
-                {tools.length === 0 ? <p className="text-xs text-slate-500">Chưa có dữ liệu Tool</p> : tools.map((t) => (
+                {tools.length === 0 ? <p className="text-xs text-slate-500">Chưa có Tool</p> : tools.map((t) => (
                   <div key={t.id} className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4 flex-1">
                       {t.image && (<div className="w-16 h-16 bg-[#0D121D] border border-[#1C2638] rounded-lg overflow-hidden shrink-0"><img src={t.image} alt={t.name} className="w-full h-full object-cover" /></div>)}
-                      <div className="space-y-1"><h4 className="font-bold text-white text-xs">{t.name}</h4><span className="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/30">Mã: {t.toolCode || 'Chưa có'}</span></div>
+                      <div><h4 className="font-bold text-white text-xs">{t.name}</h4><span className="text-[10px] font-mono text-cyan-400">Mã: {t.toolCode}</span></div>
                     </div>
                     <div className="flex gap-2"><button onClick={() => { setToolForm(t); setPreviewUrl(t.image); setIsEditingTool(true); }} className="text-cyan-400 p-2 hover:bg-cyan-500/10 rounded-lg cursor-pointer"><Edit className="w-4 h-4" /></button><button onClick={() => handleDeleteTool(t.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg cursor-pointer"><Trash2 className="w-4 h-4" /></button></div>
                   </div>
@@ -554,32 +598,6 @@ export default function AdminPage() {
                 ))}
               </div>
             </div>
-          </div>
-        )}
-
-        {activeTab === 'gist_accounts' && (
-          <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-[#1C2638] pb-3">
-              <h2 className="text-sm font-bold text-white uppercase flex items-center gap-2"><KeyRound className="w-4 h-4 text-cyan-400" /> KHO TÀI KHOẢN TOOL (GITHUB GIST)</h2>
-              <button onClick={fetchGistAccountsData} className="bg-[#06090E] border border-[#1C2638] text-cyan-400 text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer"><RefreshCw className={`w-3.5 h-3.5 ${loadingGist ? 'animate-spin' : ''}`} /> Tải lại</button>
-            </div>
-            {loadingGist ? <div className="text-center text-xs text-slate-400 py-10">Đang đọc dữ liệu Gist...</div> : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-slate-300">
-                  <thead className="bg-[#06090E] text-slate-400 uppercase text-[10px]"><tr><th className="p-3">Tài khoản</th><th className="p-3">Mật khẩu</th><th className="p-3">Tool</th><th className="p-3">Thời gian còn lại</th></tr></thead>
-                  <tbody className="divide-y divide-[#1C2638]">
-                    {gistAccounts.length === 0 ? <tr><td colSpan={4} className="p-4 text-center text-slate-500">Chưa có tài khoản trên Gist.</td></tr> : gistAccounts.map((acc, idx) => (
-                      <tr key={idx} className="hover:bg-[#06090E]/50">
-                        <td className="p-3 font-bold text-white">{acc.username}</td>
-                        <td className="p-3 font-mono text-cyan-400">{acc.password}</td>
-                        <td className="p-3 font-mono text-emerald-400">{acc.tool_code || 'Chung'}</td>
-                        <td className="p-3">{renderRemainingTime(acc.expire_timestamp)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
         )}
 
