@@ -1,11 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Script from 'next/script';
-import { MessageSquare, X } from 'lucide-react';
+import { MessageSquare, X, Facebook } from 'lucide-react';
 
 export default function SocialFloatButtons() {
   const [showZaloModal, setShowZaloModal] = useState(false);
+
+  // Lắng nghe sự kiện từ Footer gửi tới để mở popup Zalo
+  useEffect(() => {
+    const handleOpenZalo = () => setShowZaloModal(true);
+    window.addEventListener('open-zalo-modal', handleOpenZalo);
+    return () => window.removeEventListener('open-zalo-modal', handleOpenZalo);
+  }, []);
 
   const openLiveChat = () => {
     if (typeof window !== 'undefined' && (window as any).Tawk_API) {
@@ -20,7 +27,23 @@ export default function SocialFloatButtons() {
       {/* CỤM NÚT NỔI Ở GÓC DƯỚI BÊN PHẢI MÀN HÌNH */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col space-y-3 items-end">
         
-        {/* 1. NÚT ZALO (BẤM VÀO BẬT POPUP ẢNH QR NGUYỄN MINH KHANG) */}
+        {/* 1. NÚT FACEBOOK (NẰM TRÊN CÙNG) */}
+        <a
+          href="https://www.facebook.com/profile.php?id=61592809269339"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group relative flex items-center justify-center w-13 h-13 sm:w-14 sm:h-14 bg-[#1877F2] hover:bg-[#166FE5] text-white rounded-2xl shadow-xl shadow-blue-600/20 border-2 border-blue-400/30 transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer"
+          title="Ghé thăm Fanpage Facebook"
+        >
+          <Facebook className="w-6 h-6 fill-current" />
+          
+          {/* Tooltip khi hover */}
+          <span className="absolute right-16 bg-[#0D121D] border border-[#1C2638] text-white text-[11px] font-bold px-3 py-1.5 rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition duration-200 whitespace-nowrap pointer-events-none">
+            Ghé thăm Fanpage
+          </span>
+        </a>
+
+        {/* 2. NÚT ZALO */}
         <button
           onClick={() => setShowZaloModal(true)}
           className="group relative flex items-center justify-center w-13 h-13 sm:w-14 sm:h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl shadow-xl shadow-blue-600/30 border-2 border-blue-400/50 transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer"
@@ -34,7 +57,7 @@ export default function SocialFloatButtons() {
           </span>
         </button>
 
-        {/* 2. NÚT CHAT TRỰC TUYẾN (TAWK.TO) */}
+        {/* 3. NÚT CHAT TRỰC TUYẾN (TAWK.TO) */}
         <button
           onClick={openLiveChat}
           className="group relative flex items-center justify-center w-13 h-13 sm:w-14 sm:h-14 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-2xl shadow-xl shadow-cyan-500/30 border-2 border-cyan-300 transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer"
@@ -73,7 +96,6 @@ export default function SocialFloatButtons() {
                 alt="Zalo QR Code Nguyễn Minh Khang"
                 className="w-56 h-auto object-cover rounded-xl mx-auto"
                 onError={(e) => {
-                  // Hiển thị thông báo nếu chưa chép ảnh vào thư mục public/
                   (e.target as HTMLElement).style.display = 'none';
                 }}
               />
