@@ -48,16 +48,20 @@ export default function Navbar() {
   const [showAccountInfoModal, setShowAccountInfoModal] = useState(false);
   const [showPurchasedToolsModal, setShowPurchasedToolsModal] = useState(false);
   
-  // Tính năng Điểm danh
-  const [showCheckInModal, setShowCheckInModal] = useState(false);
-  const [checkInLoading, setCheckInLoading] = useState(false);
-  const [checkInMsg, setCheckInMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
+  // GIẢI PHÁP CHỐNG GIẬT: Đọc trạng thái điểm danh tức thì trong ngày từ localStorage
+  const [hasCheckedInToday, setHasCheckedInToday] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+      const savedStatus = localStorage.getItem(`ztool_checkin_${todayStr}`);
+      return savedStatus === 'true';
+    }
+    return false;
+  });
 
   const [rechargeAmount, setRechargeAmount] = useState('50000');
   const [copied, setCopied] = useState(false);
 
-  // GIẢI PHÁP CHỐNG GIẬT: Đọc thông báo chung tức thì từ localStorage ngay khi khởi tạo render
+  // Đọc thông báo chung tức thì từ localStorage ngay khi khởi tạo render
   const [announcement, setAnnouncement] = useState<{ text: string, active: boolean } | null>(() => {
     if (typeof window !== 'undefined') {
       const savedNotice = localStorage.getItem('ztool_cached_notice');
@@ -107,7 +111,6 @@ export default function Navbar() {
     }
   };
 
-  // Cập nhật ngầm dữ liệu thông báo từ Cloud và lưu vào bộ nhớ cache client
   const loadAnnouncement = async () => {
     try {
       const { data } = await supabase.from('settings').select('*').eq('id', 1).single();
@@ -150,12 +153,19 @@ export default function Navbar() {
         .limit(1)
         .single();
 
+      const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
       if (lastCheckIn) {
-        const today = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
         const lastCheckInDate = new Date(lastCheckIn.created_at).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-        setHasCheckedInToday(lastCheckInDate === today);
+        const checkedIn = lastCheckInDate === todayStr;
+        setHasCheckedInToday(checkedIn);
+        if (checkedIn) {
+          localStorage.setItem(`ztool_checkin_${todayStr}`, 'true');
+        } else {
+          localStorage.removeItem(`ztool_checkin_${todayStr}`);
+        }
       } else {
         setHasCheckedInToday(false);
+        localStorage.removeItem(`ztool_checkin_${todayStr}`);
       }
     } catch (err) {
       console.error(err);
@@ -236,39 +246,6 @@ export default function Navbar() {
     if (!error && data) {
       setUserTransactions(data);
     }
-  };
-
-  const renderRemainingTime = (expireTimestamp: number) => {
-    if (!expireTimestamp || expireTimestamp === 0) {
-      return (
-        <span className="text-cyan-300 font-black bg-gradient-to-r from-cyan-500/20 to-blue-500/20 px-3.5 py-1.5 rounded-xl border border-cyan-400/40 text-xs shadow-[0_0_12px_rgba(6,182,212,0.2)] inline-flex items-center gap-1.5">
-          ♾️ Vĩnh Viễn
-        </span>
-      );
-    }
-
-    const nowSec = Math.floor(nowTime / 1000);
-    const diffSec = expireTimestamp - nowSec;
-
-    if (diffSec <= 0) {
-      return (
-        <span className="text-rose-400 font-bold bg-rose-500/20 px-3.5 py-1.5 rounded-xl border border-rose-500/40 text-xs inline-flex items-center gap-1.5">
-          ⚠️ Đã Hết Hạn
-        </span>
-      );
-    }
-
-    const days = Math.floor(diffSec / 86400);
-    const hours = Math.floor((diffSec % 86400) / 3600);
-    const minutes = Math.floor((diffSec % 3600) / 60);
-    const seconds = diffSec % 60;
-
-    return (
-      <span className="text-emerald-300 font-mono font-black bg-gradient-to-r from-emerald-500/20 to-teal-500/20 px-3.5 py-1.5 rounded-xl border border-emerald-400/40 text-xs inline-flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.25)]">
-        <Clock className="w-4 h-4 text-emerald-400 shrink-0 animate-pulse" />
-        {days > 0 && `${days}d `}{hours}h {minutes}m {seconds}s
-      </span>
-    );
   };
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -352,7 +329,9 @@ export default function Navbar() {
     if (currentUser?.username) {
       await supabase.from('users').update({ is_online: false }).eq('username', currentUser.username);
     }
+    const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
     localStorage.removeItem('ztool_current_user');
+    localStorage.removeItem(`ztool_checkin_${todayStr}`);
     setCurrentUser(null);
     setShowUserDropdown(false);
     setHasCheckedInToday(false);
@@ -373,11 +352,12 @@ export default function Navbar() {
         .limit(1)
         .single();
 
-      const today = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+      const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
       if (lastCheckIn) {
         const lastCheckInDate = new Date(lastCheckIn.created_at).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-        if (lastCheckInDate === today) {
+        if (lastCheckInDate === todayStr) {
           setHasCheckedInToday(true);
+          localStorage.setItem(`ztool_checkin_${todayStr}`, 'true');
           setCheckInMsg({ type: 'error', text: 'Bạn đã điểm danh hôm nay rồi. Hãy quay lại vào ngày mai nhé!' });
           setCheckInLoading(false);
           return;
@@ -398,6 +378,7 @@ export default function Navbar() {
 
       setCurrentUser({ ...currentUser, balance: newBalance });
       setHasCheckedInToday(true);
+      localStorage.setItem(`ztool_checkin_${todayStr}`, 'true');
       setCheckInMsg({ type: 'success', text: 'Điểm danh thành công! Bạn nhận được +1,000 VNĐ.' });
 
     } catch (err: any) {
