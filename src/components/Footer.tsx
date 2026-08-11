@@ -1,3 +1,5 @@
+'use client';
+
 import Image from "next/image";
 import Link from "next/link";
 
@@ -95,9 +97,11 @@ export default function Footer() {
               </a>
 
 
-              {/* Facebook */}
+              {/* Facebook (Đã cập nhật link Fanpage) */}
               <a
-                href="#"
+                href="https://www.facebook.com/profile.php?id=61592809269339"
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label="Facebook"
                 className="
                   flex h-10 w-10 items-center justify-center
@@ -173,7 +177,28 @@ export default function Footer() {
 
             <div className="space-y-4">
               <FooterLink href="#" text="Hướng dẫn" />
-              <FooterLink href="#" text="Liên hệ" />
+              
+              {/* Nút bấm Liên hệ kích hoạt Popup Zalo */}
+              <button
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('open-zalo-modal'));
+                  }
+                }}
+                className="
+                  group flex items-center
+                  text-sm text-slate-500
+                  transition-all duration-200
+                  hover:translate-x-1
+                  hover:text-cyan-300
+                  cursor-pointer text-left bg-transparent border-none p-0 outline-none
+                "
+              >
+                <span className="mr-2 text-[10px] text-cyan-500/50 transition-colors group-hover:text-cyan-400">
+                  •
+                </span>
+                Liên hệ
+              </button>
             </div>
           </div>
 
