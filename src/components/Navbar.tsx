@@ -17,16 +17,23 @@ export default function Navbar() {
     return null;
   }
 
-  // Khởi tạo trạng thái user ngay lập tức từ localStorage để chống giật khi F5
+  // Đọc User từ localStorage ngay lập tức
   const [currentUser, setCurrentUser] = useState<any | null>(() => {
     if (typeof window !== 'undefined') {
-      const savedUser = localStorage.getItem('ztool_current_user');
-      return savedUser ? { username: savedUser, balance: 0 } : null;
+      const savedUserStr = localStorage.getItem('ztool_user_data');
+      if (savedUserStr) {
+        try {
+          return JSON.parse(savedUserStr);
+        } catch (e) {
+          const savedUsername = localStorage.getItem('ztool_current_user');
+          return savedUsername ? { username: savedUsername, balance: 0 } : null;
+        }
+      }
+      const savedUsername = localStorage.getItem('ztool_current_user');
+      return savedUsername ? { username: savedUsername, balance: 0 } : null;
     }
     return null;
   });
-
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   // States Menu & Dropdown
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -48,7 +55,10 @@ export default function Navbar() {
   const [showAccountInfoModal, setShowAccountInfoModal] = useState(false);
   const [showPurchasedToolsModal, setShowPurchasedToolsModal] = useState(false);
   
-  // GIẢI PHÁP CHỐNG GIẬT: Đọc trạng thái điểm danh tức thì trong ngày từ localStorage
+  // Trạng thái điểm danh
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [checkInLoading, setCheckInLoading] = useState(false);
+  const [checkInMsg, setCheckInMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [hasCheckedInToday, setHasCheckedInToday] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
@@ -61,7 +71,7 @@ export default function Navbar() {
   const [rechargeAmount, setRechargeAmount] = useState('50000');
   const [copied, setCopied] = useState(false);
 
-  // Đọc thông báo chung tức thì từ localStorage ngay khi khởi tạo render
+  // Thông báo chung
   const [announcement, setAnnouncement] = useState<{ text: string, active: boolean } | null>(() => {
     if (typeof window !== 'undefined') {
       const savedNotice = localStorage.getItem('ztool_cached_notice');
@@ -180,19 +190,19 @@ export default function Navbar() {
         if (data.isBanned) {
           alert('Tài khoản của bạn đã bị khóa!');
           handleLogout();
-          setIsAuthLoading(false);
           return;
         }
         setCurrentUser(data);
+        localStorage.setItem('ztool_user_data', JSON.stringify(data));
         checkTodayCheckInStatus(data.username);
       } else {
         localStorage.removeItem('ztool_current_user');
+        localStorage.removeItem('ztool_user_data');
         setCurrentUser(null);
       }
     } else {
       setCurrentUser(null);
     }
-    setIsAuthLoading(false);
   };
 
   const loadUserGistData = async (username: string) => {
@@ -248,6 +258,39 @@ export default function Navbar() {
     }
   };
 
+  const renderRemainingTime = (expireTimestamp: number) => {
+    if (!expireTimestamp || expireTimestamp === 0) {
+      return (
+        <span className="text-cyan-300 font-black bg-gradient-to-r from-cyan-500/20 to-blue-500/20 px-3.5 py-1.5 rounded-xl border border-cyan-400/40 text-xs shadow-[0_0_12px_rgba(6,182,212,0.2)] inline-flex items-center gap-1.5">
+          ♾️ Vĩnh Viễn
+        </span>
+      );
+    }
+
+    const nowSec = Math.floor(nowTime / 1000);
+    const diffSec = expireTimestamp - nowSec;
+
+    if (diffSec <= 0) {
+      return (
+        <span className="text-rose-400 font-bold bg-rose-500/20 px-3.5 py-1.5 rounded-xl border border-rose-500/40 text-xs inline-flex items-center gap-1.5">
+          ⚠️ Đã Hết Hạn
+        </span>
+      );
+    }
+
+    const days = Math.floor(diffSec / 86400);
+    const hours = Math.floor((diffSec % 86400) / 3600);
+    const minutes = Math.floor((diffSec % 3600) / 60);
+    const seconds = diffSec % 60;
+
+    return (
+      <span className="text-emerald-300 font-mono font-black bg-gradient-to-r from-emerald-500/20 to-teal-500/20 px-3.5 py-1.5 rounded-xl border border-emerald-400/40 text-xs inline-flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.25)]">
+        <Clock className="w-4 h-4 text-emerald-400 shrink-0 animate-pulse" />
+        {days > 0 && `${days}d `}{hours}h {minutes}m {seconds}s
+      </span>
+    );
+  };
+
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthMsg(null);
@@ -290,6 +333,7 @@ export default function Navbar() {
         setAuthMsg({ type: 'error', text: 'Lỗi đăng ký: ' + error.message });
       } else {
         localStorage.setItem('ztool_current_user', newUser.username);
+        localStorage.setItem('ztool_user_data', JSON.stringify(newUser));
         setCurrentUser(newUser);
 
         await supabase.from('transactions').insert([{ username: newUser.username, type: 'INIT', title: 'Khởi tạo tài khoản thành công', amount: 0, status: 'Thành công' }]);
@@ -318,6 +362,7 @@ export default function Navbar() {
       }
 
       localStorage.setItem('ztool_current_user', user.username);
+      localStorage.setItem('ztool_user_data', JSON.stringify(user));
       setCurrentUser(user);
 
       setAuthMsg({ type: 'success', text: 'Đăng nhập thành công!' });
@@ -331,6 +376,7 @@ export default function Navbar() {
     }
     const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
     localStorage.removeItem('ztool_current_user');
+    localStorage.removeItem('ztool_user_data');
     localStorage.removeItem(`ztool_checkin_${todayStr}`);
     setCurrentUser(null);
     setShowUserDropdown(false);
@@ -343,6 +389,8 @@ export default function Navbar() {
     setCheckInLoading(true);
 
     try {
+      const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+
       const { data: lastCheckIn } = await supabase
         .from('transactions')
         .select('created_at')
@@ -352,7 +400,6 @@ export default function Navbar() {
         .limit(1)
         .single();
 
-      const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
       if (lastCheckIn) {
         const lastCheckInDate = new Date(lastCheckIn.created_at).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
         if (lastCheckInDate === todayStr) {
@@ -376,14 +423,16 @@ export default function Navbar() {
 
       await supabase.from('transactions').insert([{ username: currentUser.username, type: 'CHECKIN', title: 'Điểm danh hàng ngày', amount: rewardAmount, status: 'Thành công' }]);
 
-      setCurrentUser({ ...currentUser, balance: newBalance });
+      const updatedUser = { ...currentUser, balance: newBalance };
+      setCurrentUser(updatedUser);
+      localStorage.setItem('ztool_user_data', JSON.stringify(updatedUser));
       setHasCheckedInToday(true);
       localStorage.setItem(`ztool_checkin_${todayStr}`, 'true');
       setCheckInMsg({ type: 'success', text: 'Điểm danh thành công! Bạn nhận được +1,000 VNĐ.' });
 
     } catch (err: any) {
       setCheckInMsg({ type: 'error', text: `Lỗi hệ thống: ${err.message}` });
-    } finally {
+    } fontinally {
       setCheckInLoading(false);
     }
   };
@@ -448,12 +497,7 @@ export default function Navbar() {
 
         {/* NẠP TIỀN, ĐIỂM DANH & VÍ TIỀN */}
         <div className="flex items-center gap-3">
-          {isAuthLoading ? (
-            <div className="flex items-center gap-3 opacity-40">
-              <div className="w-24 h-10 bg-[#1C2638] rounded-2xl animate-pulse"></div>
-              <div className="w-24 h-10 bg-[#1C2638] rounded-2xl animate-pulse"></div>
-            </div>
-          ) : currentUser ? (
+          {currentUser ? (
             <div className="flex items-center gap-3">
               
               {/* NÚT ĐIỂM DANH */}
