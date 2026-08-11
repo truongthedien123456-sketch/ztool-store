@@ -1,217 +1,106 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Navbar from '@/components/Navbar';
-import { Lock, User, Key, ShieldCheck, LogOut, Users, CreditCard, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
+import Script from 'next/script';
+import { MessageSquare, X } from 'lucide-react';
 
-export default function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [usernameInput, setUsernameInput] = useState('');
-  const [passwordInput, setPasswordInput] = useState('');
-  const [loginError, setLoginError] = useState('');
+export default function SocialFloatButtons() {
+  const [showZaloModal, setShowZaloModal] = useState(false);
 
-  // Dữ liệu quản trị
-  const [users, setUsers] = useState<any[]>([]);
-  const [rechargeHistory, setRechargeHistory] = useState<any[]>([]);
-
-  // Kiểm tra trạng thái đã đăng nhập Admin trước đó chưa
-  useEffect(() => {
-    const isLogged = localStorage.getItem('ztool_admin_authenticated');
-    if (isLogged === 'true') {
-      setIsAuthenticated(true);
-      loadAdminData();
-    }
-  }, []);
-
-  const loadAdminData = () => {
-    const savedUsers = localStorage.getItem('ztool_users');
-    if (savedUsers) setUsers(JSON.parse(savedUsers));
-
-    const savedHistory = localStorage.getItem('ztool_recharge_history');
-    if (savedHistory) setRechargeHistory(JSON.parse(savedHistory));
-  };
-
-  // Xử lý đăng nhập Admin
-  const handleAdminLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // THAY ĐỔI TÀI KHOẢN & MẬT KHẨU ADMIN TẠI ĐÂY
-    const ADMIN_USER = 'admin';
-    const ADMIN_PASS = 'ztool123456@';
-
-    if (usernameInput === ADMIN_USER && passwordInput === ADMIN_PASS) {
-      localStorage.setItem('ztool_admin_authenticated', 'true');
-      setIsAuthenticated(true);
-      setLoginError('');
-      loadAdminData();
+  const openLiveChat = () => {
+    if (typeof window !== 'undefined' && (window as any).Tawk_API) {
+      (window as any).Tawk_API.maximize();
     } else {
-      setLoginError('Tài khoản hoặc mật khẩu Quản trị không chính xác!');
+      alert('Hệ thống chat trực tuyến đang khởi tạo, vui lòng thử lại sau vài giây!');
     }
   };
 
-  // Xử lý Đăng xuất Admin
-  const handleAdminLogout = () => {
-    localStorage.removeItem('ztool_admin_authenticated');
-    setIsAuthenticated(false);
-    setUsernameInput('');
-    setPasswordInput('');
-  };
-
-  // MÀN HÌNH ĐĂNG NHẬP ADMIN
-  if (!isAuthenticated) {
-    return (
-      <main className="min-h-screen bg-[#080B10] text-white font-sans flex flex-col justify-center items-center px-4">
-        <div className="max-w-md w-full bg-[#0F141C] border border-[#1A2332] rounded-3xl p-8 shadow-2xl relative">
-          
-          <div className="text-center space-y-2 mb-8">
-            <div className="w-14 h-14 bg-neonBlue/10 border border-neonBlue/30 rounded-2xl flex items-center justify-center mx-auto text-cyanGlow">
-              <Lock className="w-7 h-7" />
-            </div>
-            <h1 className="text-xl font-black text-white">TRANG QUẢN TRỊ ZTOOL</h1>
-            <p className="text-xs text-gray-400">Vui lòng đăng nhập tài khoản Admin để truy cập hệ thống</p>
-          </div>
-
-          {loginError && (
-            <div className="mb-6 p-3.5 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs text-center font-bold">
-              {loginError}
-            </div>
-          )}
-
-          <form onSubmit={handleAdminLogin} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-300 mb-1.5">Tài khoản Quản trị</label>
-              <div className="relative">
-                <User className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" />
-                <input
-                  type="text"
-                  required
-                  placeholder="Nhập username..."
-                  value={usernameInput}
-                  onChange={(e) => setUsernameInput(e.target.value)}
-                  className="w-full bg-[#080B10] border border-[#1A2332] focus:border-neonBlue rounded-xl pl-10 pr-4 py-3 text-xs text-white focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-300 mb-1.5">Mật khẩu Bảo mật</label>
-              <div className="relative">
-                <Key className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" />
-                <input
-                  type="password"
-                  required
-                  placeholder="Nhập mật khẩu..."
-                  value={passwordInput}
-                  onChange={(e) => setPasswordInput(e.target.value)}
-                  className="w-full bg-[#080B10] border border-[#1A2332] focus:border-neonBlue rounded-xl pl-10 pr-4 py-3 text-xs text-white focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-r from-neonBlue to-cyanGlow text-black font-extrabold text-xs py-3.5 rounded-xl shadow-lg shadow-neonBlue/20 hover:opacity-90 transition cursor-pointer flex items-center justify-center gap-2 mt-2"
-            >
-              <ShieldCheck className="w-4 h-4" /> ĐĂNG NHẬP HỆ THỐNG
-            </button>
-          </form>
-
-        </div>
-      </main>
-    );
-  }
-
-  // MÀN HÌNH DASHBOARD BẢNG QUẢN TRỊ (Sau khi đăng nhập đúng)
   return (
-    <main className="min-h-screen bg-[#080B10] text-white pb-20 font-sans">
-      <Navbar />
-
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <>
+      {/* CỤM NÚT NỔI Ở GÓC DƯỚI BÊN PHẢI MÀN HÌNH */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col space-y-3 items-end">
         
-        {/* Header Admin */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#1A2332] pb-6">
-          <div>
-            <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-semibold text-emerald-400 mb-2">
-              <ShieldCheck className="w-3.5 h-3.5" /> BẢNG QUẢN TRỊ BẢO MẬT
-            </div>
-            <h1 className="text-2xl font-black text-white">QUẢN LÝ HỆ THỐNG ZTOOL</h1>
-          </div>
+        {/* 1. NÚT ZALO (BẤM VÀO BẬT POPUP ẢNH QR NGUYỄN MINH KHANG) */}
+        <button
+          onClick={() => setShowZaloModal(true)}
+          className="group relative flex items-center justify-center w-13 h-13 sm:w-14 sm:h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl shadow-xl shadow-blue-600/30 border-2 border-blue-400/50 transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer"
+          title="Liên hệ Zalo"
+        >
+          <span className="font-black text-xs sm:text-sm tracking-tight">ZALO</span>
+          
+          {/* Tooltip khi hover */}
+          <span className="absolute right-16 bg-[#0D121D] border border-[#1C2638] text-white text-[11px] font-bold px-3 py-1.5 rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition duration-200 whitespace-nowrap pointer-events-none">
+            Quét mã Zalo
+          </span>
+        </button>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={loadAdminData}
-              className="bg-[#0F141C] border border-[#1A2332] hover:border-gray-600 text-gray-300 text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <RefreshCw className="w-3.5 h-3.5" /> Tải lại dữ liệu
-            </button>
+        {/* 2. NÚT CHAT TRỰC TUYẾN (TAWK.TO) */}
+        <button
+          onClick={openLiveChat}
+          className="group relative flex items-center justify-center w-13 h-13 sm:w-14 sm:h-14 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-2xl shadow-xl shadow-cyan-500/30 border-2 border-cyan-300 transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer"
+          title="Chat trực tuyến"
+        >
+          <MessageSquare className="w-6 h-6 stroke-[2.5]" />
 
-            <button
-              onClick={handleAdminLogout}
-              className="bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" /> Đăng xuất
-            </button>
-          </div>
-        </div>
-
-        {/* Thống kê Tổng quan */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-[#0F141C] border border-[#1A2332] rounded-2xl p-5 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-neonBlue/10 border border-neonBlue/30 flex items-center justify-center text-cyanGlow">
-              <Users className="w-6 h-6" />
-            </div>
-            <div>
-              <span className="text-xs text-gray-400 block">Tổng số người dùng</span>
-              <b className="text-xl font-bold text-white">{users.length} tài khoản</b>
-            </div>
-          </div>
-
-          <div className="bg-[#0F141C] border border-[#1A2332] rounded-2xl p-5 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <CreditCard className="w-6 h-6" />
-            </div>
-            <div>
-              <span className="text-xs text-gray-400 block">Tổng số giao dịch nạp</span>
-              <b className="text-xl font-bold text-white">{rechargeHistory.length} đơn</b>
-            </div>
-          </div>
-        </div>
-
-        {/* Bảng Danh Sách Người Dùng */}
-        <div className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 shadow-xl space-y-4">
-          <h2 className="text-base font-bold text-white flex items-center gap-2 border-b border-[#1A2332] pb-3">
-            <Users className="w-5 h-5 text-cyanGlow" /> DANH SÁCH TÀI KHOẢN NGƯỜI DÙNG
-          </h2>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-gray-300">
-              <thead className="bg-[#080B10] border-b border-[#1A2332] text-gray-400 uppercase text-[10px]">
-                <tr>
-                  <th className="p-3">Tài khoản</th>
-                  <th className="p-3">Số dư hiện tại</th>
-                  <th className="p-3">Ngày đăng ký</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1A2332]">
-                {users.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="p-4 text-center text-gray-500">Chưa có người dùng nào đăng ký</td>
-                  </tr>
-                ) : (
-                  users.map((u, i) => (
-                    <tr key={i} className="hover:bg-[#080B10]/50 transition">
-                      <td className="p-3 font-bold text-white">{u.username}</td>
-                      <td className="p-3 font-bold text-emerald-400">{(u.balance || 0).toLocaleString('vi-VN')} VNĐ</td>
-                      <td className="p-3 text-gray-400">{u.createdAt || 'N/A'}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+          {/* Tooltip khi hover */}
+          <span className="absolute right-16 bg-[#0D121D] border border-[#1C2638] text-white text-[11px] font-bold px-3 py-1.5 rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition duration-200 whitespace-nowrap pointer-events-none">
+            Hỗ trợ trực tuyến
+          </span>
+        </button>
 
       </div>
-    </main>
+
+      {/* POPUP HIỂN THỊ MÃ QR ZALO NGUYỄN MINH KHANG */}
+      {showZaloModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 animate-fade-in">
+          <div className="bg-[#0D121D] border-2 border-cyan-400 w-full max-w-sm rounded-3xl p-6 relative text-center space-y-4 shadow-2xl shadow-cyan-500/30">
+            <button
+              onClick={() => setShowZaloModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-[#1C2638] cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="space-y-1 pt-2">
+              <h3 className="text-base font-black text-white uppercase tracking-wider">LIÊN HỆ QUẢN TRỊ VIÊN</h3>
+              <p className="text-xs text-slate-400">Mở ứng dụng Zalo bấm nút quét QR để kết bạn trực tiếp</p>
+            </div>
+
+            {/* KHUNG ẢNH QR ZALO NGUYỄN MINH KHANG */}
+            <div className="bg-white p-3 rounded-2xl inline-block shadow-inner">
+              <img
+                src="/zalo-qr.jpg"
+                alt="Zalo QR Code Nguyễn Minh Khang"
+                className="w-56 h-auto object-cover rounded-xl mx-auto"
+                onError={(e) => {
+                  // Hiển thị thông báo nếu chưa chép ảnh vào thư mục public/
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-sm font-black text-white">Nguyễn Minh Khang</p>
+              <p className="text-xs font-bold text-cyan-400">Liên hệ Zalo 24/7</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TÍCH HỢP SCRIPT TAWK.TO CHAT */}
+      <Script id="tawk-to-script" strategy="lazyOnload">
+        {`
+          var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+          (function(){
+            var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+            s1.async=true;
+            s1.src='https://embed.tawk.to/678a63583a84273260706cb8/1iho0f7b0';
+            s1.charset='UTF-8';
+            s1.setAttribute('crossorigin','*');
+            s0.parentNode.insertBefore(s1,s0);
+          })();
+        `}
+      </Script>
+    </>
   );
 }

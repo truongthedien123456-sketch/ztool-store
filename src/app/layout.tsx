@@ -8,6 +8,9 @@ import Navbar from "@/components/Navbar";
 // Footer
 import Footer from "@/components/Footer";
 
+// Cụm nút Zalo & Chat nổi
+import SocialFloatButtons from "@/components/SocialFloatButtons";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -33,7 +36,7 @@ export default function RootLayout({
       lang="vi"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-screen bg-[#05080d] text-white">
+      <body className="min-h-screen bg-[#05080d] text-white relative">
         
         {/* NAVBAR */}
         <Navbar />
@@ -42,6 +45,9 @@ export default function RootLayout({
         <main className="min-h-screen">
           {children}
         </main>
+
+        {/* CỤM NÚT NỔI ZALO & CHAT TAWK.TO */}
+        <SocialFloatButtons />
 
         {/* FOOTER */}
         <Footer />
