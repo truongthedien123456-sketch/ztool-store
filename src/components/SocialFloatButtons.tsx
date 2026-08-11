@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Script from 'next/script';
-import { MessageSquare, X, Facebook } from 'lucide-react';
+import { MessageSquare, X } from 'lucide-react';
 
 export default function SocialFloatButtons() {
   const [showZaloModal, setShowZaloModal] = useState(false);
@@ -35,7 +35,10 @@ export default function SocialFloatButtons() {
           className="group relative flex items-center justify-center w-13 h-13 sm:w-14 sm:h-14 bg-[#1877F2] hover:bg-[#166FE5] text-white rounded-2xl shadow-xl shadow-blue-600/20 border-2 border-blue-400/30 transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer"
           title="Ghé thăm Fanpage Facebook"
         >
-          <Facebook className="w-6 h-6 fill-current" />
+          {/* SVG ICON FACEBOOK CHUẨN */}
+          <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+            <path d="M24 12.073c0-6.627-4.873-12-10.875-12S2.25 5.446 2.25 12.073c0 5.99 4.388 10.954 10.125 11.854v-8.385H9.703v-3.47h2.672V9.423c0-2.638 1.569-4.09 3.971-4.09 1.15 0 2.351.205 2.351.205v2.584h-1.324c-1.308 0-1.715.813-1.715 1.648v1.98h2.912l-.465 3.47h-2.447v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+          </svg>
           
           {/* Tooltip khi hover */}
           <span className="absolute right-16 bg-[#0D121D] border border-[#1C2638] text-white text-[11px] font-bold px-3 py-1.5 rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition duration-200 whitespace-nowrap pointer-events-none">
@@ -89,15 +92,12 @@ export default function SocialFloatButtons() {
               <p className="text-xs text-slate-400">Mở ứng dụng Zalo bấm nút quét QR để kết bạn trực tiếp</p>
             </div>
 
-            {/* KHUNG ẢNH QR ZALO NGUYỄN MINH KHANG */}
+            {/* KHUNG ẢNH QR ZALO (KHỚP TÊN FILE zalo-qr.jpg TRONG PUBLIC) */}
             <div className="bg-white p-3 rounded-2xl inline-block shadow-inner">
               <img
                 src="/zalo-qr.jpg"
                 alt="Zalo QR Code Nguyễn Minh Khang"
                 className="w-56 h-auto object-cover rounded-xl mx-auto"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
-                }}
               />
             </div>
 
