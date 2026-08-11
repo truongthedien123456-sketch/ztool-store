@@ -17,7 +17,7 @@ export default function Navbar() {
     return null;
   }
 
-  // Khởi tạo state đọc ngay từ localStorage để không bị trễ khung hình khi F5
+  // Khởi tạo trạng thái user ngay lập tức từ localStorage để chống giật khi F5
   const [currentUser, setCurrentUser] = useState<any | null>(() => {
     if (typeof window !== 'undefined') {
       const savedUser = localStorage.getItem('ztool_current_user');
@@ -57,8 +57,20 @@ export default function Navbar() {
   const [rechargeAmount, setRechargeAmount] = useState('50000');
   const [copied, setCopied] = useState(false);
 
-  // Dữ liệu Thông báo Chung từ Admin
-  const [announcement, setAnnouncement] = useState<{ text: string, active: boolean } | null>(null);
+  // GIẢI PHÁP CHỐNG GIẬT: Đọc thông báo chung tức thì từ localStorage ngay khi khởi tạo render
+  const [announcement, setAnnouncement] = useState<{ text: string, active: boolean } | null>(() => {
+    if (typeof window !== 'undefined') {
+      const savedNotice = localStorage.getItem('ztool_cached_notice');
+      if (savedNotice) {
+        try {
+          return JSON.parse(savedNotice);
+        } catch (e) {
+          return null;
+        }
+      }
+    }
+    return null;
+  });
 
   // Dữ liệu Gist và Lịch sử
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
@@ -95,11 +107,14 @@ export default function Navbar() {
     }
   };
 
+  // Cập nhật ngầm dữ liệu thông báo từ Cloud và lưu vào bộ nhớ cache client
   const loadAnnouncement = async () => {
     try {
       const { data } = await supabase.from('settings').select('*').eq('id', 1).single();
       if (data) {
-        setAnnouncement({ text: data.notice_text, active: data.is_active });
+        const noticeObj = { text: data.notice_text, active: data.is_active };
+        setAnnouncement(noticeObj);
+        localStorage.setItem('ztool_cached_notice', JSON.stringify(noticeObj));
       }
     } catch (e) {
       console.error(e);
@@ -452,7 +467,12 @@ export default function Navbar() {
 
         {/* NẠP TIỀN, ĐIỂM DANH & VÍ TIỀN */}
         <div className="flex items-center gap-3">
-          {currentUser ? (
+          {isAuthLoading ? (
+            <div className="flex items-center gap-3 opacity-40">
+              <div className="w-24 h-10 bg-[#1C2638] rounded-2xl animate-pulse"></div>
+              <div className="w-24 h-10 bg-[#1C2638] rounded-2xl animate-pulse"></div>
+            </div>
+          ) : currentUser ? (
             <div className="flex items-center gap-3">
               
               {/* NÚT ĐIỂM DANH */}
