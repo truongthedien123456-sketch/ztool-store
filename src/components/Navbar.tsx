@@ -17,7 +17,7 @@ export default function Navbar() {
     return null;
   }
 
-  // Đọc User từ localStorage ngay lập tức
+  // Khởi tạo User từ localStorage
   const [currentUser, setCurrentUser] = useState<any | null>(() => {
     if (typeof window !== 'undefined') {
       const savedUserStr = localStorage.getItem('ztool_user_data');
@@ -55,10 +55,7 @@ export default function Navbar() {
   const [showAccountInfoModal, setShowAccountInfoModal] = useState(false);
   const [showPurchasedToolsModal, setShowPurchasedToolsModal] = useState(false);
   
-  // Trạng thái điểm danh
-  const [showCheckInModal, setShowCheckInModal] = useState(false);
-  const [checkInLoading, setCheckInLoading] = useState(false);
-  const [checkInMsg, setCheckInMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  // Trạng thái điểm danh từ localStorage
   const [hasCheckedInToday, setHasCheckedInToday] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
@@ -68,10 +65,14 @@ export default function Navbar() {
     return false;
   });
 
+  const [checkInModalShow, setCheckInModalShow] = useState(false);
+  const [checkInLoading, setCheckInLoading] = useState(false);
+  const [checkInMsg, setCheckInMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   const [rechargeAmount, setRechargeAmount] = useState('50000');
   const [copied, setCopied] = useState(false);
 
-  // Thông báo chung
+  // Thông báo chung từ localStorage
   const [announcement, setAnnouncement] = useState<{ text: string, active: boolean } | null>(() => {
     if (typeof window !== 'undefined') {
       const savedNotice = localStorage.getItem('ztool_cached_notice');
@@ -93,6 +94,15 @@ export default function Navbar() {
   const [toolsList, setToolsList] = useState<any[]>([]);
   const [loadingPurchasedTools, setLoadingPurchasedTools] = useState(false);
   const [nowTime, setNowTime] = useState(Date.now());
+
+  // Tránh nháy active menu khi đang Hydration
+  const [currentPath, setCurrentPath] = useState<string>('');
+
+  useEffect(() => {
+    if (pathname) {
+      setCurrentPath(pathname);
+    }
+  }, [pathname]);
 
   useEffect(() => {
     checkLoggedInUser();
@@ -432,7 +442,7 @@ export default function Navbar() {
 
     } catch (err: any) {
       setCheckInMsg({ type: 'error', text: `Lỗi hệ thống: ${err.message}` });
-    } fontinally {
+    } finally {
       setCheckInLoading(false);
     }
   };
@@ -473,14 +483,14 @@ export default function Navbar() {
           </div>
         </Link>
 
-        {/* MENU ĐIỀU HƯỚNG */}
+        {/* MENU ĐIỀU HƯỚNG CỐ ĐỊNH CHỐNG NHÁY MÀU KHI HYDRATION */}
         <div className="hidden md:flex items-center gap-2 bg-[#06090E] p-1.5 rounded-2xl border-2 border-[#1C2638] shadow-xl">
           {[
             { name: 'Trang chủ', path: '/' },
             { name: 'TOOL AUTO', path: '/tools' },
             { name: 'Dự án', path: '/projects' }
           ].map((item) => {
-            const isActive = pathname === item.path;
+            const isActive = currentPath === item.path;
             return (
               <Link 
                 key={item.path}
@@ -503,7 +513,7 @@ export default function Navbar() {
               {/* NÚT ĐIỂM DANH */}
               <button
                 disabled={hasCheckedInToday}
-                onClick={() => { setShowCheckInModal(true); setCheckInMsg(null); }}
+                onClick={() => { setCheckInModalShow(true); setCheckInMsg(null); }}
                 className={`relative group overflow-hidden border-2 px-4 py-2.5 rounded-2xl text-sm flex items-center gap-2 transition-all duration-300 ${
                   hasCheckedInToday
                     ? 'bg-[#0D121D] border-[#1C2638] text-slate-500 cursor-not-allowed opacity-90'
@@ -585,10 +595,10 @@ export default function Navbar() {
       </nav>
 
       {/* MODAL ĐIỂM DANH */}
-      {showCheckInModal && currentUser && (
+      {checkInModalShow && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
           <div className="bg-[#0D121D] border-2 border-cyan-400 w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-2xl shadow-cyan-500/30">
-            <button onClick={() => setShowCheckInModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-[#1C2638] cursor-pointer"><X className="w-5 h-5" /></button>
+            <button onClick={() => setCheckInModalShow(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-[#1C2638] cursor-pointer"><X className="w-5 h-5" /></button>
             <div className="flex items-center gap-3 border-b border-[#1C2638] pb-4">
               <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400"><CalendarCheck className="w-5 h-5" /></div>
               <div><h3 className="text-base font-black text-white">ĐIỂM DANH MỖI NGÀY</h3><p className="text-xs text-slate-400">Nhận quà tặng từ ZTOOL để trải nghiệm dịch vụ</p></div>
@@ -616,7 +626,7 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* CÁC MODAL KHÁC... */}
+      {/* CÁC MODAL KHÁC */}
       {showPurchasedToolsModal && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
           <div className="bg-[#0D121D] border-2 border-cyan-400 w-full max-w-xl rounded-3xl p-6 space-y-5 relative shadow-2xl max-h-[90vh] overflow-y-auto">
