@@ -27,18 +27,16 @@ export default function SocialFloatButtons() {
       {/* CỤM NÚT NỔI Ở GÓC DƯỚI BÊN PHẢI MÀN HÌNH */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col space-y-3 items-end">
         
-        {/* 1. NÚT FACEBOOK (NẰM TRÊN CÙNG) */}
+        {/* 1. NÚT FACEBOOK CHUYÊN NGHIỆP (ĐỒNG BỘ PHONG CÁCH VỚI NÚT ZALO) */}
         <a
           href="https://www.facebook.com/profile.php?id=61592809269339"
           target="_blank"
           rel="noopener noreferrer"
-          className="group relative flex items-center justify-center w-13 h-13 sm:w-14 sm:h-14 bg-[#1877F2] hover:bg-[#166FE5] text-white rounded-2xl shadow-xl shadow-blue-600/20 border-2 border-blue-400/30 transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer"
+          className="group relative flex items-center justify-center w-13 h-13 sm:w-14 sm:h-14 bg-[#1877F2] hover:bg-[#166FE5] text-white rounded-2xl shadow-xl shadow-blue-600/30 border-2 border-blue-400/50 transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer"
           title="Ghé thăm Fanpage Facebook"
         >
-          {/* SVG ICON FACEBOOK CHUẨN */}
-          <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
-            <path d="M24 12.073c0-6.627-4.873-12-10.875-12S2.25 5.446 2.25 12.073c0 5.99 4.388 10.954 10.125 11.854v-8.385H9.703v-3.47h2.672V9.423c0-2.638 1.569-4.09 3.971-4.09 1.15 0 2.351.205 2.351.205v2.584h-1.324c-1.308 0-1.715.813-1.715 1.648v1.98h2.912l-.465 3.47h-2.447v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-          </svg>
+          {/* Thay thế icon cũ bằng nhãn chữ FB thiết kế dày dặn cực kỳ hiện đại */}
+          <span className="font-black text-sm sm:text-base tracking-tighter select-none">FB</span>
           
           {/* Tooltip khi hover */}
           <span className="absolute right-16 bg-[#0D121D] border border-[#1C2638] text-white text-[11px] font-bold px-3 py-1.5 rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition duration-200 whitespace-nowrap pointer-events-none">
@@ -52,7 +50,7 @@ export default function SocialFloatButtons() {
           className="group relative flex items-center justify-center w-13 h-13 sm:w-14 sm:h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl shadow-xl shadow-blue-600/30 border-2 border-blue-400/50 transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer"
           title="Liên hệ Zalo"
         >
-          <span className="font-black text-xs sm:text-sm tracking-tight">ZALO</span>
+          <span className="font-black text-xs sm:text-sm tracking-tight select-none">ZALO</span>
           
           {/* Tooltip khi hover */}
           <span className="absolute right-16 bg-[#0D121D] border border-[#1C2638] text-white text-[11px] font-bold px-3 py-1.5 rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition duration-200 whitespace-nowrap pointer-events-none">
@@ -76,7 +74,7 @@ export default function SocialFloatButtons() {
 
       </div>
 
-      {/* POPUP HIỂN THỊ MÃ QR ZALO NGUYỄN MINH KHANG */}
+      {/* POPUP HIỂN THỊ MÃ QR ZALO */}
       {showZaloModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 animate-fade-in">
           <div className="bg-[#0D121D] border-2 border-cyan-400 w-full max-w-sm rounded-3xl p-6 relative text-center space-y-4 shadow-2xl shadow-cyan-500/30">
@@ -92,7 +90,6 @@ export default function SocialFloatButtons() {
               <p className="text-xs text-slate-400">Mở ứng dụng Zalo bấm nút quét QR để kết bạn trực tiếp</p>
             </div>
 
-            {/* KHUNG ẢNH QR ZALO (KHỚP TÊN FILE zalo-qr.jpg TRONG PUBLIC) */}
             <div className="bg-white p-3 rounded-2xl inline-block shadow-inner">
               <img
                 src="/zalo-qr.jpg"
