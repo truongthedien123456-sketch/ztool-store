@@ -287,7 +287,7 @@ export default function Navbar() {
   const renderRemainingTime = (expireTimestamp: number) => {
     if (!expireTimestamp || expireTimestamp === 0) {
       return (
-        <span className="text-cyan-300 font-black bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-cyan-500/20 px-3.5 py-1.5 rounded-xl border border-cyan-400/50 text-xs shadow-[0_0_15px_rgba(6,182,212,0.3)] inline-flex items-center gap-1.5 animate-pulse">
+        <span className="text-cyan-300 font-black bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-cyan-500/20 px-3.5 py-1.5 rounded-xl border border-cyan-400/50 text-xs shadow-[0_0_15px_rgba(6,182,212,0.3)] inline-flex items-center gap-1.5">
           <Crown className="w-3.5 h-3.5 text-cyan-300" /> Vĩnh Viễn
         </span>
       );
@@ -298,7 +298,7 @@ export default function Navbar() {
 
     if (diffSec <= 0) {
       return (
-        <span className="text-rose-400 font-black bg-rose-500/20 px-3.5 py-1.5 rounded-xl border border-rose-500/50 text-xs inline-flex items-center gap-1.5 shadow-[0_0_12px_rgba(244,63,94,0.25)] animate-pulse">
+        <span className="text-rose-400 font-black bg-rose-500/20 px-3.5 py-1.5 rounded-xl border border-rose-500/50 text-xs inline-flex items-center gap-1.5 shadow-[0_0_12px_rgba(244,63,94,0.25)]">
           ⚠️ Đã Hết Hạn
         </span>
       );
@@ -646,7 +646,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* MODAL HOÀN CHỈNH: DANH SÁCH TOOL ĐÃ MUA (GIAO DIỆN BẮT MẮT CYBERPUNK) */}
+      {/* MODAL HOÀN CHỈNH: DANH SÁCH TOOL ĐÃ MUA (GIAO DIỆN CYBERPUNK CẢI TIẾN) */}
       {showPurchasedToolsModal && currentUser && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
           <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
@@ -681,14 +681,11 @@ export default function Navbar() {
                     return (
                       <div key={idx} className="bg-[#05080E] border border-slate-800/90 p-5 rounded-2xl space-y-4 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.12)] hover:-translate-y-0.5 transition duration-300">
                         
-                        {/* Tiêu đề Tool & Badge Thời hạn */}
+                        {/* Tiêu đề Tool & Badge Thời hạn (ĐÃ BỎ NÚT NHẤP NHÁY CANH TÊN TOOL) */}
                         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3.5">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-                            <div>
-                              <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">BẢN QUYỀN HOẠT ĐỘNG</span>
-                              <h4 className="font-black text-white text-base mt-0.5">{toolAcc.toolName}</h4>
-                            </div>
+                          <div>
+                            <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">BẢN QUYỀN HOẠT ĐỘNG</span>
+                            <h4 className="font-black text-white text-base mt-0.5">{toolAcc.toolName}</h4>
                           </div>
                           <div>
                             {renderRemainingTime(toolAcc.expire_timestamp)}
@@ -737,14 +734,14 @@ export default function Navbar() {
                           </div>
                         </div>
 
-                        {/* Hàng nút Gia Hạn & Tải Tool */}
+                        {/* Hàng nút Gia Hạn & Tải Tool (HIỆU ỨNG TRỎ CHUỘT NỔI BẬT PHÁT SÁNG) */}
                         <div className="flex items-center justify-between gap-3 pt-1">
                           {!isLifetime ? (
                             <button
                               onClick={() => handleOpenRenewModal(toolAcc.toolCode)}
-                              className="bg-gradient-to-r from-amber-500/20 to-amber-600/20 hover:from-amber-500/30 hover:to-amber-600/30 border border-amber-500/50 text-amber-300 font-black px-4 py-2.5 rounded-xl text-xs transition flex items-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.15)] hover:shadow-[0_0_20px_rgba(245,158,11,0.3)]"
+                              className="bg-amber-500/10 border border-amber-500/40 text-amber-400 font-black px-4 py-2.5 rounded-xl text-xs transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-sm hover:scale-[1.03] hover:bg-amber-500/25 hover:border-amber-400 hover:text-amber-300 hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]"
                             >
-                              <RefreshCw className="w-3.5 h-3.5 text-amber-400" /> GIA HẠN THỜI HẠN
+                              <RefreshCw className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '10s' }} /> GIA HẠN THỜI HẠN
                             </button>
                           ) : (
                             <div className="text-[11px] text-slate-500 font-bold italic flex items-center gap-1">
@@ -757,7 +754,7 @@ export default function Navbar() {
                               href={toolAcc.downloadLink} 
                               target="_blank" 
                               rel="noopener noreferrer" 
-                              className="bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 border border-cyan-400/50 text-cyan-300 font-black px-4 py-2.5 rounded-xl text-xs transition flex items-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(6,182,212,0.15)]"
+                              className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-black px-4 py-2.5 rounded-xl text-xs transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-sm hover:scale-[1.03] hover:bg-cyan-500/35 hover:border-cyan-300 hover:text-white hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]"
                             >
                               <Download className="w-3.5 h-3.5 text-cyan-400" /> Tải Tool về máy
                             </a>
