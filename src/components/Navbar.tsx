@@ -308,7 +308,6 @@ export default function Navbar() {
   const handleOpenRenewModal = (toolCode: string) => {
     setShowPurchasedToolsModal(false);
     
-    // Nếu đang ở trang /tools thì mở modal trực tiếp, nếu không thì chuyển hướng về /tools
     if (pathname === '/tools') {
       const event = new CustomEvent('open-buy-tool-modal', { detail: { toolCode } });
       window.dispatchEvent(event);
@@ -500,7 +499,7 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* 2. NAVBAR CHÍNH GLASSMORPHISM */}
+      {/* 2. NAVBAR CHÍNH GLASSMORPHISM CYBERPUNK PRO */}
       <nav className="bg-[#080D15]/90 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-40 px-4 lg:px-8 py-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.6)] transition-all">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           
@@ -586,7 +585,7 @@ export default function Navbar() {
                   >
                     <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-xs uppercase shadow-inner relative">
                       {currentUser.username.substring(0, 1).toUpperCase()}
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#0D121D] absolute -bottom-0.5 -right-0.5 animate-pulse"></span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#0D131F] absolute -bottom-0.5 -right-0.5 animate-pulse"></span>
                     </div>
                     
                     <div className="text-left text-xs leading-tight flex flex-col justify-center">
@@ -603,7 +602,7 @@ export default function Navbar() {
 
                   {/* USER DROPDOWN MENU */}
                   {showUserDropdown && (
-                    <div className="absolute right-0 mt-2.5 w-60 bg-[#0D121D] border border-slate-800 rounded-2xl p-2 shadow-2xl space-y-1 z-50 backdrop-blur-xl">
+                    <div className="absolute right-0 mt-2.5 w-60 bg-[#0D131F] border border-slate-800 rounded-2xl p-2 shadow-2xl space-y-1 z-50 backdrop-blur-xl">
                       <button onClick={() => { setShowAccountInfoModal(true); setShowUserDropdown(false); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/60 transition cursor-pointer">
                         <User className="w-4 h-4 text-cyan-400" /> Thông tin tài khoản
                       </button>
@@ -635,7 +634,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* MODAL CẢI TIẾN: DANH SÁCH TOOL ĐÃ MUA (HIỆN ACC/PASS/GIA HẠN THÔNG MINH) */}
+      {/* MODAL HOÀN CHỈNH: DANH SÁCH TOOL ĐÃ MUA (HIỆN THÔNG TIN ACC, PASS & NÚT GIA HẠN THÔNG MINH) */}
       {showPurchasedToolsModal && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
           <div className="bg-[#0D121D] border border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_40px_rgba(6,182,212,0.25)] max-h-[85vh] overflow-y-auto">
