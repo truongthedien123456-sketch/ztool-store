@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { 
   User, Lock, LogIn, UserPlus, LogOut, Wallet, X, AlertCircle, CheckCircle2,
-  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift, Bell, Home, FolderKanban, Sparkles, Eye, EyeOff, ShieldCheck, Zap, ShoppingBag, ArrowUpRightFromSquare
+  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift, Bell, Home, FolderKanban, Sparkles, Eye, EyeOff, ShieldCheck, Zap, ShoppingBag
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -646,7 +646,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* MODAL HOÀN CHỈNH: DANH SÁCH TOOL ĐÃ MUA */}
+      {/* MODAL HOÀN CHỈNH: DANH SÁCH TOOL ĐÃ MUA (GIAO DIỆN CYBERPUNK CẢI TIẾN) */}
       {showPurchasedToolsModal && currentUser && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
           <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
@@ -681,7 +681,7 @@ export default function Navbar() {
                     return (
                       <div key={idx} className="bg-[#05080E] border border-slate-800/90 p-5 rounded-2xl space-y-4 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.12)] hover:-translate-y-0.5 transition duration-300">
                         
-                        {/* Tiêu đề Tool & Badge Thời hạn (ĐÃ BỎ CHẤM XANH NHẤP NHÁY) */}
+                        {/* Tiêu đề Tool & Badge Thời hạn */}
                         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3.5">
                           <div>
                             <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">BẢN QUYỀN HOẠT ĐỘNG</span>
@@ -734,7 +734,7 @@ export default function Navbar() {
                           </div>
                         </div>
 
-                        {/* Hàng nút Gia Hạn & Tải Tool (CÓ HIỆU ỨNG TRỎ CHUỘT SỐNG ĐỘNG) */}
+                        {/* Hàng nút Gia Hạn & Tải Tool */}
                         <div className="flex items-center justify-between gap-3 pt-1">
                           {!isLifetime ? (
                             <button
