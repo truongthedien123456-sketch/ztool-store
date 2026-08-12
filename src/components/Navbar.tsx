@@ -165,6 +165,7 @@ export default function Navbar() {
     return () => clearInterval(interval);
   }, [currentUser?.username]);
 
+  // KIỂM TRA ĐIỂM DANH CHUẨN XÁC THEO LỊCH SỬ GIAO DỊCH CHÍNH TÀI KHOẢN
   const checkTodayCheckInStatus = async (username: string) => {
     try {
       const { data: lastCheckIn } = await supabase
@@ -173,12 +174,11 @@ export default function Navbar() {
         .eq('username', username)
         .eq('type', 'CHECKIN')
         .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(1);
 
       const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-      if (lastCheckIn) {
-        const lastCheckInDate = new Date(lastCheckIn.created_at).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+      if (lastCheckIn && lastCheckIn.length > 0) {
+        const lastCheckInDate = new Date(lastCheckIn[0].created_at).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
         const checkedIn = lastCheckInDate === todayStr;
         setHasCheckedInToday(checkedIn);
         if (checkedIn) {
@@ -191,7 +191,7 @@ export default function Navbar() {
         localStorage.removeItem(`ztool_checkin_${todayStr}`);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Lỗi kiểm tra trạng thái điểm danh:', err);
     }
   };
 
@@ -430,6 +430,7 @@ export default function Navbar() {
     setHasCheckedInToday(false);
   };
 
+  // XỬ LÝ ĐIỂM DANH CHÍNH XÁC VÀ CẬP NHẬT TÀI KHOẢN TỨC THÌ
   const handleDailyCheckIn = async () => {
     if (!currentUser) return;
     setCheckInMsg(null);
@@ -438,17 +439,17 @@ export default function Navbar() {
     try {
       const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
 
-      const { data: lastCheckIn } = await supabase
+      // Lấy lịch sử điểm danh gần nhất
+      const { data: checkinLogs } = await supabase
         .from('transactions')
         .select('created_at')
         .eq('username', currentUser.username)
         .eq('type', 'CHECKIN')
         .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(1);
 
-      if (lastCheckIn) {
-        const lastCheckInDate = new Date(lastCheckIn.created_at).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+      if (checkinLogs && checkinLogs.length > 0) {
+        const lastCheckInDate = new Date(checkinLogs[0].created_at).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
         if (lastCheckInDate === todayStr) {
           setHasCheckedInToday(true);
           localStorage.setItem(`ztool_checkin_${todayStr}`, 'true');
@@ -459,8 +460,9 @@ export default function Navbar() {
       }
 
       const rewardAmount = 1000;
-      const newBalance = (currentUser.balance || 0) + rewardAmount;
+      const newBalance = Number(currentUser.balance || 0) + rewardAmount;
       
+      // 1. Cập nhật số dư ví người dùng
       const { error: updateErr } = await supabase
         .from('users')
         .update({ balance: newBalance })
@@ -468,17 +470,26 @@ export default function Navbar() {
 
       if (updateErr) throw updateErr;
 
-      await supabase.from('transactions').insert([{ username: currentUser.username, type: 'CHECKIN', title: 'Điểm danh hàng ngày', amount: rewardAmount, status: 'Thành công' }]);
+      // 2. Ghi lịch sử biến động số dư
+      await supabase.from('transactions').insert([{ 
+        username: currentUser.username, 
+        type: 'CHECKIN', 
+        title: 'Điểm danh hàng ngày (+1.000 VNĐ)', 
+        amount: rewardAmount, 
+        status: 'Thành công' 
+      }]);
 
+      // 3. Cập nhật state local & localStorage tức thì
       const updatedUser = { ...currentUser, balance: newBalance };
       setCurrentUser(updatedUser);
       localStorage.setItem('ztool_user_data', JSON.stringify(updatedUser));
       setHasCheckedInToday(true);
       localStorage.setItem(`ztool_checkin_${todayStr}`, 'true');
-      setCheckInMsg({ type: 'success', text: 'Điểm danh thành công! Bạn nhận được +1,000 VNĐ.' });
+      setCheckInMsg({ type: 'success', text: 'Điểm danh thành công! Bạn nhận được +1,000 VNĐ vào ví.' });
 
     } catch (err: any) {
-      setCheckInMsg({ type: 'error', text: `Lỗi hệ thống: ${err.message}` });
+      console.error('Lỗi điểm danh:', err);
+      setCheckInMsg({ type: 'error', text: `Lỗi điểm danh: ${err.message || 'Hệ thống gián đoạn'}` });
     } finally {
       setCheckInLoading(false);
     }
@@ -559,18 +570,18 @@ export default function Navbar() {
             {currentUser ? (
               <div className="flex items-center gap-3">
                 
-                {/* NÚT ĐIỂM DANH */}
+                {/* NÚT ĐIỂM DANH CẢI TIẾN CYBER GLOW */}
                 <button
                   disabled={hasCheckedInToday}
                   onClick={() => { setCheckInModalShow(true); setCheckInMsg(null); }}
-                  className={`relative group overflow-hidden border px-3.5 py-2.5 rounded-xl text-xs flex items-center gap-2 transition duration-200 ${
+                  className={`relative group overflow-hidden border px-3.5 py-2.5 rounded-xl text-xs flex items-center gap-2 transition-all duration-300 cursor-pointer ${
                     hasCheckedInToday
-                      ? 'bg-[#0D131F] border-slate-800 text-slate-500 cursor-not-allowed'
-                      : 'bg-[#0D131F] border-cyan-500/40 hover:border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] cursor-pointer'
+                      ? 'bg-[#0D131F] border-slate-800 text-slate-500 cursor-not-allowed opacity-80'
+                      : 'bg-[#0D131F] border-cyan-500/50 hover:border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)] hover:shadow-[0_0_25px_rgba(6,182,212,0.45)] hover:scale-[1.04]'
                   }`}
                 >
-                  <Gift className={`w-3.5 h-3.5 ${hasCheckedInToday ? 'text-slate-500' : 'text-cyan-400 group-hover:animate-bounce'}`} />
-                  <span className="font-bold hidden sm:inline">
+                  <Gift className={`w-4 h-4 ${hasCheckedInToday ? 'text-slate-500' : 'text-cyan-400 group-hover:animate-bounce'}`} />
+                  <span className="font-extrabold hidden sm:inline">
                     {hasCheckedInToday ? 'Đã điểm danh' : 'Điểm danh'}
                   </span>
                   {!hasCheckedInToday && (
@@ -589,13 +600,13 @@ export default function Navbar() {
                   <PlusCircle className="w-4 h-4 text-slate-950 stroke-[2.5]" /> Nạp tiền
                 </button>
 
-                {/* Ô THÔNG TIN KHÁCH HÀNG */}
+                {/* Ô THÔNG TIN KHÁCH HÀNG (CẢI TIẾN TRỎ CHUỘT BẮT MẮT) */}
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setShowUserDropdown(!showUserDropdown)}
-                    className="flex items-center gap-3 bg-[#0D131F]/90 border border-slate-700/80 hover:border-cyan-500/60 p-1.5 pr-3.5 rounded-2xl transition duration-300 shadow-[0_4px_15px_rgba(0,0,0,0.4)] cursor-pointer group backdrop-blur-md"
+                    className="flex items-center gap-3 bg-[#0D131F]/90 border border-slate-700/80 hover:border-cyan-400/80 p-1.5 pr-3.5 rounded-2xl transition-all duration-300 shadow-[0_4px_15px_rgba(0,0,0,0.4)] hover:shadow-[0_0_20px_rgba(6,182,212,0.25)] hover:scale-[1.02] cursor-pointer group backdrop-blur-md"
                   >
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-xs uppercase shadow-inner relative">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-xs uppercase shadow-inner relative border border-cyan-400/40">
                       {currentUser.username.substring(0, 1).toUpperCase()}
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#0D131F] absolute -bottom-0.5 -right-0.5 animate-pulse"></span>
                     </div>
@@ -604,7 +615,7 @@ export default function Navbar() {
                       <span className="font-extrabold text-white group-hover:text-cyan-300 transition truncate max-w-[90px]">
                         {currentUser.username}
                       </span>
-                      <span className="text-[10px] text-emerald-400 font-black block mt-0.5">
+                      <span className="text-[10px] text-emerald-400 font-black block mt-0.5 font-mono">
                         {(currentUser.balance || 0).toLocaleString('vi-VN')} VNĐ
                       </span>
                     </div>
@@ -646,7 +657,61 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* MODAL HOÀN CHỈNH: DANH SÁCH TOOL ĐÃ MUA (GIAO DIỆN CYBERPUNK CẢI TIẾN) */}
+      {/* MODAL HOÀN CHỈNH: ĐIỂM DANH HÀNG NGÀY */}
+      {checkInModalShow && currentUser && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
+          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-md rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)]">
+            <button onClick={() => setCheckInModalShow(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
+            
+            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+                <CalendarCheck className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">ƯU ĐÃI THÀNH VIÊN</span>
+                <h3 className="text-lg font-black text-white tracking-wide">ĐIỂM DANH MỖI NGÀY</h3>
+              </div>
+            </div>
+
+            <div className="bg-[#05080E] border border-slate-800/90 p-6 rounded-2xl flex flex-col items-center space-y-4 text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-2 border-cyan-400 rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(6,182,212,0.4)] animate-pulse">
+                <Gift className="w-10 h-10 text-cyan-300" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Phần thưởng điểm danh hôm nay</h4>
+                <p className="text-3xl font-black text-emerald-400 font-mono tracking-tight">+1.000 VNĐ</p>
+              </div>
+            </div>
+
+            {checkInMsg && (
+              <div className={`p-4 rounded-xl text-xs font-bold flex items-start gap-2.5 ${checkInMsg.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'}`}>
+                {checkInMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />}
+                <span className="leading-relaxed">{checkInMsg.text}</span>
+              </div>
+            )}
+
+            <button 
+              disabled={checkInLoading || checkInMsg?.type === 'success' || hasCheckedInToday}
+              onClick={handleDailyCheckIn} 
+              className={`w-full font-black py-4 rounded-2xl text-xs shadow-lg transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${
+                (checkInMsg?.type === 'success' || hasCheckedInToday) 
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' 
+                  : 'bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 shadow-[0_0_25px_rgba(6,182,212,0.35)] hover:scale-[1.02]'
+              }`}
+            >
+              {checkInLoading ? (
+                <><Loader2 className="w-4 h-4 animate-spin text-slate-950" /> ĐANG XỬ LÝ HỆ THỐNG...</>
+              ) : (checkInMsg?.type === 'success' || hasCheckedInToday) ? (
+                <><CheckCircle2 className="w-4 h-4" /> ĐÃ ĐIỂM DANH HÔM NAY</>
+              ) : (
+                <><Gift className="w-4 h-4" /> BẤM ĐỂ ĐIỂM DANH NHẬN 1.000đ</>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL HOÀN CHỈNH: DANH SÁCH TOOL ĐÃ MUA */}
       {showPurchasedToolsModal && currentUser && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
           <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
@@ -827,7 +892,6 @@ export default function Navbar() {
                         }`}
                       >
                         <div className="flex items-center gap-3.5 min-w-0">
-                          {/* Icon biểu thị loại giao dịch */}
                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
                             isBuy 
                               ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' 
@@ -848,7 +912,6 @@ export default function Navbar() {
                           </div>
                         </div>
 
-                        {/* Hiển thị biến động số tiền */}
                         <div className="text-right shrink-0">
                           <span className={`text-sm font-mono font-black block ${
                             isPositive ? 'text-emerald-400' : 'text-rose-400'
