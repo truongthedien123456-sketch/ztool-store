@@ -243,6 +243,7 @@ export default function ToolsPage() {
             {tools.map((tool) => (
               <div 
                 key={tool.id} 
+                onClick={() => setSelectedToolForDetail(tool)}
                 className="group bg-[#0F141C] border-2 border-[#1C2638] hover:border-cyan-400 rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-xl hover:shadow-2xl hover:shadow-cyan-500/30 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer"
               >
                 <div className="space-y-4">
@@ -267,12 +268,25 @@ export default function ToolsPage() {
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   <button
                     disabled={tool.status === 'Tạm ngưng'}
-                    onClick={() => { setSelectedToolForBuy(tool); setPurchaseMsg(null); setCouponInput(''); setAppliedCoupon(null); setCouponMsg(null); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedToolForBuy(tool); 
+                      setPurchaseMsg(null); 
+                      setCouponInput(''); 
+                      setAppliedCoupon(null); 
+                      setCouponMsg(null); 
+                    }}
                     className={`font-black py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-md ${tool.status === 'Tạm ngưng' ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : 'bg-cyan-500 text-slate-950 hover:bg-cyan-400 shadow-cyan-500/20'}`}
                   >
                     <ShoppingBag className="w-4 h-4" /> {tool.status === 'Tạm ngưng' ? 'Tạm Ngưng' : 'Mua Ngay'}
                   </button>
-                  <button onClick={() => setSelectedToolForDetail(tool)} className="bg-[#080B10] border border-[#1A2332] hover:border-slate-500 text-slate-300 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 text-center transition cursor-pointer">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedToolForDetail(tool);
+                    }} 
+                    className="bg-[#080B10] border border-[#1A2332] hover:border-slate-500 text-slate-300 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 text-center transition cursor-pointer"
+                  >
                     <Info className="w-4 h-4 text-cyan-400" /> Chi tiết
                   </button>
                 </div>
