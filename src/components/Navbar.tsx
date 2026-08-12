@@ -248,7 +248,7 @@ export default function Navbar() {
 
               return {
                 accountKey: k,
-                appUsername: item.username || username,
+                appUsername: k, // Đồng bộ tên tài khoản Tool đúng với Kho Acc Admin (VD: abc_congtruongf17)
                 appPassword: item.password || '---',
                 toolCode: tCode,
                 toolName: foundTool ? foundTool.name : (tCode ? `TOOL AUTO (${tCode.toUpperCase()})` : 'TOOL AUTOMATION'),
@@ -614,7 +614,7 @@ export default function Navbar() {
 
                   {/* USER DROPDOWN MENU */}
                   {showUserDropdown && (
-                    <div className="absolute right-0 mt-2.5 w-60 bg-[#0D121D] border border-slate-800 rounded-2xl p-2 shadow-2xl space-y-1 z-50 backdrop-blur-xl">
+                    <div className="absolute right-0 mt-2.5 w-60 bg-[#0D131F] border border-slate-800 rounded-2xl p-2 shadow-2xl space-y-1 z-50 backdrop-blur-xl">
                       <button onClick={() => { setShowAccountInfoModal(true); setShowUserDropdown(false); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/60 transition cursor-pointer">
                         <User className="w-4 h-4 text-cyan-400" /> Thông tin tài khoản
                       </button>
@@ -694,9 +694,9 @@ export default function Navbar() {
 
                         {/* Thông tin Acc / Pass */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#0D121D] border border-slate-800 p-3.5 rounded-xl text-xs">
-                          {/* Tài khoản App */}
+                          {/* Tài khoản Tool */}
                           <div className="space-y-1">
-                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Tài khoản App</span>
+                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Tài khoản tool</span>
                             <div className="flex items-center justify-between bg-[#06090E] border border-slate-800 px-3 py-2 rounded-lg font-mono font-bold text-cyan-300">
                               <span className="truncate pr-2">{toolAcc.appUsername}</span>
                               <button 
@@ -709,9 +709,9 @@ export default function Navbar() {
                             </div>
                           </div>
 
-                          {/* Mật khẩu App */}
+                          {/* Mật khẩu Tool */}
                           <div className="space-y-1">
-                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Mật khẩu App</span>
+                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Mật khẩu tool</span>
                             <div className="flex items-center justify-between bg-[#06090E] border border-slate-800 px-3 py-2 rounded-lg font-mono font-bold text-slate-200">
                               <span>{isShowPass ? toolAcc.appPassword : '••••••••'}</span>
                               <div className="flex items-center gap-1.5">
