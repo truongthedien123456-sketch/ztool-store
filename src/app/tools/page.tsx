@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag
+  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag, Eye
 } from 'lucide-react';
 
 export default function ToolsPage() {
@@ -71,19 +71,33 @@ export default function ToolsPage() {
           priceMonth: t.priceMonth || t.price_month || '',
           priceLifetime: t.priceLifetime || t.price_lifetime || '',
           description: t.description,
-          downloadLink: t.downloadLink || t.download_link || ''
+          downloadLink: t.downloadLink || t.download_link || '',
+          views: t.views || 0,
+          sales: t.sales || 0
         }));
         setTools(mappedTools);
       } else {
         setTools([{
           id: 1, name: 'AUTO FARM CÔNG TRƯỜNG F17', toolCode: 'congtruongf17', image: 'https://i.ibb.co/8L2gsmQ0/logo.jpg', status: 'Đang hoạt động',
-          priceDay: '5000', priceWeek: '20000', priceMonth: '50000', priceLifetime: '100000', description: 'Tự động chạy nhanh, bấm E nghề công trường F17 City.', downloadLink: ''
+          priceDay: '5000', priceWeek: '20000', priceMonth: '50000', priceLifetime: '100000', description: 'Tự động chạy nhanh, bấm E nghề công trường F17 City.', downloadLink: '', views: 0, sales: 0
         }]);
       }
     } catch (error) {
       console.error(error);
     } finally {
       setIsLoadingData(false);
+    }
+  };
+
+  // HÀM MỞ BẢNG CHI TIẾT TỰ ĐỘNG TĂNG 1 LƯỢT XEM (VIEWS)
+  const handleOpenDetail = async (tool: any) => {
+    setSelectedToolForDetail(tool);
+    try {
+      const newViews = (tool.views || 0) + 1;
+      await supabase.from('tools').update({ views: newViews }).eq('id', tool.id);
+      setTools(prev => prev.map(t => t.id === tool.id ? { ...t, views: newViews } : t));
+    } catch (e) {
+      console.error('Lỗi cộng lượt xem:', e);
     }
   };
 
@@ -201,8 +215,12 @@ export default function ToolsPage() {
         await supabase.from('coupons').update({ quantity: newQty }).eq('id', appliedCoupon.id);
       }
 
+      // TRỪ TIỀN VÀ TỰ ĐỘNG TĂNG LƯỢT BÁN (SALES + 1)
       const newBalance = userData.balance - priceNum;
       await supabase.from('users').update({ balance: newBalance }).eq('id', userData.id);
+
+      const newSales = (selectedToolForBuy.sales || 0) + 1;
+      await supabase.from('tools').update({ sales: newSales }).eq('id', selectedToolForBuy.id);
 
       const logTitle = appliedCoupon ? `Mua ${selectedToolForBuy.name} (${durationText}) - Giảm giá mã ${appliedCoupon.code}` : `Mua ${selectedToolForBuy.name} (${durationText})`;
       await supabase.from('transactions').insert([{ username: userData.username, type: 'BUY', title: logTitle, amount: -priceNum, status: 'Thành công' }]);
@@ -243,16 +261,30 @@ export default function ToolsPage() {
             {tools.map((tool) => (
               <div 
                 key={tool.id} 
-                onClick={() => setSelectedToolForDetail(tool)}
-                className="group bg-[#0F141C] border-2 border-[#1C2638] hover:border-cyan-400 rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-xl hover:shadow-2xl hover:shadow-cyan-500/30 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer"
+                onClick={() => handleOpenDetail(tool)}
+                className="group bg-[#0F141C] border-2 border-[#1C2638] hover:border-cyan-400 rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-xl hover:shadow-2xl hover:shadow-cyan-500/30 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer relative"
               >
                 <div className="space-y-4">
                   <div className="w-full aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
                     <img src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={tool.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                    
+                    {/* Badge Trạng thái */}
                     <span className={`absolute top-3 right-3 text-[10px] font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md border ${tool.status === 'Tạm ngưng' ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'}`}>
                       {tool.status ? tool.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
                     </span>
+
+                    {/* Hiển thị Lượt xem & Lượt bán trực tiếp lên ảnh */}
+                    <div className="absolute bottom-3 left-3 bg-[#080B10]/80 backdrop-blur-md border border-[#1A2332] px-2.5 py-1 rounded-lg flex items-center gap-2 text-[10px]">
+                      <span className="flex items-center gap-1 text-slate-300" title="Lượt xem">
+                        <Eye className="w-3 h-3 text-cyan-400" /> {tool.views || 0}
+                      </span>
+                      <span className="text-slate-600">|</span>
+                      <span className="flex items-center gap-1 text-slate-300" title="Đã bán">
+                        <ShoppingBag className="w-3 h-3 text-emerald-400" /> {tool.sales || 0}
+                      </span>
+                    </div>
                   </div>
+
                   <div>
                     <h3 className="text-lg font-black text-white group-hover:text-cyan-400 transition">{tool.name}</h3>
                     <p className="text-xs text-slate-400 mt-1 line-clamp-1 truncate" title={tool.description}>{tool.description || 'Chưa có mô tả sản phẩm.'}</p>
@@ -283,7 +315,7 @@ export default function ToolsPage() {
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedToolForDetail(tool);
+                      handleOpenDetail(tool);
                     }} 
                     className="bg-[#080B10] border border-[#1A2332] hover:border-slate-500 text-slate-300 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 text-center transition cursor-pointer"
                   >
@@ -294,7 +326,7 @@ export default function ToolsPage() {
             ))}
           </div>
 
-          {/* Modal Chi tiết có Animation Mở/Đóng & Bấm ra ngoài để tắt */}
+          {/* Modal Chi tiết */}
           <AnimatePresence>
             {selectedToolForDetail && (
               <motion.div 
@@ -345,7 +377,7 @@ export default function ToolsPage() {
             )}
           </AnimatePresence>
 
-          {/* Modal Mua / Xác nhận gia hạn có Animation Mở/Đóng & Bấm ra ngoài để tắt */}
+          {/* Modal Mua */}
           <AnimatePresence>
             {selectedToolForBuy && (
               <motion.div 
