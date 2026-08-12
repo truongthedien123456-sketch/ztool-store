@@ -27,7 +27,7 @@ export default function HomePage() {
 
   const loadHomeSyncData = async () => {
     try {
-      // SỬA TẠI ĐÂY: Sắp xếp giảm dần theo 'views' thay vì 'id'
+      // Sắp xếp giảm dần theo 'views'
       const { data: toolData } = await supabase
         .from('tools')
         .select('*')
@@ -150,7 +150,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Khung Tool Nổi Bật (Luôn chọn Tool có views cao nhất) */}
+            {/* Khung Tool Nổi Bật (Chọn Tool có views cao nhất) */}
             {featuredTool && (
               <div 
                 onClick={() => handleOpenFeaturedTool(featuredTool)}
@@ -173,15 +173,9 @@ export default function HomePage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
                   />
                   
-                  {/* Hiển thị lượt xem thực tế */}
-                  <div className="absolute bottom-3 left-3 bg-[#080B10]/80 backdrop-blur-md border border-[#1A2332] px-2.5 py-1 rounded-lg flex items-center gap-2 text-[10px]">
-                    <span className="flex items-center gap-1 text-slate-300" title="Lượt xem">
-                      <Eye className="w-3 h-3 text-cyan-400" /> {featuredTool.views || 0}
-                    </span>
-                    <span className="text-slate-600">|</span>
-                    <span className="flex items-center gap-1 text-slate-300" title="Đã bán">
-                      <ShoppingBag className="w-3 h-3 text-emerald-400" /> {featuredTool.sales || 0}
-                    </span>
+                  {/* Badge Mắt xem ở GÓC TRÁI TRÊN */}
+                  <div className="absolute top-3 left-3 bg-[#080B10]/80 backdrop-blur-md border border-[#1A2332] px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-[10px] text-slate-300 font-bold">
+                    <Eye className="w-3.5 h-3.5 text-cyan-400" /> {featuredTool.views || 0}
                   </div>
                 </div>
 
@@ -228,6 +222,12 @@ export default function HomePage() {
                         className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
                       />
                       
+                      {/* Badge Mắt xem ở GÓC TRÁI TRÊN */}
+                      <div className="absolute top-3 left-3 bg-[#080B10]/80 backdrop-blur-md border border-[#1A2332] px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-[10px] text-slate-300 font-bold">
+                        <Eye className="w-3.5 h-3.5 text-cyan-400" /> {tool.views || 0}
+                      </div>
+
+                      {/* Badge Trạng thái ở GÓC PHẢI TRÊN */}
                       <span className={`absolute top-3 right-3 text-[10px] font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md border ${
                         tool.status === 'Tạm ngưng'
                           ? 'bg-rose-500/20 text-rose-400 border-rose-500/40'
@@ -235,17 +235,6 @@ export default function HomePage() {
                       }`}>
                         {tool.status ? tool.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
                       </span>
-
-                      {/* Hiển thị Lượt xem & Lượt bán */}
-                      <div className="absolute bottom-3 left-3 bg-[#080B10]/80 backdrop-blur-md border border-[#1A2332] px-2.5 py-1 rounded-lg flex items-center gap-2 text-[10px]">
-                        <span className="flex items-center gap-1 text-slate-300" title="Lượt xem">
-                          <Eye className="w-3 h-3 text-cyan-400" /> {tool.views || 0}
-                        </span>
-                        <span className="text-slate-600">|</span>
-                        <span className="flex items-center gap-1 text-slate-300" title="Đã bán">
-                          <ShoppingBag className="w-3 h-3 text-emerald-400" /> {tool.sales || 0}
-                        </span>
-                      </div>
                     </div>
                     <div>
                       <h3 className="font-bold text-white text-base group-hover:text-cyan-400 transition">{tool.name}</h3>
