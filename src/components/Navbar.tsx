@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { 
   User, Lock, LogIn, UserPlus, LogOut, Wallet, X, AlertCircle, CheckCircle2,
-  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift, Bell, Home, FolderKanban, Sparkles, Eye, EyeOff
+  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift, Bell, Home, FolderKanban, Sparkles, Eye, EyeOff, ShieldCheck, Zap
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -248,7 +248,7 @@ export default function Navbar() {
 
               return {
                 accountKey: k,
-                appUsername: k, // Đồng bộ tên tài khoản Tool đúng với Kho Acc Admin (VD: abc_congtruongf17)
+                appUsername: k,
                 appPassword: item.password || '---',
                 toolCode: tCode,
                 toolName: foundTool ? foundTool.name : (tCode ? `TOOL AUTO (${tCode.toUpperCase()})` : 'TOOL AUTOMATION'),
@@ -287,8 +287,8 @@ export default function Navbar() {
   const renderRemainingTime = (expireTimestamp: number) => {
     if (!expireTimestamp || expireTimestamp === 0) {
       return (
-        <span className="text-cyan-300 font-black bg-cyan-500/20 px-3 py-1 rounded-xl border border-cyan-400/40 text-[11px] inline-flex items-center gap-1.5 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
-          ♾️ Vĩnh Viễn
+        <span className="text-cyan-300 font-black bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-cyan-500/20 px-3.5 py-1.5 rounded-xl border border-cyan-400/50 text-xs shadow-[0_0_15px_rgba(6,182,212,0.3)] inline-flex items-center gap-1.5 animate-pulse">
+          <Crown className="w-3.5 h-3.5 text-cyan-300" /> Vĩnh Viễn
         </span>
       );
     }
@@ -298,7 +298,7 @@ export default function Navbar() {
 
     if (diffSec <= 0) {
       return (
-        <span className="text-rose-400 font-bold bg-rose-500/20 px-3 py-1 rounded-xl border border-rose-500/40 text-[11px] inline-flex items-center gap-1.5">
+        <span className="text-rose-400 font-black bg-rose-500/20 px-3.5 py-1.5 rounded-xl border border-rose-500/50 text-xs inline-flex items-center gap-1.5 shadow-[0_0_12px_rgba(244,63,94,0.25)] animate-pulse">
           ⚠️ Đã Hết Hạn
         </span>
       );
@@ -310,8 +310,8 @@ export default function Navbar() {
     const seconds = diffSec % 60;
 
     return (
-      <span className="text-emerald-300 font-mono font-black bg-emerald-500/20 px-3 py-1 rounded-xl border border-emerald-400/40 text-[11px] inline-flex items-center gap-1.5">
-        <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0 animate-pulse" />
+      <span className="text-emerald-300 font-mono font-black bg-gradient-to-r from-emerald-500/20 to-teal-500/20 px-3.5 py-1.5 rounded-xl border border-emerald-400/50 text-xs inline-flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+        <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0 animate-spin" style={{ animationDuration: '8s' }} />
         {days > 0 && `${days}d `}{hours}h {minutes}m {seconds}s
       </span>
     );
@@ -646,32 +646,32 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* MODAL HOÀN CHỈNH: DANH SÁCH TOOL ĐÃ MUA */}
+      {/* MODAL HOÀN CHỈNH: DANH SÁCH TOOL ĐÃ MUA (GIAO DIỆN BẮT MẮT CYBERPUNK) */}
       {showPurchasedToolsModal && currentUser && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0D121D] border border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_40px_rgba(6,182,212,0.25)] max-h-[85vh] overflow-y-auto">
-            <button onClick={() => setShowPurchasedToolsModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1.5 rounded-xl bg-[#06090E] border border-slate-800 cursor-pointer transition"><X className="w-5 h-5" /></button>
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
+          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
+            <button onClick={() => setShowPurchasedToolsModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
             
-            <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-              <div className="w-11 h-11 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
-                <Wrench className="w-5 h-5" />
+            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+                <Wrench className="w-6 h-6 animate-pulse" />
               </div>
               <div>
-                <h3 className="text-base font-black text-white tracking-wide">DANH SÁCH TOOL ĐÃ MUA</h3>
-                <p className="text-xs text-slate-400 mt-0.5">Quản lý tài khoản đăng nhập app, thời hạn và gia hạn bản quyền</p>
+                <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">QUẢN LÝ BẢN QUYỀN</span>
+                <h3 className="text-lg font-black text-white tracking-wide">DANH SÁCH TOOL ĐÃ MUA</h3>
               </div>
             </div>
 
             {loadingPurchasedTools ? (
               <div className="flex items-center justify-center gap-2 py-12 text-xs text-slate-400">
-                <Loader2 className="w-5 h-5 animate-spin text-cyan-400" /> Đang kiểm tra dữ liệu từ máy chủ...
+                <Loader2 className="w-5 h-5 animate-spin text-cyan-400" /> Đang kiểm tra dữ liệu bản quyền...
               </div>
             ) : (
               <div className="space-y-4">
                 {!userGistData || userGistData.length === 0 ? (
-                  <div className="bg-[#06090E] border border-slate-800 p-8 rounded-2xl text-center text-xs text-slate-400 space-y-2">
+                  <div className="bg-[#05080E] border border-slate-800/80 p-8 rounded-2xl text-center text-xs text-slate-400 space-y-2">
                     <p className="font-bold text-slate-300 text-sm">Bạn chưa sở hữu bản quyền Tool nào.</p>
-                    <p className="text-slate-500">Hãy truy cập mục "TOOL AUTO" để mua và kích hoạt ứng dụng.</p>
+                    <p className="text-slate-500">Hãy truy cập mục "TOOL AUTO" để chọn mua và kích hoạt ứng dụng.</p>
                   </div>
                 ) : (
                   userGistData.map((toolAcc: any, idx: number) => {
@@ -679,42 +679,45 @@ export default function Navbar() {
                     const isShowPass = showToolPasswords[toolAcc.accountKey] || false;
 
                     return (
-                      <div key={idx} className="bg-[#06090E] border border-slate-800/90 p-5 rounded-2xl space-y-4 hover:border-slate-700/80 transition">
+                      <div key={idx} className="bg-[#05080E] border border-slate-800/90 p-5 rounded-2xl space-y-4 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.12)] hover:-translate-y-0.5 transition duration-300">
                         
-                        {/* Tiêu đề Tool & Thời hạn */}
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
-                          <div>
-                            <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">BẢN QUYỀN HOẠT ĐỘNG</span>
-                            <h4 className="font-black text-white text-base mt-0.5">{toolAcc.toolName}</h4>
+                        {/* Tiêu đề Tool & Badge Thời hạn */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3.5">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                            <div>
+                              <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">BẢN QUYỀN HOẠT ĐỘNG</span>
+                              <h4 className="font-black text-white text-base mt-0.5">{toolAcc.toolName}</h4>
+                            </div>
                           </div>
                           <div>
                             {renderRemainingTime(toolAcc.expire_timestamp)}
                           </div>
                         </div>
 
-                        {/* Thông tin Acc / Pass */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#0D121D] border border-slate-800 p-3.5 rounded-xl text-xs">
+                        {/* Ô Thông tin Tài khoản / Mật khẩu Tool */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#0B1019] border border-slate-800/80 p-3.5 rounded-xl text-xs">
                           {/* Tài khoản Tool */}
                           <div className="space-y-1">
-                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Tài khoản tool</span>
-                            <div className="flex items-center justify-between bg-[#06090E] border border-slate-800 px-3 py-2 rounded-lg font-mono font-bold text-cyan-300">
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Tài khoản tool</span>
+                            <div className="flex items-center justify-between bg-[#05080E] border border-slate-800/90 focus-within:border-cyan-400/60 px-3 py-2 rounded-lg font-mono font-bold text-cyan-300 transition">
                               <span className="truncate pr-2">{toolAcc.appUsername}</span>
                               <button 
                                 onClick={() => copyTextToClipboard(toolAcc.appUsername, `user_${idx}`)} 
-                                className="text-slate-400 hover:text-cyan-400 transition cursor-pointer" 
+                                className="text-slate-400 hover:text-cyan-400 transition cursor-pointer flex items-center gap-1" 
                                 title="Sao chép tài khoản"
                               >
-                                {copiedKey === `user_${idx}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                                {copiedKey === `user_${idx}` ? <span className="text-[10px] text-emerald-400 font-sans">Đã chép!</span> : <Copy className="w-3.5 h-3.5" />}
                               </button>
                             </div>
                           </div>
 
                           {/* Mật khẩu Tool */}
                           <div className="space-y-1">
-                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Mật khẩu tool</span>
-                            <div className="flex items-center justify-between bg-[#06090E] border border-slate-800 px-3 py-2 rounded-lg font-mono font-bold text-slate-200">
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Mật khẩu tool</span>
+                            <div className="flex items-center justify-between bg-[#05080E] border border-slate-800/90 focus-within:border-cyan-400/60 px-3 py-2 rounded-lg font-mono font-bold text-slate-200 transition">
                               <span>{isShowPass ? toolAcc.appPassword : '••••••••'}</span>
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-2">
                                 <button 
                                   onClick={() => setShowToolPasswords(prev => ({ ...prev, [toolAcc.accountKey]: !prev[toolAcc.accountKey] }))} 
                                   className="text-slate-400 hover:text-white transition cursor-pointer"
@@ -724,27 +727,29 @@ export default function Navbar() {
                                 </button>
                                 <button 
                                   onClick={() => copyTextToClipboard(toolAcc.appPassword, `pass_${idx}`)} 
-                                  className="text-slate-400 hover:text-cyan-400 transition cursor-pointer" 
+                                  className="text-slate-400 hover:text-cyan-400 transition cursor-pointer flex items-center gap-1" 
                                   title="Sao chép mật khẩu"
                                 >
-                                  {copiedKey === `pass_${idx}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                                  {copiedKey === `pass_${idx}` ? <span className="text-[10px] text-emerald-400 font-sans">Đã chép!</span> : <Copy className="w-3.5 h-3.5" />}
                                 </button>
                               </div>
                             </div>
                           </div>
                         </div>
 
-                        {/* Gia Hạn & Tải Tool */}
+                        {/* Hàng nút Gia Hạn & Tải Tool */}
                         <div className="flex items-center justify-between gap-3 pt-1">
                           {!isLifetime ? (
                             <button
                               onClick={() => handleOpenRenewModal(toolAcc.toolCode)}
-                              className="bg-amber-500/10 border border-amber-500/40 hover:bg-amber-500/20 text-amber-400 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                              className="bg-gradient-to-r from-amber-500/20 to-amber-600/20 hover:from-amber-500/30 hover:to-amber-600/30 border border-amber-500/50 text-amber-300 font-black px-4 py-2.5 rounded-xl text-xs transition flex items-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.15)] hover:shadow-[0_0_20px_rgba(245,158,11,0.3)]"
                             >
-                              <RefreshCw className="w-3.5 h-3.5" /> GIA HẠN THỜI HẠN
+                              <RefreshCw className="w-3.5 h-3.5 text-amber-400" /> GIA HẠN THỜI HẠN
                             </button>
                           ) : (
-                            <div className="text-[11px] text-slate-500 font-bold italic">Sở hữu vĩnh viễn (Không cần gia hạn)</div>
+                            <div className="text-[11px] text-slate-500 font-bold italic flex items-center gap-1">
+                              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" /> Sở hữu vĩnh viễn (Không cần gia hạn)
+                            </div>
                           )}
 
                           {toolAcc.downloadLink && (
@@ -752,9 +757,9 @@ export default function Navbar() {
                               href={toolAcc.downloadLink} 
                               target="_blank" 
                               rel="noopener noreferrer" 
-                              className="bg-cyan-500/20 border border-cyan-500/40 hover:bg-cyan-500/30 text-cyan-300 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer"
+                              className="bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 border border-cyan-400/50 text-cyan-300 font-black px-4 py-2.5 rounded-xl text-xs transition flex items-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(6,182,212,0.15)]"
                             >
-                              <Download className="w-3.5 h-3.5" /> Tải Tool về máy
+                              <Download className="w-3.5 h-3.5 text-cyan-400" /> Tải Tool về máy
                             </a>
                           )}
                         </div>
