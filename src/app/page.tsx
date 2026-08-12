@@ -237,10 +237,10 @@ export default function HomePage() {
           <div className="space-y-6 pt-4">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
               <div>
-                <h2 className="text-xl font-black text-white flex items-center gap-2.5 tracking-wide">
-                  <Wrench className="w-5 h-5 text-cyan-400" /> DANH SÁCH TOOL AUTOMATION
+                <h2 className="text-xl font-black text-white flex items-center gap-2.5 tracking-wide uppercase">
+                  <Wrench className="w-5 h-5 text-cyan-400" /> DANH SÁCH TOOL AUTO
                 </h2>
-                <p className="text-xs text-slate-400 mt-1">Các bản hack/tool tự động hóa game cập nhật mới nhất</p>
+                <p className="text-xs text-slate-400 mt-1">Các bản tool được cập nhật liên tục</p>
               </div>
               <Link href="/tools" className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition">
                 Xem tất cả <ArrowRight className="w-3.5 h-3.5" />
@@ -311,7 +311,7 @@ export default function HomePage() {
                   <h2 className="text-xl font-black text-white flex items-center gap-2.5 tracking-wide">
                     <FolderKanban className="w-5 h-5 text-cyan-400" /> DỰ ÁN NỔI BẬT
                   </h2>
-                  <p className="text-xs text-slate-400 mt-1">Các dự án và giải pháp mã nguồn đã triển khai thành công</p>
+                  <p className="text-xs text-slate-400 mt-1">Các dự án, tool đang trong thời gian phát triển</p>
                 </div>
                 <Link href="/projects" className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition">
                   Xem tất cả dự án <ArrowRight className="w-3.5 h-3.5" />
