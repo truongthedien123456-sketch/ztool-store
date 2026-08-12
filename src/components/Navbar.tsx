@@ -462,22 +462,20 @@ export default function Navbar() {
 
   return (
     <>
-      {/* 1. THANH THÔNG BÁO CHẠY CHỮ TRÊN CÙNG (TOP ANNOUNCEMENT BAR) */}
+      {/* 1. THANH THÔNG BÁO TÊN CÙNG: CĂN GIỮA DÒNG HOÀN HẢO */}
       {announcement?.active && announcement?.text && (
-        <div className="bg-[#0B0F17] border-b border-amber-500/30 px-4 py-1.5 text-xs text-amber-300 font-bold overflow-hidden flex items-center gap-2 relative z-50">
-          <div className="flex items-center gap-1.5 shrink-0 bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded text-[10px] uppercase font-black tracking-wider border border-amber-500/30 shadow-inner">
-            <Bell className="w-3 h-3 animate-bounce text-amber-400" /> THÔNG BÁO
+        <div className="bg-[#0A0E17] border-b border-amber-500/30 px-4 py-2 text-xs font-extrabold text-amber-300 flex items-center justify-center gap-3 relative z-50 shadow-md">
+          <div className="flex items-center gap-1.5 shrink-0 bg-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded-md text-[10px] uppercase font-black tracking-wider border border-amber-500/40 shadow-inner">
+            <Bell className="w-3.5 h-3.5 animate-bounce text-amber-400" /> THÔNG BÁO
           </div>
-          <div className="whitespace-nowrap overflow-hidden flex-1">
-            <div className="inline-block animate-[marquee_25s_linear_infinite] pl-4 text-slate-200">
-              {announcement.text}
-            </div>
-          </div>
+          <p className="text-slate-200 truncate max-w-4xl tracking-wide text-center">
+            {announcement.text}
+          </p>
         </div>
       )}
 
-      {/* 2. NAVBAR CHÍNH GLASSMORPHISM CYBERPUNK */}
-      <nav className="bg-[#080D15]/85 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-40 px-4 lg:px-8 py-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] transition-all">
+      {/* 2. NAVBAR CHÍNH GLASSMORPHISM CYBERPUNK PRO */}
+      <nav className="bg-[#080D15]/90 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-40 px-4 lg:px-8 py-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.6)] transition-all">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           
           {/* LOGO ZTOOL GLOW */}
@@ -519,7 +517,7 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* NẠP TIỀN, ĐIỂM DANH & VÍ TIỀN */}
+          {/* CỤM ĐIỂM DANH, NẠP TIỀN & Ô THÔNG TIN TÀI KHOẢN CAO CẤP */}
           <div className="flex items-center gap-3">
             {currentUser ? (
               <div className="flex items-center gap-3">
@@ -528,7 +526,7 @@ export default function Navbar() {
                 <button
                   disabled={hasCheckedInToday}
                   onClick={() => { setCheckInModalShow(true); setCheckInMsg(null); }}
-                  className={`relative group overflow-hidden border px-3.5 py-2 rounded-xl text-xs flex items-center gap-2 transition duration-200 ${
+                  className={`relative group overflow-hidden border px-3.5 py-2.5 rounded-xl text-xs flex items-center gap-2 transition duration-200 ${
                     hasCheckedInToday
                       ? 'bg-[#0D131F] border-slate-800 text-slate-500 cursor-not-allowed'
                       : 'bg-[#0D131F] border-cyan-500/40 hover:border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] cursor-pointer'
@@ -546,35 +544,40 @@ export default function Navbar() {
                   )}
                 </button>
 
-                {/* NÚT NẠP TIỀN NEON */}
+                {/* NÚT NẠP TIỀN NEON EMERALD CAO CẤP */}
                 <button
                   onClick={() => setShowRechargeModal(true)}
-                  className="bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] transition duration-300 hover:scale-[1.02] cursor-pointer"
+                  className="bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 hover:brightness-110 text-slate-950 font-black px-4 sm:px-5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 shadow-[0_0_20px_rgba(16,185,129,0.35)] hover:shadow-[0_0_25px_rgba(16,185,129,0.55)] transition duration-300 hover:scale-[1.03] cursor-pointer border border-emerald-300/50"
                 >
                   <PlusCircle className="w-4 h-4 text-slate-950 stroke-[2.5]" /> Nạp tiền
                 </button>
 
-                {/* KHUNG TÀI KHOẢN & SỐ DƯ */}
+                {/* Ô THÔNG TIN KHÁCH HÀNG (USER PROFILE CARD) */}
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setShowUserDropdown(!showUserDropdown)}
-                    className="flex items-center gap-2.5 bg-[#0D131F] border border-slate-800 hover:border-slate-700 p-1.5 pr-3 rounded-2xl transition cursor-pointer shadow-md"
+                    className="flex items-center gap-3 bg-[#0D131F]/90 border border-slate-700/80 hover:border-cyan-500/60 p-1.5 pr-3.5 rounded-2xl transition duration-300 shadow-[0_4px_15px_rgba(0,0,0,0.4)] cursor-pointer group backdrop-blur-md"
                   >
-                    <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-xs uppercase shadow-inner">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-xs uppercase shadow-inner relative">
                       {currentUser.username.substring(0, 1).toUpperCase()}
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#0D131F] absolute -bottom-0.5 -right-0.5 animate-pulse"></span>
                     </div>
-                    <div className="text-left text-xs leading-none flex flex-col justify-center">
-                      <span className="font-bold text-white block max-w-[80px] truncate">{currentUser.username}</span>
+                    
+                    <div className="text-left text-xs leading-tight flex flex-col justify-center">
+                      <span className="font-extrabold text-white group-hover:text-cyan-300 transition truncate max-w-[90px]">
+                        {currentUser.username}
+                      </span>
                       <span className="text-[10px] text-emerald-400 font-black block mt-0.5">
-                        {(currentUser.balance || 0).toLocaleString('vi-VN')}đ
+                        {(currentUser.balance || 0).toLocaleString('vi-VN')} VNĐ
                       </span>
                     </div>
-                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition duration-200 ${showUserDropdown ? 'rotate-180 text-cyan-400' : ''}`} />
+
+                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition duration-300 ml-0.5 ${showUserDropdown ? 'rotate-180 text-cyan-400' : 'group-hover:text-cyan-400'}`} />
                   </button>
 
                   {/* USER DROPDOWN MENU */}
                   {showUserDropdown && (
-                    <div className="absolute right-0 mt-2 w-60 bg-[#0D131F] border border-slate-800 rounded-2xl p-2 shadow-2xl space-y-1 z-50 backdrop-blur-xl">
+                    <div className="absolute right-0 mt-2.5 w-60 bg-[#0D131F] border border-slate-800 rounded-2xl p-2 shadow-2xl space-y-1 z-50 backdrop-blur-xl">
                       <button onClick={() => { setShowAccountInfoModal(true); setShowUserDropdown(false); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/60 transition cursor-pointer">
                         <User className="w-4 h-4 text-cyan-400" /> Thông tin tài khoản
                       </button>
@@ -594,10 +597,10 @@ export default function Navbar() {
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <button onClick={() => { setAuthModalMode('login'); resetForm(); setShowAuthModal(true); }} className="bg-[#0D131F] border border-cyan-500/40 hover:border-cyan-400 text-slate-100 text-xs font-black px-4 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-sm">
+                <button onClick={() => { setAuthModalMode('login'); resetForm(); setShowAuthModal(true); }} className="bg-[#0D131F] border border-cyan-500/40 hover:border-cyan-400 text-slate-100 text-xs font-black px-4 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-sm">
                   <LogIn className="w-3.5 h-3.5 text-cyan-400" /> ĐĂNG NHẬP
                 </button>
-                <button onClick={() => { setAuthModalMode('register'); resetForm(); setShowAuthModal(true); }} className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black px-4 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+                <button onClick={() => { setAuthModalMode('register'); resetForm(); setShowAuthModal(true); }} className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
                   <UserPlus className="w-3.5 h-3.5" /> ĐĂNG KÝ
                 </button>
               </div>
