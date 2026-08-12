@@ -5,15 +5,13 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { 
-  Sparkles, Wrench, ShieldCheck, Zap, ArrowRight, ShoppingBag, FolderKanban, Bell
+  Sparkles, Wrench, ShieldCheck, Zap, ArrowRight, ShoppingBag, FolderKanban, Bell, Flame, Eye
 } from 'lucide-react';
 
 export default function HomePage() {
   const [tools, setTools] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [systemNotice, setSystemNotice] = useState<{ text: string, active: boolean } | null>(null);
-  
-  // Thêm trạng thái chờ tải dữ liệu
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -29,22 +27,26 @@ export default function HomePage() {
 
   const loadHomeSyncData = async () => {
     try {
+      // SỬA TẠI ĐÂY: Sắp xếp giảm dần theo 'views' thay vì 'id'
       const { data: toolData } = await supabase
         .from('tools')
         .select('*')
-        .order('id', { ascending: false });
+        .order('views', { ascending: false });
 
       if (toolData && toolData.length > 0) {
         const mappedTools = toolData.map((t: any) => ({
           id: t.id,
           name: t.name,
+          toolCode: t.toolCode || t.tool_code || '',
           image: t.image,
           status: t.status || 'Đang hoạt động',
           priceDay: t.priceDay || t.price_day || '',
           priceWeek: t.priceWeek || t.price_week || '',
           priceMonth: t.priceMonth || t.price_month || '',
           priceLifetime: t.priceLifetime || t.price_lifetime || '',
-          description: t.description
+          description: t.description,
+          views: Number(t.views) || 0,
+          sales: Number(t.sales) || 0
         }));
         setTools(mappedTools);
       }
@@ -58,7 +60,6 @@ export default function HomePage() {
         setProjects(projectData);
       }
 
-      // Tải Thông báo từ Admin (id = 1)
       const { data: noticeData } = await supabase
         .from('settings')
         .select('*')
@@ -72,18 +73,32 @@ export default function HomePage() {
     } catch (error) {
       console.error(error);
     } finally {
-      // Xác nhận đã tải xong data hoàn toàn
       setIsLoading(false);
     }
   };
 
-  const activeTools = tools.filter(t => t.status !== 'Tạm ngưng');
+  // Lấy Tool đang hoạt động có lượt xem cao nhất tuyệt đối
+  const activeTools = [...tools].filter(t => t.status !== 'Tạm ngưng').sort((a, b) => b.views - a.views);
   const featuredTool = activeTools.length > 0 ? activeTools[0] : null;
+
+  const handleOpenFeaturedTool = async (tool: any) => {
+    if (!tool) return;
+    try {
+      const newViews = (tool.views || 0) + 1;
+      await supabase.from('tools').update({ views: newViews }).eq('id', tool.id);
+      
+      const event = new CustomEvent('open-buy-tool-modal', {
+        detail: { toolCode: tool.toolCode }
+      });
+      window.dispatchEvent(event);
+    } catch (e) {
+      console.error('Lỗi cộng lượt xem:', e);
+    }
+  };
 
   return (
     <main className="font-sans pb-20 min-h-screen">
       {isLoading ? (
-        // Khoảng trống bảo vệ cấu trúc trong lúc chờ data để chống chớp giật
         <div className="min-h-[60vh]"></div>
       ) : (
         <motion.div 
@@ -93,7 +108,7 @@ export default function HomePage() {
           className="max-w-7xl mx-auto px-4 py-8 space-y-12"
         >
 
-          {/* KHUNG HIỂN THỊ THÔNG BÁO TỪ ADMIN */}
+          {/* KHUNG THÔNG BÁO TỪ ADMIN */}
           {systemNotice?.active && systemNotice?.text && (
             <div className="bg-amber-500/10 border-2 border-amber-500/30 rounded-2xl p-4 flex items-center gap-4 shadow-[0_0_20px_rgba(245,158,11,0.15)] relative overflow-hidden">
               <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 border border-amber-500/40">
@@ -108,7 +123,7 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Banner Hero Chuyển Động */}
+          {/* Banner Hero Chuyển Động & Khung Tool Nổi Bật */}
           <div className="bg-[#0D121D] border border-[#1C2638] rounded-3xl p-8 lg:p-12 grid grid-cols-1 lg:grid-cols-3 gap-8 items-center shadow-2xl relative overflow-hidden">
             <div className="lg:col-span-2 space-y-6 relative z-10">
               <div className="inline-flex items-center gap-2 bg-cyan-500/10 border border-cyan-500/30 px-4 py-1.5 rounded-full text-xs font-bold text-cyan-400">
@@ -135,12 +150,15 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Khung Tool Nổi Bật */}
+            {/* Khung Tool Nổi Bật (Luôn chọn Tool có views cao nhất) */}
             {featuredTool && (
-              <div className="group bg-[#06090E] border-2 border-cyan-500/40 hover:border-cyan-400 rounded-3xl p-5 space-y-4 shadow-xl hover:shadow-2xl hover:shadow-cyan-500/30 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer relative z-10">
+              <div 
+                onClick={() => handleOpenFeaturedTool(featuredTool)}
+                className="group bg-[#06090E] border-2 border-amber-500/40 hover:border-amber-400 rounded-3xl p-5 space-y-4 shadow-xl hover:shadow-2xl hover:shadow-amber-500/20 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer relative z-10"
+              >
                 <div className="flex justify-between items-center border-b border-[#1C2638] pb-3">
-                  <span className="text-xs font-extrabold text-cyan-400 flex items-center gap-1.5 uppercase tracking-wider">
-                    <Wrench className="w-4 h-4" /> TOOL NỔI BẬT
+                  <span className="text-xs font-black text-amber-400 flex items-center gap-1.5 uppercase tracking-wider">
+                    <Flame className="w-4 h-4 fill-amber-400 animate-bounce" /> TOOL NỔI BẬT
                   </span>
                   
                   <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded border text-emerald-400 bg-emerald-500/20 border-emerald-500/30">
@@ -154,16 +172,27 @@ export default function HomePage() {
                     alt={featuredTool.name} 
                     className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
                   />
+                  
+                  {/* Hiển thị lượt xem thực tế */}
+                  <div className="absolute bottom-3 left-3 bg-[#080B10]/80 backdrop-blur-md border border-[#1A2332] px-2.5 py-1 rounded-lg flex items-center gap-2 text-[10px]">
+                    <span className="flex items-center gap-1 text-slate-300" title="Lượt xem">
+                      <Eye className="w-3 h-3 text-cyan-400" /> {featuredTool.views || 0}
+                    </span>
+                    <span className="text-slate-600">|</span>
+                    <span className="flex items-center gap-1 text-slate-300" title="Đã bán">
+                      <ShoppingBag className="w-3 h-3 text-emerald-400" /> {featuredTool.sales || 0}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="space-y-1">
-                  <h3 className="font-bold text-white text-base group-hover:text-cyan-400 transition">{featuredTool.name}</h3>
+                  <h3 className="font-bold text-white text-base group-hover:text-amber-400 transition">{featuredTool.name}</h3>
                   <p className="text-xs text-slate-400 line-clamp-1">{featuredTool.description}</p>
                 </div>
 
                 <div className="flex items-center justify-between pt-2 border-t border-[#1C2638]">
                   <span className="text-xs text-emerald-400 font-extrabold">Giá từ: {formatPrice(featuredTool.priceDay)} VNĐ</span>
-                  <Link href="/tools" className="text-xs font-bold text-cyan-400 hover:underline flex items-center gap-1">
+                  <Link href="/tools" className="text-xs font-bold text-amber-400 hover:underline flex items-center gap-1">
                     Xem chi tiết <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
@@ -189,7 +218,7 @@ export default function HomePage() {
               {tools.slice(0, 3).map((tool) => (
                 <div 
                   key={tool.id} 
-                  className="bg-[#0D121D] border-2 border-[#1C2638] hover:border-cyan-400 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-xl hover:shadow-2xl hover:shadow-cyan-500/30 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer group"
+                  className="bg-[#0D121D] border-2 border-[#1C2638] hover:border-cyan-400 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-xl hover:shadow-2xl hover:shadow-cyan-500/30 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer group relative"
                 >
                   <div className="space-y-3">
                     <div className="w-full aspect-square bg-[#06090E] border border-[#1C2638] rounded-2xl overflow-hidden relative">
@@ -206,6 +235,17 @@ export default function HomePage() {
                       }`}>
                         {tool.status ? tool.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
                       </span>
+
+                      {/* Hiển thị Lượt xem & Lượt bán */}
+                      <div className="absolute bottom-3 left-3 bg-[#080B10]/80 backdrop-blur-md border border-[#1A2332] px-2.5 py-1 rounded-lg flex items-center gap-2 text-[10px]">
+                        <span className="flex items-center gap-1 text-slate-300" title="Lượt xem">
+                          <Eye className="w-3 h-3 text-cyan-400" /> {tool.views || 0}
+                        </span>
+                        <span className="text-slate-600">|</span>
+                        <span className="flex items-center gap-1 text-slate-300" title="Đã bán">
+                          <ShoppingBag className="w-3 h-3 text-emerald-400" /> {tool.sales || 0}
+                        </span>
+                      </div>
                     </div>
                     <div>
                       <h3 className="font-bold text-white text-base group-hover:text-cyan-400 transition">{tool.name}</h3>
