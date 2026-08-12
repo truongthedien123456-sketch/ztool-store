@@ -6,7 +6,7 @@ import {
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
   Ban, CheckCircle, CreditCard, KeyRound, Search, DollarSign, Settings,
-  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell
+  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -107,7 +107,8 @@ export default function AdminPage() {
         setTools(toolData.map((t: any) => ({
           id: t.id, name: t.name, toolCode: t.toolCode || t.tool_code || '', image: t.image, status: t.status || 'Đang hoạt động',
           priceDay: t.priceDay || t.price_day || '', priceWeek: t.priceWeek || t.price_week || '', priceMonth: t.priceMonth || t.price_month || '',
-          priceLifetime: t.priceLifetime || t.price_lifetime || '', description: t.description, downloadLink: t.downloadLink || t.download_link || ''
+          priceLifetime: t.priceLifetime || t.price_lifetime || '', description: t.description, downloadLink: t.downloadLink || t.download_link || '',
+          views: t.views || 0, sales: t.sales || 0
         })));
       }
 
@@ -328,10 +329,9 @@ export default function AdminPage() {
           <button onClick={() => setActiveTab('settings')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'settings' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-amber-400 hover:text-amber-300 hover:bg-[#141C2B]'}`}><Bell className="w-4 h-4" /> THÔNG BÁO CHUNG</button>
         </div>
 
-        {/* TAB CÀI ĐẶT THÔNG BÁO (HIỆN Ô CHỈNH SỬA VÀ Ô HIỂN THỊ KẾ BÊN) */}
+        {/* TAB CÀI ĐẶT THÔNG BÁO */}
         {activeTab === 'settings' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Cột Trái: Form chỉnh sửa */}
             <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
               <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
                 <Bell className="w-4 h-4 text-amber-400" /> Soạn thảo / Chỉnh sửa thông báo
@@ -365,7 +365,6 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Cột Phải: Ô kế bên hiển thị thông báo đang hoạt động kèm nút Chỉnh sửa nhanh */}
             <div className="bg-[#0D121D] border border-amber-500/40 rounded-2xl p-6 space-y-4 h-fit shadow-xl shadow-amber-500/5">
               <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2 border-b border-[#1C2638] pb-3 uppercase">
                 <CheckCircle className="w-4 h-4 text-amber-400" /> Thông báo đang hoạt động thực tế
@@ -395,7 +394,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* CÁC TAB KHÁC... */}
+        {/* TAB NGƯỜI DÙNG */}
         {activeTab === 'users' && (
           <div className="space-y-6">
             <form onSubmit={handleCreateUser} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
@@ -560,7 +559,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* CÁC TAB KHÁC... */}
+        {/* TAB SẢN PHẨM TOOL (ĐÃ THÊM GIÁ TIỀN, LƯỢT XEM VÀ LƯỢT MUA) */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
@@ -578,12 +577,46 @@ export default function AdminPage() {
               <h3 className="text-xs font-bold text-white border-b border-[#1C2638] pb-3 uppercase">DANH SÁCH TOOL</h3>
               <div className="space-y-3">
                 {tools.length === 0 ? <p className="text-xs text-slate-500">Chưa có Tool</p> : tools.map((t) => (
-                  <div key={t.id} className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-4 flex-1">
-                      {t.image && (<div className="w-16 h-16 bg-[#0D121D] border border-[#1C2638] rounded-lg overflow-hidden shrink-0"><img src={t.image} alt={t.name} className="w-full h-full object-cover" /></div>)}
-                      <div><h4 className="font-bold text-white text-xs">{t.name}</h4><span className="text-[10px] font-mono text-cyan-400">Mã: {t.toolCode}</span></div>
+                  <div key={t.id} className="bg-[#06090E] border border-[#1C2638] p-4 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-4 flex-1">
+                        {t.image && (<div className="w-16 h-16 bg-[#0D121D] border border-[#1C2638] rounded-lg overflow-hidden shrink-0"><img src={t.image} alt={t.name} className="w-full h-full object-cover" /></div>)}
+                        <div>
+                          <h4 className="font-bold text-white text-xs">{t.name}</h4>
+                          <span className="text-[10px] font-mono text-cyan-400 block">Mã: {t.toolCode}</span>
+                          <span className={`inline-block mt-1 text-[9px] font-extrabold px-2 py-0.5 rounded border ${t.status === 'Tạm ngưng' ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'}`}>
+                            {t.status ? t.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Lượt Xem & Lượt Mua */}
+                      <div className="flex items-center gap-3 bg-[#0D121D] border border-[#1C2638] px-3 py-1.5 rounded-xl text-xs">
+                        <div className="flex items-center gap-1 text-slate-400" title="Lượt xem">
+                          <Eye className="w-3.5 h-3.5 text-cyan-400" />
+                          <span className="font-bold text-white">{t.views || 0}</span>
+                        </div>
+                        <span className="text-slate-600">|</span>
+                        <div className="flex items-center gap-1 text-slate-400" title="Lượt mua">
+                          <ShoppingBag className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="font-bold text-emerald-400">{t.sales || 0}</span>
+                        </div>
+                      </div>
+
+                      {/* Nút Sửa/Xóa */}
+                      <div className="flex gap-2">
+                        <button onClick={() => { setToolForm(t); setPreviewUrl(t.image); setIsEditingTool(true); }} className="text-cyan-400 p-2 hover:bg-cyan-500/10 rounded-lg cursor-pointer"><Edit className="w-4 h-4" /></button>
+                        <button onClick={() => handleDeleteTool(t.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+                      </div>
                     </div>
-                    <div className="flex gap-2"><button onClick={() => { setToolForm(t); setPreviewUrl(t.image); setIsEditingTool(true); }} className="text-cyan-400 p-2 hover:bg-cyan-500/10 rounded-lg cursor-pointer"><Edit className="w-4 h-4" /></button><button onClick={() => handleDeleteTool(t.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg cursor-pointer"><Trash2 className="w-4 h-4" /></button></div>
+
+                    {/* Bảng Giá Chi Tiết Hàng Tool */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-[#0D121D] border border-[#1C2638] p-2.5 rounded-xl text-[11px]">
+                      <div><span className="text-slate-500 block">Ngày:</span><b className="text-emerald-400">{t.priceDay ? `${Number(t.priceDay).toLocaleString('vi-VN')}đ` : '---'}</b></div>
+                      <div><span className="text-slate-500 block">Tuần:</span><b className="text-emerald-400">{t.priceWeek ? `${Number(t.priceWeek).toLocaleString('vi-VN')}đ` : '---'}</b></div>
+                      <div><span className="text-slate-500 block">Tháng:</span><b className="text-emerald-400">{t.priceMonth ? `${Number(t.priceMonth).toLocaleString('vi-VN')}đ` : '---'}</b></div>
+                      <div><span className="text-slate-500 block">Vĩnh viễn:</span><b className="text-cyan-400">{t.priceLifetime ? `${Number(t.priceLifetime).toLocaleString('vi-VN')}đ` : '---'}</b></div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -591,6 +624,7 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* MÃ GIẢM GIÁ TAB */}
         {activeTab === 'coupons' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleCreateCoupon} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
@@ -615,6 +649,7 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* DỰ ÁN TAB */}
         {activeTab === 'projects' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveProject} className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4 h-fit">
@@ -642,6 +677,7 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* SEPAY TAB */}
         {activeTab === 'sepay' && (
           <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
             <h2 className="text-sm font-bold text-white border-b border-[#1C2638] pb-3 uppercase flex items-center gap-2"><CreditCard className="w-4 h-4 text-cyan-400" /> LỊCH SỬ SEPAY</h2>
@@ -663,6 +699,7 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* FEEDBACK TAB */}
         {activeTab === 'feedback' && (
           <div className="bg-[#0D121D] border border-[#1C2638] rounded-2xl p-6 space-y-4">
             <h2 className="text-sm font-bold text-white border-b border-[#1C2638] pb-3 uppercase flex items-center gap-2"><MessageSquare className="w-4 h-4 text-cyan-400" /> Ý KIẾN ĐÓNG GÓP</h2>
