@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { 
   User, Lock, LogIn, UserPlus, LogOut, Wallet, X, AlertCircle, CheckCircle2,
-  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift, Bell
+  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift, Bell, Home, FolderKanban, Sparkles
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -462,153 +462,165 @@ export default function Navbar() {
 
   return (
     <>
-      {/* THÔNG BÁO CHUNG HIỂN THỊ TRÊN CÙNG CỦA NAVBAR */}
+      {/* 1. THANH THÔNG BÁO CHẠY CHỮ TRÊN CÙNG (TOP ANNOUNCEMENT BAR) */}
       {announcement?.active && announcement?.text && (
-        <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 text-slate-950 font-black text-xs py-2 px-4 text-center relative z-50 shadow-md flex items-center justify-center gap-2 overflow-hidden">
-          <Bell className="w-4 h-4 text-slate-950 animate-bounce shrink-0" />
-          <span className="tracking-wide uppercase truncate">THÔNG BÁO: {announcement.text}</span>
+        <div className="bg-[#0B0F17] border-b border-amber-500/30 px-4 py-1.5 text-xs text-amber-300 font-bold overflow-hidden flex items-center gap-2 relative z-50">
+          <div className="flex items-center gap-1.5 shrink-0 bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded text-[10px] uppercase font-black tracking-wider border border-amber-500/30 shadow-inner">
+            <Bell className="w-3 h-3 animate-bounce text-amber-400" /> THÔNG BÁO
+          </div>
+          <div className="whitespace-nowrap overflow-hidden flex-1">
+            <div className="inline-block animate-[marquee_25s_linear_infinite] pl-4 text-slate-200">
+              {announcement.text}
+            </div>
+          </div>
         </div>
       )}
 
-      <nav className="bg-[#080B10]/95 backdrop-blur-md border-b-2 border-cyan-400/50 sticky top-0 z-40 px-4 lg:px-8 py-3 flex items-center justify-between shadow-lg shadow-cyan-500/15">
-        
-        {/* LOGO ZTOOL */}
-        <Link href="/" className="flex items-center gap-3.5 group">
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#06090E] p-1 border-2 border-cyan-400 shadow-lg shadow-cyan-400/40 group-hover:scale-105 group-hover:border-cyan-300 transition duration-300 overflow-hidden shrink-0">
-            <img src="/logo.jpg" alt="ZTool Logo" className="w-full h-full object-cover rounded-xl" />
-          </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-wider leading-none group-hover:text-cyan-300 transition drop-shadow-[0_0_12px_rgba(6,182,212,0.8)]">ZTOOL</h1>
-            <span className="text-[11px] font-bold text-cyan-300 tracking-wide block mt-1">Chuyên Cung Cấp Tool FiveM</span>
-          </div>
-        </Link>
+      {/* 2. NAVBAR CHÍNH GLASSMORPHISM CYBERPUNK */}
+      <nav className="bg-[#080D15]/85 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-40 px-4 lg:px-8 py-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] transition-all">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          
+          {/* LOGO ZTOOL GLOW */}
+          <Link href="/" className="flex items-center gap-3.5 group">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#05080E] p-1 border-2 border-cyan-400/80 shadow-[0_0_20px_rgba(6,182,212,0.4)] group-hover:shadow-[0_0_30px_rgba(6,182,212,0.7)] group-hover:scale-105 transition duration-300 overflow-hidden shrink-0">
+              <img src="/logo.jpg" alt="ZTool Logo" className="w-full h-full object-cover rounded-xl" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black text-white tracking-wider leading-none group-hover:text-cyan-300 transition duration-300 drop-shadow-[0_0_12px_rgba(6,182,212,0.8)]">
+                ZTOOL<span className="text-cyan-400">.STORE</span>
+              </h1>
+              <span className="text-[10px] font-bold text-slate-400 tracking-widest block mt-1 uppercase">Chuyên Cung Cấp Tool FiveM</span>
+            </div>
+          </Link>
 
-        {/* MENU ĐIỀU HƯỚNG CỐ ĐỊNH CHỐNG NHÁY MÀU KHI HYDRATION */}
-        <div className="hidden md:flex items-center gap-2 bg-[#06090E] p-1.5 rounded-2xl border-2 border-[#1C2638] shadow-xl">
-          {[
-            { name: 'Trang chủ', path: '/' },
-            { name: 'TOOL AUTO', path: '/tools' },
-            { name: 'Dự án', path: '/projects' }
-          ].map((item) => {
-            const isActive = currentPath === item.path;
-            return (
-              <Link 
-                key={item.path}
-                href={item.path} 
-                className={`min-w-[110px] text-center px-4 py-2.5 rounded-xl text-sm font-black transition-all duration-300 cursor-pointer flex items-center justify-center select-none ${
-                  isActive ? 'bg-cyan-500 text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.4)]' : 'text-slate-300 hover:text-cyan-300 hover:bg-[#0D121D]'
-                }`}
-              >
-                {item.name}
-              </Link>
-            )
-          })}
-        </div>
+          {/* MENU ĐIỀU HƯỚNG DẠNG PILL GLASS */}
+          <div className="hidden md:flex items-center gap-1.5 bg-[#0D131F] border border-slate-800/80 p-1.5 rounded-2xl shadow-inner">
+            {[
+              { name: 'Trang chủ', path: '/', icon: Home },
+              { name: 'TOOL AUTO', path: '/tools', icon: Wrench },
+              { name: 'Dự án', path: '/projects', icon: FolderKanban }
+            ].map((item) => {
+              const isActive = currentPath === item.path;
+              const IconComp = item.icon;
+              return (
+                <Link 
+                  key={item.path}
+                  href={item.path} 
+                  className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition duration-200 cursor-pointer ${
+                    isActive 
+                      ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.4)] font-black' 
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                  }`}
+                >
+                  <IconComp className="w-3.5 h-3.5" />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </div>
 
-        {/* NẠP TIỀN, ĐIỂM DANH & VÍ TIỀN */}
-        <div className="flex items-center gap-3">
-          {currentUser ? (
-            <div className="flex items-center gap-3">
-              
-              {/* NÚT ĐIỂM DANH */}
-              <button
-                disabled={hasCheckedInToday}
-                onClick={() => { setCheckInModalShow(true); setCheckInMsg(null); }}
-                className={`relative group overflow-hidden border-2 px-4 py-2.5 rounded-2xl text-sm flex items-center gap-2 transition-all duration-300 ${
-                  hasCheckedInToday
-                    ? 'bg-[#0D121D] border-[#1C2638] text-slate-500 cursor-not-allowed opacity-90'
-                    : 'bg-gradient-to-r from-[#0D121D] to-[#141C2B] border-cyan-500/60 hover:border-cyan-300 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)] hover:shadow-[0_0_20px_rgba(6,182,212,0.5)] hover:-translate-y-0.5 cursor-pointer'
-                }`}
-              >
-                {!hasCheckedInToday && <div className="absolute inset-0 bg-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>}
-                <Gift className={`w-4 h-4 relative z-10 ${hasCheckedInToday ? 'text-slate-500' : 'text-cyan-400 group-hover:animate-bounce'}`} />
-                <span className="relative z-10 flex items-center gap-1.5 font-black">
-                  {hasCheckedInToday ? 'Đã điểm danh' : 'Điểm danh'}
+          {/* NẠP TIỀN, ĐIỂM DANH & VÍ TIỀN */}
+          <div className="flex items-center gap-3">
+            {currentUser ? (
+              <div className="flex items-center gap-3">
+                
+                {/* NÚT ĐIỂM DANH */}
+                <button
+                  disabled={hasCheckedInToday}
+                  onClick={() => { setCheckInModalShow(true); setCheckInMsg(null); }}
+                  className={`relative group overflow-hidden border px-3.5 py-2 rounded-xl text-xs flex items-center gap-2 transition duration-200 ${
+                    hasCheckedInToday
+                      ? 'bg-[#0D131F] border-slate-800 text-slate-500 cursor-not-allowed'
+                      : 'bg-[#0D131F] border-cyan-500/40 hover:border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] cursor-pointer'
+                  }`}
+                >
+                  <Gift className={`w-3.5 h-3.5 ${hasCheckedInToday ? 'text-slate-500' : 'text-cyan-400 group-hover:animate-bounce'}`} />
+                  <span className="font-bold hidden sm:inline">
+                    {hasCheckedInToday ? 'Đã điểm danh' : 'Điểm danh'}
+                  </span>
                   {!hasCheckedInToday && (
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
                     </span>
                   )}
-                  {hasCheckedInToday && <CheckCircle2 className="w-3.5 h-3.5 text-slate-500" />}
-                </span>
-              </button>
-
-              {/* NÚT NẠP TIỀN */}
-              <button
-                onClick={() => setShowRechargeModal(true)}
-                className="bg-gradient-to-r from-emerald-400 to-teal-300 hover:brightness-110 text-slate-950 font-black px-5 py-2.5 rounded-2xl text-sm flex items-center gap-2 shadow-lg shadow-emerald-400/40 transition cursor-pointer hover:-translate-y-0.5 border-2 border-emerald-200"
-              >
-                <PlusCircle className="w-4 h-4 text-slate-950 stroke-[2.5]" /> Nạp tiền
-              </button>
-
-              {/* KHUNG TÀI KHOẢN & SỐ DƯ */}
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setShowUserDropdown(!showUserDropdown)}
-                  className="flex items-center gap-3 bg-[#0D121D] border-2 border-[#1C2638] hover:border-cyan-500/60 p-1.5 pr-4 rounded-full transition-all duration-300 shadow-lg hover:shadow-cyan-500/20 group cursor-pointer"
-                >
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-lg shrink-0 relative shadow-inner">
-                    {currentUser.username.substring(0, 1).toUpperCase()}
-                    <span className="w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#0D121D] absolute bottom-0 right-0 animate-pulse"></span>
-                  </div>
-                  <div className="text-left leading-none flex flex-col justify-center">
-                    <span className="text-sm font-black text-white group-hover:text-cyan-300 transition truncate max-w-[100px]">{currentUser.username}</span>
-                    <span className="text-[11px] font-bold text-emerald-400 mt-1 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/20 w-fit">
-                      <Wallet className="w-3 h-3" /> {(currentUser.balance || 0).toLocaleString('vi-VN')} đ
-                    </span>
-                  </div>
-                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-300 ml-1 ${showUserDropdown ? 'rotate-180 text-cyan-400' : 'group-hover:text-cyan-400'}`} />
                 </button>
 
-                {/* USER DROPDOWN MENU */}
-                {showUserDropdown && (
-                  <div className="absolute right-0 mt-3 w-64 bg-[#0D121D] border-2 border-cyan-400 rounded-2xl p-2.5 shadow-2xl shadow-cyan-500/35 space-y-1 z-50">
-                    <button onClick={() => { setShowAccountInfoModal(true); setShowUserDropdown(false); }} className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-[#141C2B] transition cursor-pointer">
-                      <User className="w-4 h-4 text-cyan-400" /> Thông tin tài khoản
-                    </button>
-                    <button onClick={() => { if (currentUser) loadUserGistData(currentUser.username); setShowPurchasedToolsModal(true); setShowUserDropdown(false); }} className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-[#141C2B] transition cursor-pointer">
-                      <Wrench className="w-4 h-4 text-cyan-300" /> Tool đã mua
-                    </button>
-                    <button onClick={() => { if (currentUser) loadUserTransactionsFromCloud(currentUser.username); setShowHistoryModal(true); setShowUserDropdown(false); }} className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-[#141C2B] transition cursor-pointer">
-                      <History className="w-4 h-4 text-emerald-400" /> Lịch sử giao dịch
-                    </button>
-                    <div className="border-t border-[#1C2638] my-1" />
-                    <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-500/10 transition cursor-pointer">
-                      <LogOut className="w-4 h-4" /> Đăng xuất
-                    </button>
-                  </div>
-                )}
+                {/* NÚT NẠP TIỀN NEON */}
+                <button
+                  onClick={() => setShowRechargeModal(true)}
+                  className="bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] transition duration-300 hover:scale-[1.02] cursor-pointer"
+                >
+                  <PlusCircle className="w-4 h-4 text-slate-950 stroke-[2.5]" /> Nạp tiền
+                </button>
+
+                {/* KHUNG TÀI KHOẢN & SỐ DƯ */}
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setShowUserDropdown(!showUserDropdown)}
+                    className="flex items-center gap-2.5 bg-[#0D131F] border border-slate-800 hover:border-slate-700 p-1.5 pr-3 rounded-2xl transition cursor-pointer shadow-md"
+                  >
+                    <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-xs uppercase shadow-inner">
+                      {currentUser.username.substring(0, 1).toUpperCase()}
+                    </div>
+                    <div className="text-left text-xs leading-none flex flex-col justify-center">
+                      <span className="font-bold text-white block max-w-[80px] truncate">{currentUser.username}</span>
+                      <span className="text-[10px] text-emerald-400 font-black block mt-0.5">
+                        {(currentUser.balance || 0).toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition duration-200 ${showUserDropdown ? 'rotate-180 text-cyan-400' : ''}`} />
+                  </button>
+
+                  {/* USER DROPDOWN MENU */}
+                  {showUserDropdown && (
+                    <div className="absolute right-0 mt-2 w-60 bg-[#0D131F] border border-slate-800 rounded-2xl p-2 shadow-2xl space-y-1 z-50 backdrop-blur-xl">
+                      <button onClick={() => { setShowAccountInfoModal(true); setShowUserDropdown(false); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/60 transition cursor-pointer">
+                        <User className="w-4 h-4 text-cyan-400" /> Thông tin tài khoản
+                      </button>
+                      <button onClick={() => { if (currentUser) loadUserGistData(currentUser.username); setShowPurchasedToolsModal(true); setShowUserDropdown(false); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/60 transition cursor-pointer">
+                        <Wrench className="w-4 h-4 text-cyan-300" /> Tool đã mua
+                      </button>
+                      <button onClick={() => { if (currentUser) loadUserTransactionsFromCloud(currentUser.username); setShowHistoryModal(true); setShowUserDropdown(false); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/60 transition cursor-pointer">
+                        <History className="w-4 h-4 text-emerald-400" /> Lịch sử giao dịch
+                      </button>
+                      <div className="border-t border-slate-800 my-1" />
+                      <button onClick={handleLogout} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-500/10 transition cursor-pointer">
+                        <LogOut className="w-4 h-4" /> Đăng xuất
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2.5">
-              <button onClick={() => { setAuthModalMode('login'); resetForm(); setShowAuthModal(true); }} className="bg-[#0D121D] border-2 border-cyan-500/60 hover:border-cyan-400 text-slate-100 text-xs font-black px-5 py-2.5 rounded-2xl transition cursor-pointer flex items-center gap-2">
-                <LogIn className="w-4 h-4 text-cyan-400" /> ĐĂNG NHẬP
-              </button>
-              <button onClick={() => { setAuthModalMode('register'); resetForm(); setShowAuthModal(true); }} className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black px-5 py-2.5 rounded-2xl transition cursor-pointer flex items-center gap-2 shadow-lg shadow-cyan-500/40">
-                <UserPlus className="w-4 h-4" /> ĐĂNG KÝ
-              </button>
-            </div>
-          )}
+            ) : (
+              <div className="flex items-center gap-2">
+                <button onClick={() => { setAuthModalMode('login'); resetForm(); setShowAuthModal(true); }} className="bg-[#0D131F] border border-cyan-500/40 hover:border-cyan-400 text-slate-100 text-xs font-black px-4 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-sm">
+                  <LogIn className="w-3.5 h-3.5 text-cyan-400" /> ĐĂNG NHẬP
+                </button>
+                <button onClick={() => { setAuthModalMode('register'); resetForm(); setShowAuthModal(true); }} className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black px-4 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+                  <UserPlus className="w-3.5 h-3.5" /> ĐĂNG KÝ
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
 
       {/* MODAL ĐIỂM DANH */}
       {checkInModalShow && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0D121D] border-2 border-cyan-400 w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-2xl shadow-cyan-500/30">
-            <button onClick={() => setCheckInModalShow(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-[#1C2638] cursor-pointer"><X className="w-5 h-5" /></button>
-            <div className="flex items-center gap-3 border-b border-[#1C2638] pb-4">
+          <div className="bg-[#0D121D] border border-cyan-400/80 w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-[0_0_30px_rgba(6,182,212,0.25)]">
+            <button onClick={() => setCheckInModalShow(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-slate-800 cursor-pointer"><X className="w-5 h-5" /></button>
+            <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
               <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400"><CalendarCheck className="w-5 h-5" /></div>
               <div><h3 className="text-base font-black text-white">ĐIỂM DANH MỖI NGÀY</h3><p className="text-xs text-slate-400">Nhận quà tặng từ ZTOOL để trải nghiệm dịch vụ</p></div>
             </div>
-            <div className="bg-[#06090E] border border-[#1C2638] p-6 rounded-2xl flex flex-col items-center space-y-4 text-center">
+            <div className="bg-[#06090E] border border-slate-800 p-6 rounded-2xl flex flex-col items-center space-y-4 text-center">
               <div className="w-20 h-20 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-2 border-cyan-400 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.4)] animate-pulse"><Gift className="w-10 h-10 text-cyan-300" /></div>
               <div className="space-y-1"><h4 className="text-lg font-black text-white">Phần thưởng hôm nay</h4><p className="text-2xl font-black text-emerald-400">+ 1,000 VNĐ</p></div>
             </div>
             {checkInMsg && (
-              <div className={`p-3.5 rounded-xl text-xs font-bold flex items-start gap-2 ${checkInMsg.type === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+              <div className={`p-3.5 rounded-xl text-xs font-bold flex items-start gap-2 ${checkInMsg.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'}`}>
                 {checkInMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
                 <span>{checkInMsg.text}</span>
               </div>
@@ -629,17 +641,17 @@ export default function Navbar() {
       {/* CÁC MODAL KHÁC */}
       {showPurchasedToolsModal && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0D121D] border-2 border-cyan-400 w-full max-w-xl rounded-3xl p-6 space-y-5 relative shadow-2xl max-h-[90vh] overflow-y-auto">
-            <button onClick={() => setShowPurchasedToolsModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-[#1C2638] cursor-pointer"><X className="w-5 h-5" /></button>
-            <div className="flex items-center gap-3 border-b border-[#1C2638] pb-4">
+          <div className="bg-[#0D121D] border border-cyan-400/80 w-full max-w-xl rounded-3xl p-6 space-y-5 relative shadow-[0_0_30px_rgba(6,182,212,0.25)] max-h-[90vh] overflow-y-auto">
+            <button onClick={() => setShowPurchasedToolsModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-slate-800 cursor-pointer"><X className="w-5 h-5" /></button>
+            <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
               <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400"><Wrench className="w-5 h-5" /></div>
               <div><h3 className="text-base font-black text-white">DANH SÁCH TOOL ĐÃ MUA</h3><p className="text-xs text-slate-400">Quản lý tài khoản, mật khẩu và thời hạn</p></div>
             </div>
             {loadingPurchasedTools ? <div className="flex items-center justify-center gap-2 py-10 text-xs text-slate-400"><Loader2 className="w-4 h-4 animate-spin text-cyan-400" /> Đang kiểm tra...</div> : (
               <div className="space-y-4">
                 {!userGistData || userGistData.length === 0 ? <div className="bg-[#06090E] p-6 rounded-2xl text-center text-xs text-slate-400">Chưa có bản quyền Tool nào.</div> : userGistData.map((toolAcc: any, idx: number) => (
-                  <div key={idx} className="bg-[#06090E] border border-[#1C2638] p-5 rounded-2xl space-y-4">
-                    <div className="flex justify-between items-center border-b border-[#1C2638] pb-3">
+                  <div key={idx} className="bg-[#06090E] border border-slate-800 p-5 rounded-2xl space-y-4">
+                    <div className="flex justify-between items-center border-b border-slate-800 pb-3">
                       <h4 className="font-black text-white text-base uppercase">{toolAcc.toolName}</h4>
                       {renderRemainingTime(toolAcc.expire_timestamp)}
                     </div>
@@ -653,23 +665,23 @@ export default function Navbar() {
 
       {showRechargeModal && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0D121D] border-2 border-cyan-400 w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-2xl">
-            <button onClick={() => setShowRechargeModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-[#1C2638] cursor-pointer"><X className="w-5 h-5" /></button>
-            <div className="flex items-center gap-3 border-b border-[#1C2638] pb-4"><div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400"><CreditCard className="w-5 h-5" /></div><div><h3 className="text-base font-black text-white">NẠP TIỀN VÀO VÍ TỰ ĐỘNG</h3></div></div>
-            <div className="grid grid-cols-3 gap-2">{['20000', '50000', '100000', '200000', '500000', '1000000'].map((amt) => (<button key={amt} onClick={() => setRechargeAmount(amt)} className={`py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer ${rechargeAmount === amt ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-[#06090E] border-[#1C2638] text-slate-400'}`}>{Number(amt).toLocaleString('vi-VN')}đ</button>))}</div>
-            <div className="bg-[#06090E] border border-[#1C2638] p-4 rounded-2xl flex flex-col items-center space-y-3 text-center"><img src={`https://qr.sepay.vn/img?bank=BIDV&acc=96247JFG2G&template=compact&amount=${rechargeAmount}&des=${encodeURIComponent(`NAP ${currentUser.username}`)}`} alt="QR SePay" className="w-48 h-48 rounded-xl bg-white p-2 shadow-lg" /><button onClick={() => copyToClipboard(`NAP ${currentUser.username}`)} className="font-black text-cyan-400 text-xs flex items-center gap-1 hover:underline cursor-pointer">Nội dung CK: NAP {currentUser.username} {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}</button></div>
+          <div className="bg-[#0D121D] border border-cyan-400/80 w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-[0_0_30px_rgba(6,182,212,0.25)]">
+            <button onClick={() => setShowRechargeModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-slate-800 cursor-pointer"><X className="w-5 h-5" /></button>
+            <div className="flex items-center gap-3 border-b border-slate-800 pb-4"><div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400"><CreditCard className="w-5 h-5" /></div><div><h3 className="text-base font-black text-white">NẠP TIỀN VÀO VÍ TỰ ĐỘNG</h3></div></div>
+            <div className="grid grid-cols-3 gap-2">{['20000', '50000', '100000', '200000', '500000', '1000000'].map((amt) => (<button key={amt} onClick={() => setRechargeAmount(amt)} className={`py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer ${rechargeAmount === amt ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-[#06090E] border-slate-800 text-slate-400'}`}>{Number(amt).toLocaleString('vi-VN')}đ</button>))}</div>
+            <div className="bg-[#06090E] border border-slate-800 p-4 rounded-2xl flex flex-col items-center space-y-3 text-center"><img src={`https://qr.sepay.vn/img?bank=BIDV&acc=96247JFG2G&template=compact&amount=${rechargeAmount}&des=${encodeURIComponent(`NAP ${currentUser.username}`)}`} alt="QR SePay" className="w-48 h-48 rounded-xl bg-white p-2 shadow-lg" /><button onClick={() => copyToClipboard(`NAP ${currentUser.username}`)} className="font-black text-cyan-400 text-xs flex items-center gap-1 hover:underline cursor-pointer">Nội dung CK: NAP {currentUser.username} {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}</button></div>
           </div>
         </div>
       )}
 
       {showHistoryModal && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0D121D] border-2 border-cyan-400 w-full max-w-lg rounded-3xl p-6 space-y-5 relative shadow-2xl">
-            <button onClick={() => setShowHistoryModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-[#1C2638] cursor-pointer"><X className="w-5 h-5" /></button>
-            <div className="flex items-center gap-3 border-b border-[#1C2638] pb-4"><div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400"><History className="w-5 h-5" /></div><div><h3 className="text-base font-black text-white">LỊCH SỬ GIAO DỊCH</h3></div></div>
+          <div className="bg-[#0D121D] border border-cyan-400/80 w-full max-w-lg rounded-3xl p-6 space-y-5 relative shadow-[0_0_30px_rgba(6,182,212,0.25)]">
+            <button onClick={() => setShowHistoryModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-slate-800 cursor-pointer"><X className="w-5 h-5" /></button>
+            <div className="flex items-center gap-3 border-b border-slate-800 pb-4"><div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400"><History className="w-5 h-5" /></div><div><h3 className="text-base font-black text-white">LỊCH SỬ GIAO DỊCH</h3></div></div>
             <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
               {userTransactions.length === 0 ? <div className="text-center text-slate-500 text-xs py-4">Chưa có giao dịch.</div> : userTransactions.map((log: any, idx: number) => (
-                <div key={idx} className="bg-[#06090E] border border-[#1C2638] p-3.5 rounded-2xl flex items-center justify-between text-xs">
+                <div key={idx} className="bg-[#06090E] border border-slate-800 p-3.5 rounded-2xl flex items-center justify-between text-xs">
                   <div><span className="font-bold text-white">{log.title}</span><span className="text-[10px] text-slate-500 block">{log.created_at ? new Date(log.created_at).toLocaleString('vi-VN') : ''}</span></div>
                   <span className={log.amount > 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>{(log.amount).toLocaleString('vi-VN')}đ</span>
                 </div>
@@ -681,27 +693,27 @@ export default function Navbar() {
 
       {showAccountInfoModal && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0D121D] border-2 border-cyan-400 w-full max-w-sm rounded-3xl p-6 space-y-5 relative shadow-2xl">
-            <button onClick={() => setShowAccountInfoModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-[#1C2638] cursor-pointer"><X className="w-5 h-5" /></button>
+          <div className="bg-[#0D121D] border border-cyan-400/80 w-full max-w-sm rounded-3xl p-6 space-y-5 relative shadow-[0_0_30px_rgba(6,182,212,0.25)]">
+            <button onClick={() => setShowAccountInfoModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-slate-800 cursor-pointer"><X className="w-5 h-5" /></button>
             <div className="text-center space-y-2"><div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border-2 border-cyan-400 flex items-center justify-center text-cyan-300 mx-auto text-2xl font-black">{currentUser.username.substring(0, 1).toUpperCase()}</div><h3 className="text-lg font-black text-white">{currentUser.username}</h3></div>
-            <div className="bg-[#06090E] border border-[#1C2638] rounded-2xl p-4 text-xs flex justify-between"><span className="text-slate-400">Số dư ví:</span><b className="text-emerald-400">{(currentUser.balance || 0).toLocaleString('vi-VN')} VNĐ</b></div>
+            <div className="bg-[#06090E] border border-slate-800 rounded-2xl p-4 text-xs flex justify-between"><span className="text-slate-400">Số dư ví:</span><b className="text-emerald-400">{(currentUser.balance || 0).toLocaleString('vi-VN')} VNĐ</b></div>
           </div>
         </div>
       )}
 
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0D121D] border-2 border-cyan-400 w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-2xl">
-            <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-[#1C2638] cursor-pointer"><X className="w-5 h-5" /></button>
+          <div className="bg-[#0D121D] border border-cyan-400/80 w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_30px_rgba(6,182,212,0.25)]">
+            <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-slate-800 cursor-pointer"><X className="w-5 h-5" /></button>
             <div className="text-center space-y-2"><h2 className="text-xl font-black text-white">{authMode === 'login' ? 'Đăng Nhập Tài Khoản' : 'Tạo Tài Khoản Mới'}</h2></div>
-            {authMsg && <div className={`p-3.5 rounded-xl text-xs font-bold ${authMsg.type === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}><span>{authMsg.text}</span></div>}
+            {authMsg && <div className={`p-3.5 rounded-xl text-xs font-bold ${authMsg.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'}`}><span>{authMsg.text}</span></div>}
             <form onSubmit={handleAuthSubmit} className="space-y-4">
-              <div><label className="block text-xs font-bold text-slate-300 mb-1">Tên tài khoản</label><input type="text" required placeholder="Nhập username..." value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl px-4 py-3 text-xs text-white focus:outline-none" /></div>
-              <div><label className="block text-xs font-bold text-slate-300 mb-1">Mật khẩu</label><input type="password" required placeholder="Nhập mật khẩu..." value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl px-4 py-3 text-xs text-white focus:outline-none" /></div>
-              {authMode === 'register' && <div><label className="block text-xs font-bold text-slate-300 mb-1">Nhập lại mật khẩu</label><input type="password" required placeholder="Xác nhận mật khẩu..." value={rePasswordInput} onChange={(e) => setRePasswordInput(e.target.value)} className="w-full bg-[#06090E] border border-[#1C2638] rounded-xl px-4 py-3 text-xs text-white focus:outline-none" /></div>}
-              <button type="submit" disabled={loading} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition cursor-pointer mt-2">{loading ? 'ĐANG XỬ LÝ...' : authMode === 'login' ? 'ĐĂNG NHẬP NGAY' : 'TẠO TÀI KHOẢN NGAY'}</button>
+              <div><label className="block text-xs font-bold text-slate-300 mb-1">Tên tài khoản</label><input type="text" required placeholder="Nhập username..." value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} className="w-full bg-[#06090E] border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-cyan-400 transition" /></div>
+              <div><label className="block text-xs font-bold text-slate-300 mb-1">Mật khẩu</label><input type="password" required placeholder="Nhập mật khẩu..." value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full bg-[#06090E] border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-cyan-400 transition" /></div>
+              {authMode === 'register' && <div><label className="block text-xs font-bold text-slate-300 mb-1">Nhập lại mật khẩu</label><input type="password" required placeholder="Xác nhận mật khẩu..." value={rePasswordInput} onChange={(e) => setRePasswordInput(e.target.value)} className="w-full bg-[#06090E] border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-cyan-400 transition" /></div>}
+              <button type="submit" disabled={loading} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition cursor-pointer mt-2 shadow-[0_0_15px_rgba(6,182,212,0.3)]">{loading ? 'ĐANG XỬ LÝ...' : authMode === 'login' ? 'ĐĂNG NHẬP NGAY' : 'TẠO TÀI KHOẢN NGAY'}</button>
             </form>
-            <div className="text-center pt-2 border-t border-[#1C2638]">
+            <div className="text-center pt-2 border-t border-slate-800">
               {authMode === 'login' ? <p className="text-xs text-slate-400">Chưa có tài khoản? <button onClick={() => { setAuthModalMode('register'); resetForm(); }} className="text-cyan-400 font-bold hover:underline cursor-pointer">Đăng ký ngay</button></p> : <p className="text-xs text-slate-400">Đã có tài khoản? <button onClick={() => { setAuthModalMode('login'); resetForm(); }} className="text-cyan-400 font-bold hover:underline cursor-pointer">Đăng nhập</button></p>}
             </div>
           </div>
