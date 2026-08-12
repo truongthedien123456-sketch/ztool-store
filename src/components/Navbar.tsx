@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { 
   User, Lock, LogIn, UserPlus, LogOut, Wallet, X, AlertCircle, CheckCircle2,
-  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift, Bell, Home, FolderKanban, Sparkles, Eye, EyeOff, ShieldCheck, Zap
+  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift, Bell, Home, FolderKanban, Sparkles, Eye, EyeOff, ShieldCheck, Zap, ShoppingBag, ArrowUpRightFromSquare
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -614,7 +614,7 @@ export default function Navbar() {
 
                   {/* USER DROPDOWN MENU */}
                   {showUserDropdown && (
-                    <div className="absolute right-0 mt-2.5 w-60 bg-[#0D131F] border border-slate-800 rounded-2xl p-2 shadow-2xl space-y-1 z-50 backdrop-blur-xl">
+                    <div className="absolute right-0 mt-2.5 w-60 bg-[#0D121D] border border-slate-800 rounded-2xl p-2 shadow-2xl space-y-1 z-50 backdrop-blur-xl">
                       <button onClick={() => { setShowAccountInfoModal(true); setShowUserDropdown(false); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/60 transition cursor-pointer">
                         <User className="w-4 h-4 text-cyan-400" /> Thông tin tài khoản
                       </button>
@@ -646,7 +646,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* MODAL HOÀN CHỈNH: DANH SÁCH TOOL ĐÃ MUA (GIAO DIỆN CYBERPUNK CẢI TIẾN) */}
+      {/* MODAL HOÀN CHỈNH: DANH SÁCH TOOL ĐÃ MUA */}
       {showPurchasedToolsModal && currentUser && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
           <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
@@ -681,7 +681,7 @@ export default function Navbar() {
                     return (
                       <div key={idx} className="bg-[#05080E] border border-slate-800/90 p-5 rounded-2xl space-y-4 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.12)] hover:-translate-y-0.5 transition duration-300">
                         
-                        {/* Tiêu đề Tool & Badge Thời hạn (ĐÃ BỎ NÚT NHẤP NHÁY CANH TÊN TOOL) */}
+                        {/* Tiêu đề Tool & Badge Thời hạn (ĐÃ BỎ CHẤM XANH NHẤP NHÁY) */}
                         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3.5">
                           <div>
                             <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">BẢN QUYỀN HOẠT ĐỘNG</span>
@@ -734,7 +734,7 @@ export default function Navbar() {
                           </div>
                         </div>
 
-                        {/* Hàng nút Gia Hạn & Tải Tool (HIỆU ỨNG TRỎ CHUỘT NỔI BẬT PHÁT SÁNG) */}
+                        {/* Hàng nút Gia Hạn & Tải Tool (CÓ HIỆU ỨNG TRỎ CHUỘT SỐNG ĐỘNG) */}
                         <div className="flex items-center justify-between gap-3 pt-1">
                           {!isLifetime ? (
                             <button
@@ -783,20 +783,88 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* MODAL LỊCH SỬ GIAO DỊCH */}
+      {/* MODAL LỊCH SỬ GIAO DỊCH CYBERPUNK NÂNG CẤP */}
       {showHistoryModal && currentUser && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0D121D] border border-cyan-400/80 w-full max-w-lg rounded-3xl p-6 space-y-5 relative shadow-[0_0_30px_rgba(6,182,212,0.25)]">
-            <button onClick={() => setShowHistoryModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-slate-800 cursor-pointer"><X className="w-5 h-5" /></button>
-            <div className="flex items-center gap-3 border-b border-slate-800 pb-4"><div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400"><History className="w-5 h-5" /></div><div><h3 className="text-base font-black text-white">LỊCH SỬ GIAO DỊCH</h3></div></div>
-            <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-              {userTransactions.length === 0 ? <div className="text-center text-slate-500 text-xs py-4">Chưa có giao dịch.</div> : userTransactions.map((log: any, idx: number) => (
-                <div key={idx} className="bg-[#06090E] border border-slate-800 p-3.5 rounded-2xl flex items-center justify-between text-xs">
-                  <div><span className="font-bold text-white">{log.title}</span><span className="text-[10px] text-slate-500 block">{log.created_at ? new Date(log.created_at).toLocaleString('vi-VN') : ''}</span></div>
-                  <span className={log.amount > 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>{(log.amount).toLocaleString('vi-VN')}đ</span>
-                </div>
-              ))}
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
+          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
+            <button onClick={() => setShowHistoryModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
+            
+            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-400/50 flex items-center justify-center text-emerald-300 shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                <History className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block">NHẬT KÝ TÀI CHÍNH</span>
+                <h3 className="text-lg font-black text-white tracking-wide">LỊCH SỬ GIAO DỊCH</h3>
+              </div>
             </div>
+
+            {loadingHistory ? (
+              <div className="flex items-center justify-center gap-2 py-12 text-xs text-slate-400">
+                <Loader2 className="w-5 h-5 animate-spin text-cyan-400" /> Đang tải lịch sử giao dịch...
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                {userTransactions.length === 0 ? (
+                  <div className="bg-[#05080E] border border-slate-800/80 p-8 rounded-2xl text-center text-xs text-slate-500">
+                    Chưa có lịch sử biến động số dư.
+                  </div>
+                ) : (
+                  userTransactions.map((log: any, idx: number) => {
+                    const isPositive = log.amount > 0;
+                    const isCheckin = log.type === 'CHECKIN';
+                    const isBuy = log.type === 'BUY' || log.amount < 0;
+
+                    return (
+                      <div 
+                        key={idx} 
+                        className={`bg-[#05080E] border p-4 rounded-2xl flex items-center justify-between gap-3 text-xs transition duration-300 hover:-translate-y-0.5 ${
+                          isBuy 
+                            ? 'border-slate-800/90 hover:border-rose-500/40 hover:shadow-[0_0_15px_rgba(244,63,94,0.12)]' 
+                            : isCheckin 
+                            ? 'border-slate-800/90 hover:border-cyan-500/40 hover:shadow-[0_0_15px_rgba(6,182,212,0.12)]'
+                            : 'border-slate-800/90 hover:border-emerald-500/40 hover:shadow-[0_0_15px_rgba(16,185,129,0.12)]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          {/* Icon biểu thị loại giao dịch */}
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                            isBuy 
+                              ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' 
+                              : isCheckin 
+                              ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
+                              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                          }`}>
+                            {isBuy ? <ShoppingBag className="w-5 h-5" /> : isCheckin ? <Gift className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
+                          </div>
+
+                          <div className="space-y-0.5 min-w-0">
+                            <span className="font-extrabold text-slate-100 block truncate text-xs sm:text-sm">
+                              {log.title}
+                            </span>
+                            <span className="text-[10px] font-mono font-bold text-slate-500 block">
+                              {log.created_at ? new Date(log.created_at).toLocaleString('vi-VN') : ''}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Hiển thị biến động số tiền */}
+                        <div className="text-right shrink-0">
+                          <span className={`text-sm font-mono font-black block ${
+                            isPositive ? 'text-emerald-400' : 'text-rose-400'
+                          }`}>
+                            {isPositive ? '+' : ''}{(log.amount || 0).toLocaleString('vi-VN')}đ
+                          </span>
+                          <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider block mt-0.5">
+                            {log.status || 'Thành công'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
