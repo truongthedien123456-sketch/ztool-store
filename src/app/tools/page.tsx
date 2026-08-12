@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag
 } from 'lucide-react';
@@ -294,94 +294,126 @@ export default function ToolsPage() {
             ))}
           </div>
 
-          {/* Modal Chi tiết */}
-          {selectedToolForDetail && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-              <div className="bg-[#0F141C] border border-[#1A2332] w-full max-w-xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-2xl max-h-[90vh] overflow-y-auto">
-                <button onClick={() => setSelectedToolForDetail(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1.5 rounded-xl bg-[#080B10] border border-[#1A2332]"><X className="w-5 h-5" /></button>
-                <div className="flex items-center gap-3 border-b border-[#1A2332] pb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0"><Info className="w-6 h-6" /></div>
-                  <div><span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">THÔNG TIN CHI TIẾT SẢN PHẨM</span><h2 className="text-xl font-black text-white">{selectedToolForDetail.name}</h2></div>
-                </div>
-                <div className="w-full max-w-md mx-auto aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
-                  <img src={selectedToolForDetail.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForDetail.name} className="w-full h-full object-cover" />
-                </div>
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Mô tả tính năng đầy đủ:</h4>
-                  <p className="text-xs text-slate-300 bg-[#080B10] border border-[#1A2332] p-4 rounded-2xl leading-relaxed whitespace-pre-line">{selectedToolForDetail.description || 'Chưa có nội dung mô tả chi tiết cho sản phẩm này.'}</p>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center"><span className="text-[10px] text-slate-400 block">Ngày</span><b className="text-xs text-emerald-400">{formatPrice(selectedToolForDetail.priceDay)}đ</b></div>
-                  <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center"><span className="text-[10px] text-slate-400 block">Tuần</span><b className="text-xs text-emerald-400">{formatPrice(selectedToolForDetail.priceWeek)}đ</b></div>
-                  <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center"><span className="text-[10px] text-slate-400 block">Tháng</span><b className="text-xs text-emerald-400">{formatPrice(selectedToolForDetail.priceMonth)}đ</b></div>
-                  <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center"><span className="text-[10px] text-slate-400 block">Vĩnh Viễn</span><b className="text-xs text-cyan-400">{formatPrice(selectedToolForDetail.priceLifetime)}đ</b></div>
-                </div>
-                <div className="flex gap-3 pt-2">
-                  <button
-                    disabled={selectedToolForDetail.status === 'Tạm ngưng'}
-                    onClick={() => { const tool = selectedToolForDetail; setSelectedToolForDetail(null); setSelectedToolForBuy(tool); }}
-                    className={`w-full font-black py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 cursor-pointer ${selectedToolForDetail.status === 'Tạm ngưng' ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : 'bg-cyan-500 text-slate-950 hover:bg-cyan-400'}`}
-                  >
-                    <ShoppingBag className="w-4 h-4" /> {selectedToolForDetail.status === 'Tạm ngưng' ? 'SẢN PHẨM TẠM NGƯNG' : 'MUA SẢN PHẨM NÀY NGAY'}
+          {/* Modal Chi tiết có Animation Mở/Đóng & Bấm ra ngoài để tắt */}
+          <AnimatePresence>
+            {selectedToolForDetail && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setSelectedToolForDetail(null)}
+                className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 cursor-pointer"
+              >
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                  transition={{ type: "spring", duration: 0.3, bounce: 0.15 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-[#0F141C] border border-[#1A2332] w-full max-w-xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-2xl max-h-[90vh] overflow-y-auto cursor-default"
+                >
+                  <button onClick={() => setSelectedToolForDetail(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1.5 rounded-xl bg-[#080B10] border border-[#1A2332] transition"><X className="w-5 h-5" /></button>
+                  <div className="flex items-center gap-3 border-b border-[#1A2332] pb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0"><Info className="w-6 h-6" /></div>
+                    <div><span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">THÔNG TIN CHI TIẾT SẢN PHẨM</span><h2 className="text-xl font-black text-white">{selectedToolForDetail.name}</h2></div>
+                  </div>
+                  <div className="w-full max-w-md mx-auto aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
+                    <img src={selectedToolForDetail.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForDetail.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Mô tả tính năng đầy đủ:</h4>
+                    <p className="text-xs text-slate-300 bg-[#080B10] border border-[#1A2332] p-4 rounded-2xl leading-relaxed whitespace-pre-line">{selectedToolForDetail.description || 'Chưa có nội dung mô tả chi tiết cho sản phẩm này.'}</p>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center"><span className="text-[10px] text-slate-400 block">Ngày</span><b className="text-xs text-emerald-400">{formatPrice(selectedToolForDetail.priceDay)}đ</b></div>
+                    <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center"><span className="text-[10px] text-slate-400 block">Tuần</span><b className="text-xs text-emerald-400">{formatPrice(selectedToolForDetail.priceWeek)}đ</b></div>
+                    <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center"><span className="text-[10px] text-slate-400 block">Tháng</span><b className="text-xs text-emerald-400">{formatPrice(selectedToolForDetail.priceMonth)}đ</b></div>
+                    <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center"><span className="text-[10px] text-slate-400 block">Vĩnh Viễn</span><b className="text-xs text-cyan-400">{formatPrice(selectedToolForDetail.priceLifetime)}đ</b></div>
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      disabled={selectedToolForDetail.status === 'Tạm ngưng'}
+                      onClick={() => { const tool = selectedToolForDetail; setSelectedToolForDetail(null); setSelectedToolForBuy(tool); }}
+                      className={`w-full font-black py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 cursor-pointer transition ${selectedToolForDetail.status === 'Tạm ngưng' ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : 'bg-cyan-500 text-slate-950 hover:bg-cyan-400'}`}
+                    >
+                      <ShoppingBag className="w-4 h-4" /> {selectedToolForDetail.status === 'Tạm ngưng' ? 'SẢN PHẨM TẠM NGƯNG' : 'MUA SẢN PHẨM NÀY NGAY'}
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Modal Mua / Xác nhận gia hạn có Animation Mở/Đóng & Bấm ra ngoài để tắt */}
+          <AnimatePresence>
+            {selectedToolForBuy && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setSelectedToolForBuy(null)}
+                className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 cursor-pointer"
+              >
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                  transition={{ type: "spring", duration: 0.3, bounce: 0.15 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-[#0F141C] border border-[#1A2332] w-full max-w-lg rounded-3xl p-6 space-y-6 relative shadow-2xl max-h-[90vh] overflow-y-auto cursor-default"
+                >
+                  <button onClick={() => setSelectedToolForBuy(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#080B10] border border-[#1A2332] transition"><X className="w-5 h-5" /></button>
+                  <div className="space-y-1"><span className="text-xs text-cyan-400 font-bold">XÁC NHẬN MUA SẢN PHẨM</span><h2 className="text-xl font-black text-white">{selectedToolForBuy.name}</h2></div>
+                  <div className="bg-[#080B10] border border-[#1A2332] p-4 rounded-2xl flex gap-4 items-center">
+                    <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-[#1A2332]"><img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover" /></div>
+                    <div className="space-y-1 flex-1 min-w-0"><span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider block">Mã Tool: {selectedToolForBuy.toolCode || selectedToolForBuy.tool_code || '---'}</span><p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">{selectedToolForBuy.description || 'Chưa có mô tả cho sản phẩm này.'}</p></div>
+                  </div>
+
+                  <div className="space-y-2 bg-[#080B10] border border-[#1A2332] p-3.5 rounded-2xl">
+                    <label className="block text-xs font-bold text-slate-300 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-cyan-400" /> Mã giảm giá (nếu có):</label>
+                    <div className="flex gap-2">
+                      <input type="text" placeholder="Nhập mã giảm giá..." value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="flex-1 bg-[#0F141C] border border-[#1C2638] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 uppercase font-mono" />
+                      <button onClick={handleApplyCoupon} className="bg-cyan-500/20 border border-cyan-500/40 hover:bg-cyan-500/30 text-cyan-300 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer">Áp dụng</button>
+                    </div>
+                    {couponMsg && <p className={`text-[11px] font-bold ${couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>{couponMsg.text}</p>}
+                  </div>
+
+                  {purchaseMsg && (
+                    <div className={`p-3.5 rounded-xl text-xs font-bold flex items-start gap-2 ${purchaseMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'}`}>
+                      {purchaseMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}<span>{purchaseMsg.text}</span>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-slate-300">Chọn gói thời hạn sử dụng:</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[ { key: 'day', name: 'Gói 1 Ngày', price: selectedToolForBuy.priceDay }, { key: 'week', name: 'Gói 7 Ngày', price: selectedToolForBuy.priceWeek }, { key: 'month', name: 'Gói 30 Ngày', price: selectedToolForBuy.priceMonth }, { key: 'lifetime', name: 'Gói Vĩnh Viễn', price: selectedToolForBuy.priceLifetime }, ].map((pkg) => {
+                        const originalPrice = Number(String(pkg.price || '0').replace(/[^0-9]/g, '')) || 0;
+                        const discountAmt = appliedCoupon ? Number(appliedCoupon.discount_amount) || 0 : 0;
+                        const finalPkgPrice = Math.max(0, originalPrice - discountAmt);
+                        return (
+                          <button key={pkg.key} onClick={() => setSelectedDuration(pkg.key as any)} className={`p-3 rounded-2xl border text-left text-xs space-y-1 transition ${selectedDuration === pkg.key ? 'bg-cyan-500/10 border-cyan-400 text-cyan-400' : 'bg-[#080B10] border-[#1A2332] text-slate-400'}`}>
+                            <div className="font-bold">{pkg.name}</div>
+                            <div>
+                              {appliedCoupon && discountAmt > 0 && originalPrice > 0 ? (
+                                <div className="flex items-center gap-2"><span className="line-through text-slate-500 text-[10px]">{formatPrice(originalPrice)}đ</span><span className="text-emerald-400 font-extrabold">{formatPrice(finalPkgPrice)} VNĐ</span></div>
+                              ) : (<span className="text-emerald-400 font-extrabold">{formatPrice(originalPrice)} VNĐ</span>)}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <button disabled={loadingBuy} onClick={handleBuyTool} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black py-3.5 rounded-2xl text-xs shadow-lg shadow-cyan-500/20 transition cursor-pointer flex items-center justify-center gap-2">
+                    {loadingBuy ? (<><Loader2 className="w-4 h-4 animate-spin text-slate-950" /><span>ĐANG KHỞI TẠO TÀI KHOẢN</span></>) : (<><ShieldCheck className="w-4 h-4" /> XÁC NHẬN THANH TOÁN TỪ VÍ</>)}
                   </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Modal Mua / Xác nhận gia hạn */}
-          {selectedToolForBuy && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-              <div className="bg-[#0F141C] border border-[#1A2332] w-full max-w-lg rounded-3xl p-6 space-y-6 relative shadow-2xl max-h-[90vh] overflow-y-auto">
-                <button onClick={() => setSelectedToolForBuy(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#080B10] border border-[#1A2332]"><X className="w-5 h-5" /></button>
-                <div className="space-y-1"><span className="text-xs text-cyan-400 font-bold">XÁC NHẬN MUA SẢN PHẨM</span><h2 className="text-xl font-black text-white">{selectedToolForBuy.name}</h2></div>
-                <div className="bg-[#080B10] border border-[#1A2332] p-4 rounded-2xl flex gap-4 items-center">
-                  <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-[#1A2332]"><img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover" /></div>
-                  <div className="space-y-1 flex-1 min-w-0"><span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider block">Mã Tool: {selectedToolForBuy.toolCode || selectedToolForBuy.tool_code || '---'}</span><p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">{selectedToolForBuy.description || 'Chưa có mô tả cho sản phẩm này.'}</p></div>
-                </div>
-
-                <div className="space-y-2 bg-[#080B10] border border-[#1A2332] p-3.5 rounded-2xl">
-                  <label className="block text-xs font-bold text-slate-300 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-cyan-400" /> Mã giảm giá (nếu có):</label>
-                  <div className="flex gap-2">
-                    <input type="text" placeholder="Nhập mã giảm giá..." value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="flex-1 bg-[#0F141C] border border-[#1C2638] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 uppercase font-mono" />
-                    <button onClick={handleApplyCoupon} className="bg-cyan-500/20 border border-cyan-500/40 hover:bg-cyan-500/30 text-cyan-300 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer">Áp dụng</button>
-                  </div>
-                  {couponMsg && <p className={`text-[11px] font-bold ${couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>{couponMsg.text}</p>}
-                </div>
-
-                {purchaseMsg && (
-                  <div className={`p-3.5 rounded-xl text-xs font-bold flex items-start gap-2 ${purchaseMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'}`}>
-                    {purchaseMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}<span>{purchaseMsg.text}</span>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold text-slate-300">Chọn gói thời hạn sử dụng:</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[ { key: 'day', name: 'Gói 1 Ngày', price: selectedToolForBuy.priceDay }, { key: 'week', name: 'Gói 7 Ngày', price: selectedToolForBuy.priceWeek }, { key: 'month', name: 'Gói 30 Ngày', price: selectedToolForBuy.priceMonth }, { key: 'lifetime', name: 'Gói Vĩnh Viễn', price: selectedToolForBuy.priceLifetime }, ].map((pkg) => {
-                      const originalPrice = Number(String(pkg.price || '0').replace(/[^0-9]/g, '')) || 0;
-                      const discountAmt = appliedCoupon ? Number(appliedCoupon.discount_amount) || 0 : 0;
-                      const finalPkgPrice = Math.max(0, originalPrice - discountAmt);
-                      return (
-                        <button key={pkg.key} onClick={() => setSelectedDuration(pkg.key as any)} className={`p-3 rounded-2xl border text-left text-xs space-y-1 transition ${selectedDuration === pkg.key ? 'bg-cyan-500/10 border-cyan-400 text-cyan-400' : 'bg-[#080B10] border-[#1A2332] text-slate-400'}`}>
-                          <div className="font-bold">{pkg.name}</div>
-                          <div>
-                            {appliedCoupon && discountAmt > 0 && originalPrice > 0 ? (
-                              <div className="flex items-center gap-2"><span className="line-through text-slate-500 text-[10px]">{formatPrice(originalPrice)}đ</span><span className="text-emerald-400 font-extrabold">{formatPrice(finalPkgPrice)} VNĐ</span></div>
-                            ) : (<span className="text-emerald-400 font-extrabold">{formatPrice(originalPrice)} VNĐ</span>)}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <button disabled={loadingBuy} onClick={handleBuyTool} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black py-3.5 rounded-2xl text-xs shadow-lg shadow-cyan-500/20 transition cursor-pointer flex items-center justify-center gap-2">
-                  {loadingBuy ? (<><Loader2 className="w-4 h-4 animate-spin text-slate-950" /><span>ĐANG KHỞI TẠO TÀI KHOẢN</span></>) : (<><ShieldCheck className="w-4 h-4" /> XÁC NHẬN THANH TOÁN TỪ VÍ</>)}
-                </button>
-              </div>
-            </div>
-          )}
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
     </main>
