@@ -76,21 +76,6 @@ export default function Navbar() {
   const [rechargeAmount, setRechargeAmount] = useState('50000');
   const [copied, setCopied] = useState(false);
 
-  // Thông báo chung từ localStorage
-  const [announcement, setAnnouncement] = useState<{ text: string, active: boolean } | null>(() => {
-    if (typeof window !== 'undefined') {
-      const savedNotice = localStorage.getItem('ztool_cached_notice');
-      if (savedNotice) {
-        try {
-          return JSON.parse(savedNotice);
-        } catch (e) {
-          return null;
-        }
-      }
-    }
-    return null;
-  });
-
   // Dữ liệu Gist và Lịch sử
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -110,7 +95,6 @@ export default function Navbar() {
   useEffect(() => {
     checkLoggedInUser();
     loadAllToolsMeta();
-    loadAnnouncement();
 
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -134,19 +118,6 @@ export default function Navbar() {
     }
   };
 
-  const loadAnnouncement = async () => {
-    try {
-      const { data } = await supabase.from('settings').select('*').eq('id', 1).single();
-      if (data) {
-        const noticeObj = { text: data.notice_text, active: data.is_active };
-        setAnnouncement(noticeObj);
-        localStorage.setItem('ztool_cached_notice', JSON.stringify(noticeObj));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   useEffect(() => {
     if (!currentUser?.username) return;
 
@@ -165,7 +136,6 @@ export default function Navbar() {
     return () => clearInterval(interval);
   }, [currentUser?.username]);
 
-  // KIỂM TRA ĐIỂM DANH CHUẨN XÁC THEO LỊCH SỬ GIAO DỊCH CHÍNH TÀI KHOẢN
   const checkTodayCheckInStatus = async (username: string) => {
     try {
       const { data: lastCheckIn } = await supabase
@@ -430,7 +400,6 @@ export default function Navbar() {
     setHasCheckedInToday(false);
   };
 
-  // XỬ LÝ ĐIỂM DANH CHÍNH XÁC VÀ CẬP NHẬT TÀI KHOẢN TỨC THÌ
   const handleDailyCheckIn = async () => {
     if (!currentUser) return;
     setCheckInMsg(null);
@@ -439,7 +408,6 @@ export default function Navbar() {
     try {
       const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
 
-      // Lấy lịch sử điểm danh gần nhất
       const { data: checkinLogs } = await supabase
         .from('transactions')
         .select('created_at')
@@ -462,7 +430,6 @@ export default function Navbar() {
       const rewardAmount = 1000;
       const newBalance = Number(currentUser.balance || 0) + rewardAmount;
       
-      // 1. Cập nhật số dư ví người dùng
       const { error: updateErr } = await supabase
         .from('users')
         .update({ balance: newBalance })
@@ -470,7 +437,6 @@ export default function Navbar() {
 
       if (updateErr) throw updateErr;
 
-      // 2. Ghi lịch sử biến động số dư
       await supabase.from('transactions').insert([{ 
         username: currentUser.username, 
         type: 'CHECKIN', 
@@ -479,7 +445,6 @@ export default function Navbar() {
         status: 'Thành công' 
       }]);
 
-      // 3. Cập nhật state local & localStorage tức thì
       const updatedUser = { ...currentUser, balance: newBalance };
       setCurrentUser(updatedUser);
       localStorage.setItem('ztool_user_data', JSON.stringify(updatedUser));
@@ -510,19 +475,7 @@ export default function Navbar() {
 
   return (
     <>
-      {/* 1. THANH THÔNG BÁO CĂN GIỮA DÒNG */}
-      {announcement?.active && announcement?.text && (
-        <div className="bg-[#0A0E17] border-b border-amber-500/30 px-4 py-2 text-xs font-extrabold text-amber-300 flex items-center justify-center gap-3 relative z-50 shadow-md">
-          <div className="flex items-center gap-1.5 shrink-0 bg-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded-md text-[10px] uppercase font-black tracking-wider border border-amber-500/40 shadow-inner">
-            <Bell className="w-3.5 h-3.5 animate-bounce text-amber-400" /> THÔNG BÁO
-          </div>
-          <p className="text-slate-200 truncate max-w-4xl tracking-wide text-center">
-            {announcement.text}
-          </p>
-        </div>
-      )}
-
-      {/* 2. NAVBAR CHÍNH GLASSMORPHISM CYBERPUNK PRO */}
+      {/* NAVBAR CHÍNH GLASSMORPHISM CYBERPUNK PRO */}
       <nav className="bg-[#080D15]/90 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-40 px-4 lg:px-8 py-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.6)] transition-all">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           
@@ -600,7 +553,7 @@ export default function Navbar() {
                   <PlusCircle className="w-4 h-4 text-slate-950 stroke-[2.5]" /> Nạp tiền
                 </button>
 
-                {/* Ô THÔNG TIN KHÁCH HÀNG (CẢI TIẾN TRỎ CHUỘT BẮT MẮT) */}
+                {/* Ô THÔNG TIN KHÁCH HÀNG */}
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setShowUserDropdown(!showUserDropdown)}
