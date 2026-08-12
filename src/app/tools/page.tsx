@@ -57,7 +57,7 @@ export default function ToolsPage() {
 
   const loadToolsData = async () => {
     try {
-      const { data } = await supabase.from('tools').select('*').order('id', { ascending: false });
+      const { data } = await supabase.from('tools').select('*').order('views', { ascending: false });
       
       if (data && data.length > 0) {
         const mappedTools = data.map((t: any) => ({
@@ -89,7 +89,6 @@ export default function ToolsPage() {
     }
   };
 
-  // HÀM MỞ BẢNG CHI TIẾT TỰ ĐỘNG TĂNG 1 LƯỢT XEM (VIEWS)
   const handleOpenDetail = async (tool: any) => {
     setSelectedToolForDetail(tool);
     try {
@@ -215,7 +214,6 @@ export default function ToolsPage() {
         await supabase.from('coupons').update({ quantity: newQty }).eq('id', appliedCoupon.id);
       }
 
-      // TRỪ TIỀN VÀ TỰ ĐỘNG TĂNG LƯỢT BÁN (SALES + 1)
       const newBalance = userData.balance - priceNum;
       await supabase.from('users').update({ balance: newBalance }).eq('id', userData.id);
 
@@ -268,21 +266,15 @@ export default function ToolsPage() {
                   <div className="w-full aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
                     <img src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={tool.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
                     
-                    {/* Badge Trạng thái */}
+                    {/* Badge Mắt xem ở GÓC TRÁI TRÊN */}
+                    <div className="absolute top-3 left-3 bg-[#080B10]/80 backdrop-blur-md border border-[#1A2332] px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-[10px] text-slate-300 font-bold">
+                      <Eye className="w-3.5 h-3.5 text-cyan-400" /> {tool.views || 0}
+                    </div>
+
+                    {/* Badge Trạng thái ở GÓC PHẢI TRÊN */}
                     <span className={`absolute top-3 right-3 text-[10px] font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md border ${tool.status === 'Tạm ngưng' ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'}`}>
                       {tool.status ? tool.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
                     </span>
-
-                    {/* Hiển thị Lượt xem & Lượt bán trực tiếp lên ảnh */}
-                    <div className="absolute bottom-3 left-3 bg-[#080B10]/80 backdrop-blur-md border border-[#1A2332] px-2.5 py-1 rounded-lg flex items-center gap-2 text-[10px]">
-                      <span className="flex items-center gap-1 text-slate-300" title="Lượt xem">
-                        <Eye className="w-3 h-3 text-cyan-400" /> {tool.views || 0}
-                      </span>
-                      <span className="text-slate-600">|</span>
-                      <span className="flex items-center gap-1 text-slate-300" title="Đã bán">
-                        <ShoppingBag className="w-3 h-3 text-emerald-400" /> {tool.sales || 0}
-                      </span>
-                    </div>
                   </div>
 
                   <div>
