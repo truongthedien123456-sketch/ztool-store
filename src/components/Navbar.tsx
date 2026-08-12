@@ -99,7 +99,6 @@ export default function Navbar() {
   const [loadingPurchasedTools, setLoadingPurchasedTools] = useState(false);
   const [nowTime, setNowTime] = useState(Date.now());
 
-  // Tránh nháy active menu khi đang Hydration
   const [currentPath, setCurrentPath] = useState<string>('');
 
   useEffect(() => {
@@ -222,37 +221,50 @@ export default function Navbar() {
   const loadUserGistData = async (username: string) => {
     setLoadingPurchasedTools(true);
     try {
-      const gistId = '21f0a39cbc434e5033d89f06e2c7d26e';
-      const res = await fetch(`https://api.github.com/gists/${gistId}?timestamp=${Date.now()}`, { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        const contentRaw = data.files['accounts.json']?.content || '{}';
-        const parsed = JSON.parse(contentRaw);
-        
-        const matchedKeys = Object.keys(parsed).filter(
-          k => k.trim().toLowerCase() === username.trim().toLowerCase() ||
-               k.trim().toLowerCase().startsWith(`${username.trim().toLowerCase()}_`)
-        );
+      const res = await fetch('/api/get-gist', { 
+        cache: 'no-store', 
+        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } 
+      });
 
-        if (matchedKeys.length > 0) {
-          const purchasedList = matchedKeys.map(k => {
-            const tCode = parsed[k].tool_code || parsed[k].toolCode || '';
-            const foundTool = toolsList.find(t => (t.toolCode || t.tool_code || '').trim().toLowerCase() === tCode.trim().toLowerCase());
-            return {
-              accountName: k,
-              toolCode: tCode,
-              toolName: foundTool ? foundTool.name : (tCode ? `AUTO ${tCode.toUpperCase()}` : 'TOOL AUTO CHUNG'),
-              downloadLink: foundTool ? (foundTool.downloadLink || foundTool.download_link || '') : '',
-              ...parsed[k]
-            };
+      if (res.ok) {
+        const result = await res.json();
+        if (result.success && result.data) {
+          const parsed = result.data;
+          const cleanUser = username.trim().toLowerCase();
+
+          const matchedKeys = Object.keys(parsed).filter(k => {
+            const cleanKey = k.trim().toLowerCase();
+            return cleanKey === cleanUser || cleanKey.startsWith(`${cleanUser}_`);
           });
-          setUserGistData(purchasedList);
-        } else {
-          setUserGistData(null);
+
+          if (matchedKeys.length > 0) {
+            const purchasedList = matchedKeys.map(k => {
+              const item = parsed[k];
+              const tCode = item.tool_code || item.toolCode || '';
+              
+              const foundTool = toolsList.find(t => 
+                (t.toolCode || t.tool_code || '').trim().toLowerCase() === tCode.trim().toLowerCase()
+              );
+
+              return {
+                accountKey: k,
+                appUsername: item.username || username,
+                appPassword: item.password || '---',
+                toolCode: tCode,
+                toolName: foundTool ? foundTool.name : (tCode ? `TOOL AUTO (${tCode.toUpperCase()})` : 'TOOL AUTOMATION'),
+                downloadLink: foundTool ? (foundTool.downloadLink || foundTool.download_link || '') : '',
+                expire_timestamp: item.expire_timestamp || 0,
+                device_id: item.device_id || ''
+              };
+            });
+            setUserGistData(purchasedList);
+          } else {
+            setUserGistData(null);
+          }
         }
       }
     } catch (err) {
-      console.error(err);
+      console.error('Lỗi đọc tài khoản Gist:', err);
     } finally {
       setLoadingPurchasedTools(false);
     }
@@ -275,7 +287,7 @@ export default function Navbar() {
   const renderRemainingTime = (expireTimestamp: number) => {
     if (!expireTimestamp || expireTimestamp === 0) {
       return (
-        <span className="text-cyan-300 font-black bg-gradient-to-r from-cyan-500/20 to-blue-500/20 px-3 py-1 rounded-xl border border-cyan-400/40 text-[11px] shadow-[0_0_12px_rgba(6,182,212,0.2)] inline-flex items-center gap-1.5">
+        <span className="text-cyan-300 font-black bg-cyan-500/20 px-3 py-1 rounded-xl border border-cyan-400/40 text-[11px] inline-flex items-center gap-1.5 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
           ♾️ Vĩnh Viễn
         </span>
       );
@@ -298,7 +310,7 @@ export default function Navbar() {
     const seconds = diffSec % 60;
 
     return (
-      <span className="text-emerald-300 font-mono font-black bg-gradient-to-r from-emerald-500/20 to-teal-500/20 px-3 py-1 rounded-xl border border-emerald-400/40 text-[11px] inline-flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.25)]">
+      <span className="text-emerald-300 font-mono font-black bg-emerald-500/20 px-3 py-1 rounded-xl border border-emerald-400/40 text-[11px] inline-flex items-center gap-1.5">
         <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0 animate-pulse" />
         {days > 0 && `${days}d `}{hours}h {minutes}m {seconds}s
       </span>
@@ -577,7 +589,7 @@ export default function Navbar() {
                   <PlusCircle className="w-4 h-4 text-slate-950 stroke-[2.5]" /> Nạp tiền
                 </button>
 
-                {/* Ô THÔNG TIN KHÁCH HÀNG (USER CARD) */}
+                {/* Ô THÔNG TIN KHÁCH HÀNG */}
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setShowUserDropdown(!showUserDropdown)}
@@ -602,7 +614,7 @@ export default function Navbar() {
 
                   {/* USER DROPDOWN MENU */}
                   {showUserDropdown && (
-                    <div className="absolute right-0 mt-2.5 w-60 bg-[#0D131F] border border-slate-800 rounded-2xl p-2 shadow-2xl space-y-1 z-50 backdrop-blur-xl">
+                    <div className="absolute right-0 mt-2.5 w-60 bg-[#0D121D] border border-slate-800 rounded-2xl p-2 shadow-2xl space-y-1 z-50 backdrop-blur-xl">
                       <button onClick={() => { setShowAccountInfoModal(true); setShowUserDropdown(false); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/60 transition cursor-pointer">
                         <User className="w-4 h-4 text-cyan-400" /> Thông tin tài khoản
                       </button>
@@ -634,7 +646,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* MODAL HOÀN CHỈNH: DANH SÁCH TOOL ĐÃ MUA (HIỆN THÔNG TIN ACC, PASS & NÚT GIA HẠN THÔNG MINH) */}
+      {/* MODAL HOÀN CHỈNH: DANH SÁCH TOOL ĐÃ MUA */}
       {showPurchasedToolsModal && currentUser && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
           <div className="bg-[#0D121D] border border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_40px_rgba(6,182,212,0.25)] max-h-[85vh] overflow-y-auto">
@@ -664,7 +676,7 @@ export default function Navbar() {
                 ) : (
                   userGistData.map((toolAcc: any, idx: number) => {
                     const isLifetime = !toolAcc.expire_timestamp || toolAcc.expire_timestamp === 0;
-                    const isShowPass = showToolPasswords[toolAcc.accountName] || false;
+                    const isShowPass = showToolPasswords[toolAcc.accountKey] || false;
 
                     return (
                       <div key={idx} className="bg-[#06090E] border border-slate-800/90 p-5 rounded-2xl space-y-4 hover:border-slate-700/80 transition">
@@ -680,15 +692,15 @@ export default function Navbar() {
                           </div>
                         </div>
 
-                        {/* Thông tin Acc / Pass đăng nhập trên Tool App */}
+                        {/* Thông tin Acc / Pass */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#0D121D] border border-slate-800 p-3.5 rounded-xl text-xs">
-                          {/* Tài khoản */}
+                          {/* Tài khoản App */}
                           <div className="space-y-1">
                             <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Tài khoản App</span>
-                            <div className="flex items-center justify-between bg-[#06090E] border border-slate-800 px-3 py-1.5 rounded-lg font-mono font-bold text-cyan-300">
-                              <span className="truncate pr-2">{currentUser.username}</span>
+                            <div className="flex items-center justify-between bg-[#06090E] border border-slate-800 px-3 py-2 rounded-lg font-mono font-bold text-cyan-300">
+                              <span className="truncate pr-2">{toolAcc.appUsername}</span>
                               <button 
-                                onClick={() => copyTextToClipboard(currentUser.username, `user_${idx}`)} 
+                                onClick={() => copyTextToClipboard(toolAcc.appUsername, `user_${idx}`)} 
                                 className="text-slate-400 hover:text-cyan-400 transition cursor-pointer" 
                                 title="Sao chép tài khoản"
                               >
@@ -697,21 +709,21 @@ export default function Navbar() {
                             </div>
                           </div>
 
-                          {/* Mật khẩu */}
+                          {/* Mật khẩu App */}
                           <div className="space-y-1">
                             <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Mật khẩu App</span>
-                            <div className="flex items-center justify-between bg-[#06090E] border border-slate-800 px-3 py-1.5 rounded-lg font-mono font-bold text-slate-200">
-                              <span>{isShowPass ? toolAcc.password : '••••••••'}</span>
+                            <div className="flex items-center justify-between bg-[#06090E] border border-slate-800 px-3 py-2 rounded-lg font-mono font-bold text-slate-200">
+                              <span>{isShowPass ? toolAcc.appPassword : '••••••••'}</span>
                               <div className="flex items-center gap-1.5">
                                 <button 
-                                  onClick={() => setShowToolPasswords(prev => ({ ...prev, [toolAcc.accountName]: !prev[toolAcc.accountName] }))} 
+                                  onClick={() => setShowToolPasswords(prev => ({ ...prev, [toolAcc.accountKey]: !prev[toolAcc.accountKey] }))} 
                                   className="text-slate-400 hover:text-white transition cursor-pointer"
                                   title={isShowPass ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                                 >
                                   {isShowPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                                 </button>
                                 <button 
-                                  onClick={() => copyTextToClipboard(toolAcc.password, `pass_${idx}`)} 
+                                  onClick={() => copyTextToClipboard(toolAcc.appPassword, `pass_${idx}`)} 
                                   className="text-slate-400 hover:text-cyan-400 transition cursor-pointer" 
                                   title="Sao chép mật khẩu"
                                 >
@@ -722,9 +734,8 @@ export default function Navbar() {
                           </div>
                         </div>
 
-                        {/* Hàng nút Thao tác: Gia hạn & Tải Tool */}
+                        {/* Gia Hạn & Tải Tool */}
                         <div className="flex items-center justify-between gap-3 pt-1">
-                          {/* Nút Gia Hạn (Chỉ hiện khi KHÔNG PHẢI Vĩnh viễn) */}
                           {!isLifetime ? (
                             <button
                               onClick={() => handleOpenRenewModal(toolAcc.toolCode)}
@@ -736,7 +747,6 @@ export default function Navbar() {
                             <div className="text-[11px] text-slate-500 font-bold italic">Sở hữu vĩnh viễn (Không cần gia hạn)</div>
                           )}
 
-                          {/* Nút Download nếu có Link */}
                           {toolAcc.downloadLink && (
                             <a 
                               href={toolAcc.downloadLink} 
@@ -766,7 +776,7 @@ export default function Navbar() {
             <button onClick={() => setShowRechargeModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-slate-800 cursor-pointer"><X className="w-5 h-5" /></button>
             <div className="flex items-center gap-3 border-b border-slate-800 pb-4"><div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400"><CreditCard className="w-5 h-5" /></div><div><h3 className="text-base font-black text-white">NẠP TIỀN VÀO VÍ TỰ ĐỘNG</h3></div></div>
             <div className="grid grid-cols-3 gap-2">{['20000', '50000', '100000', '200000', '500000', '1000000'].map((amt) => (<button key={amt} onClick={() => setRechargeAmount(amt)} className={`py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer ${rechargeAmount === amt ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-[#06090E] border-slate-800 text-slate-400'}`}>{Number(amt).toLocaleString('vi-VN')}đ</button>))}</div>
-            <div className="bg-[#06090E] border border-slate-800 p-4 rounded-2xl flex flex-col items-center space-y-3 text-center"><img src={`https://qr.sepay.vn/img?bank=BIDV&acc=96247JFG2G&template=compact&amount=${rechargeAmount}&des=${encodeURIComponent(`NAP ${currentUser.username}`)}`} alt="QR SePay" className="w-48 h-48 rounded-xl bg-white p-2 shadow-lg" /><button onClick={() => copyToClipboard(`NAP ${currentUser.username}`)} className="font-black text-cyan-400 text-xs flex items-center gap-1 hover:underline cursor-pointer">Nội dung CK: NAP {currentUser.username} {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" /></button></div>
+            <div className="bg-[#06090E] border border-slate-800 p-4 rounded-2xl flex flex-col items-center space-y-3 text-center"><img src={`https://qr.sepay.vn/img?bank=BIDV&acc=96247JFG2G&template=compact&amount=${rechargeAmount}&des=${encodeURIComponent(`NAP ${currentUser.username}`)}`} alt="QR SePay" className="w-48 h-48 rounded-xl bg-white p-2 shadow-lg" /><button onClick={() => copyToClipboard(`NAP ${currentUser.username}`)} className="font-black text-cyan-400 text-xs flex items-center gap-1 hover:underline cursor-pointer">Nội dung CK: NAP {currentUser.username} {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}</button></div>
           </div>
         </div>
       )}
