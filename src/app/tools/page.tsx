@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag, Eye, Shield, Check, Sparkle
+  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag, Eye, Shield, Check, Crown
 } from 'lucide-react';
 
 export default function ToolsPage() {
@@ -235,9 +235,11 @@ export default function ToolsPage() {
   };
 
   return (
-    <main className="font-sans pb-20 min-h-screen">
+    <main className="font-sans pb-20 min-h-screen bg-transparent text-slate-100 selection:bg-cyan-500 selection:text-black">
       {isLoadingData ? (
-        <div className="min-h-[60vh]"></div>
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <div className="w-10 h-10 border-4 border-cyan-500/20 border-t-cyan-400 rounded-full animate-spin"></div>
+        </div>
       ) : (
         <motion.div 
           initial={{ opacity: 0, y: 15 }}
@@ -245,49 +247,80 @@ export default function ToolsPage() {
           transition={{ duration: 0.3, ease: 'easeOut' }}
           className="max-w-7xl mx-auto px-4 py-8 space-y-8"
         >
-          <div className="text-center space-y-3 border-b border-[#1A2332] pb-8">
-            <div className="inline-flex items-center gap-2 bg-[#06090E] border border-cyan-500/30 px-4 py-1.5 rounded-full text-xs font-bold text-cyan-400">
-              <Sparkles className="w-4 h-4" /> BẢNG HÃNG TOOL AUTO HIGH-QUALITY
+          {/* HEADER TRANG KÍNH MỜ GLASSMORPHISM */}
+          <div className="text-center space-y-3 border-b border-slate-800/80 pb-8 bg-[#0B1019]/40 backdrop-blur-md p-6 rounded-3xl border border-cyan-500/20 shadow-[0_0_30px_rgba(6,182,212,0.1)]">
+            <div className="inline-flex items-center gap-2 bg-[#05080E]/80 border border-cyan-400/50 px-4 py-1.5 rounded-full text-xs font-bold text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+              <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" /> BẢNG HÃNG TOOL AUTO HIGH-QUALITY
             </div>
-            <h1 className="text-3xl font-black text-white tracking-wide">DANH SÁCH SẢN PHẨM TOOL AUTO</h1>
-            <p className="text-xs text-slate-400 max-w-xl mx-auto">
-              Cập nhật liên tục các bản hack/tool tự động mới nhất. Đảm bảo an toàn, tối ưu hiệu năng và cập nhật tự động.
+            <h1 className="text-3xl sm:text-4xl font-black text-white tracking-wide">
+              DANH SÁCH SẢN PHẨM <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-300 drop-shadow-[0_0_20px_rgba(6,182,212,0.5)]">TOOL AUTO</span>
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto font-medium leading-relaxed">
+              Cập nhật liên tục các bản tool tự động mới nhất. Đảm bảo an toàn tuyệt đối, tối ưu hiệu năng và cập nhật tự động.
             </p>
           </div>
 
+          {/* GRID CARD TẤT CẢ CÁC TOOL */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tools.map((tool) => (
               <div 
                 key={tool.id} 
                 onClick={() => handleOpenDetail(tool)}
-                className="group bg-[#0F141C] border-2 border-[#1C2638] hover:border-cyan-400 rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-xl hover:shadow-2xl hover:shadow-cyan-500/30 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer relative"
+                className="group bg-[#0B1019]/60 backdrop-blur-md border-2 border-slate-800/80 hover:border-cyan-400/80 rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-xl hover:shadow-[0_0_35px_rgba(6,182,212,0.25)] hover:-translate-y-1.5 transition-all duration-500 cursor-pointer relative"
               >
                 <div className="space-y-4">
-                  <div className="w-full aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
-                    <img src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={tool.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                  {/* Khung Ảnh Banner Sản Phẩm */}
+                  <div className="w-full aspect-square bg-[#05080E] border border-slate-800 rounded-2xl overflow-hidden relative shadow-inner">
+                    <img src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={tool.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-700 ease-out" />
                     
-                    <div className="absolute top-3 left-3 bg-[#080B10]/80 backdrop-blur-md border border-[#1A2332] px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-[10px] text-slate-300 font-bold">
+                    {/* Badge Lượt xem ở GÓC TRÁI TRÊN */}
+                    <div className="absolute top-3 left-3 bg-[#05080E]/80 backdrop-blur-md border border-slate-700/60 px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[10px] text-slate-200 font-extrabold shadow-md">
                       <Eye className="w-3.5 h-3.5 text-cyan-400" /> {tool.views || 0}
                     </div>
 
-                    <span className={`absolute top-3 right-3 text-[10px] font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md border ${tool.status === 'Tạm ngưng' ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'}`}>
+                    {/* Badge Trạng thái ở GÓC PHẢI TRÊN */}
+                    <span className={`absolute top-3 right-3 text-[10px] font-black px-2.5 py-1 rounded-xl backdrop-blur-md border shadow-md ${tool.status === 'Tạm ngưng' ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'}`}>
                       {tool.status ? tool.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
                     </span>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-black text-white group-hover:text-cyan-400 transition">{tool.name}</h3>
+                    <h3 className="text-lg font-black text-white group-hover:text-cyan-300 transition duration-300">{tool.name}</h3>
                     <p className="text-xs text-slate-400 mt-1 line-clamp-1 truncate" title={tool.description}>{tool.description || 'Chưa có mô tả sản phẩm.'}</p>
                   </div>
-                  <div className="bg-[#080B10] border border-[#1A2332] p-3.5 rounded-2xl space-y-2 text-xs">
-                    <div className="flex justify-between items-center text-slate-300"><span>Theo Ngày:</span><b className="text-emerald-400 font-bold">{formatPrice(tool.priceDay)} VNĐ</b></div>
-                    <div className="flex justify-between items-center text-slate-300"><span>Theo Tuần:</span><b className="text-emerald-400 font-bold">{formatPrice(tool.priceWeek)} VNĐ</b></div>
-                    <div className="flex justify-between items-center text-slate-300"><span>Theo Tháng:</span><b className="text-emerald-400 font-bold">{formatPrice(tool.priceMonth)} VNĐ</b></div>
-                    <div className="flex justify-between items-center text-slate-300 border-t border-[#1A2332] pt-1.5"><span className="font-semibold text-white">Vĩnh Viễn:</span><b className="text-cyan-400 font-black">{formatPrice(tool.priceLifetime)} VNĐ</b></div>
+
+                  {/* KHUNG GIÁ CẢ DẠNG CHIP MINI-BADGES PRO 2 CỘT */}
+                  <div className="grid grid-cols-2 gap-2 bg-[#05080E]/80 border border-slate-800/80 p-3 rounded-2xl text-xs backdrop-blur-sm">
+                    {/* Gói Ngày */}
+                    <div className="bg-[#0B1019] border border-slate-800/80 p-2 rounded-xl flex flex-col justify-center space-y-0.5">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Theo Ngày</span>
+                      <b className="text-xs text-emerald-400 font-mono font-black">{tool.priceDay ? `${formatPrice(tool.priceDay)}đ` : '---'}</b>
+                    </div>
+
+                    {/* Gói Tuần */}
+                    <div className="bg-[#0B1019] border border-slate-800/80 p-2 rounded-xl flex flex-col justify-center space-y-0.5">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Theo Tuần</span>
+                      <b className="text-xs text-emerald-400 font-mono font-black">{tool.priceWeek ? `${formatPrice(tool.priceWeek)}đ` : '---'}</b>
+                    </div>
+
+                    {/* Gói Tháng */}
+                    <div className="bg-[#0B1019] border border-slate-800/80 p-2 rounded-xl flex flex-col justify-center space-y-0.5">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Theo Tháng</span>
+                      <b className="text-xs text-emerald-400 font-mono font-black">{tool.priceMonth ? `${formatPrice(tool.priceMonth)}đ` : '---'}</b>
+                    </div>
+
+                    {/* Gói Vĩnh Viễn Glow Neon Cyan với Icon Crown */}
+                    <div className="bg-gradient-to-r from-cyan-500/15 to-blue-500/15 border border-cyan-400/50 p-2 rounded-xl flex flex-col justify-center space-y-0.5 shadow-[0_0_12px_rgba(6,182,212,0.15)]">
+                      <span className="text-[10px] text-cyan-300 font-black uppercase tracking-wider flex items-center gap-1">
+                        <Crown className="w-3 h-3 text-cyan-300" /> Vĩnh Viễn
+                      </span>
+                      <b className="text-xs text-cyan-300 font-mono font-black">{tool.priceLifetime ? `${formatPrice(tool.priceLifetime)}đ` : '---'}</b>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 pt-2">
+                {/* HÀNG NÚT BẤM "MUA NGAY" GRADIENT GLOW & "CHI TIẾT" */}
+                <div className="grid grid-cols-2 gap-3 pt-1">
                   <button
                     disabled={tool.status === 'Tạm ngưng'}
                     onClick={(e) => {
@@ -298,16 +331,22 @@ export default function ToolsPage() {
                       setAppliedCoupon(null); 
                       setCouponMsg(null); 
                     }}
-                    className={`font-black py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-md ${tool.status === 'Tạm ngưng' ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : 'bg-cyan-500 text-slate-950 hover:bg-cyan-400 shadow-cyan-500/20'}`}
+                    className={`relative overflow-hidden font-black py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all duration-300 cursor-pointer shadow-md ${
+                      tool.status === 'Tạm ngưng' 
+                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' 
+                        : 'bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-400 text-slate-950 hover:brightness-110 shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:scale-[1.02]'
+                    }`}
                   >
-                    <ShoppingBag className="w-4 h-4" /> {tool.status === 'Tạm ngưng' ? 'Tạm Ngưng' : 'Mua Ngay'}
+                    <ShoppingBag className="w-4 h-4 text-slate-950 stroke-[2.5]" /> 
+                    {tool.status === 'Tạm ngưng' ? 'Tạm Ngưng' : 'Mua Ngay'}
                   </button>
+
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
                       handleOpenDetail(tool);
                     }} 
-                    className="bg-[#080B10] border border-[#1A2332] hover:border-slate-500 text-slate-300 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 text-center transition cursor-pointer"
+                    className="bg-[#05080E]/90 border border-slate-800 hover:border-cyan-400/60 text-slate-200 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 text-center transition-all duration-300 cursor-pointer hover:bg-slate-800/50"
                   >
                     <Info className="w-4 h-4 text-cyan-400" /> Chi tiết
                   </button>
