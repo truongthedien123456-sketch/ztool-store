@@ -266,12 +266,10 @@ export default function ToolsPage() {
                   <div className="w-full aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
                     <img src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={tool.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
                     
-                    {/* Badge Mắt xem ở GÓC TRÁI TRÊN */}
                     <div className="absolute top-3 left-3 bg-[#080B10]/80 backdrop-blur-md border border-[#1A2332] px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-[10px] text-slate-300 font-bold">
                       <Eye className="w-3.5 h-3.5 text-cyan-400" /> {tool.views || 0}
                     </div>
 
-                    {/* Badge Trạng thái ở GÓC PHẢI TRÊN */}
                     <span className={`absolute top-3 right-3 text-[10px] font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md border ${tool.status === 'Tạm ngưng' ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'}`}>
                       {tool.status ? tool.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
                     </span>
@@ -369,7 +367,7 @@ export default function ToolsPage() {
             )}
           </AnimatePresence>
 
-          {/* MODAL MUA SẢN PHẨM (ĐÃ NÂNG CẤP GIAO DIỆN PRO - ẨN MÃ TOOL, ẢNH TO RÕ) */}
+          {/* MODAL MUA SẢN PHẨM (ĐÃ NÂNG CẤP BẢNG XÁC NHẬN - ẢNH TO NÉT) */}
           <AnimatePresence>
             {selectedToolForBuy && (
               <motion.div 
@@ -395,16 +393,18 @@ export default function ToolsPage() {
                     <h2 className="text-xl font-black text-white tracking-wide">{selectedToolForBuy.name}</h2>
                   </div>
 
-                  {/* KHUNG THÔNG TIN SẢN PHẨM: ẢNH RÕ NÉT - ẨN MÃ TOOL */}
-                  <div className="bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl flex flex-col sm:flex-row gap-4 items-center">
-                    <div className="w-24 h-20 sm:w-28 sm:h-28 rounded-xl overflow-hidden shrink-0 border-2 border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.15)] bg-[#0B1019]">
+                  {/* KHUNG THÔNG TIN SẢN PHẨM: ẢNH PHÓNG TO 1:1 NẾT & ĐẸP */}
+                  <div className="bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl flex flex-col sm:flex-row gap-5 items-center sm:items-start">
+                    <div className="w-36 h-36 sm:w-40 sm:h-40 rounded-2xl overflow-hidden shrink-0 border-2 border-cyan-500/40 shadow-[0_0_20px_rgba(6,182,212,0.2)] bg-[#0B1019]">
                       <img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover" />
                     </div>
-                    <div className="space-y-1.5 flex-1 min-w-0 text-left">
-                      <span className="text-[10px] font-extrabold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded-md inline-block uppercase tracking-wider">
-                        {selectedToolForBuy.status || 'ĐANG HOẠT ĐỘNG'}
-                      </span>
-                      <p className="text-xs text-slate-300 leading-relaxed max-h-24 overflow-y-auto pr-1 whitespace-pre-line">
+                    <div className="space-y-2 flex-1 min-w-0 text-left w-full">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-extrabold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-lg uppercase tracking-wider inline-block">
+                          {selectedToolForBuy.status || 'ĐANG HOẠT ĐỘNG'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed max-h-32 overflow-y-auto pr-1 whitespace-pre-line">
                         {selectedToolForBuy.description || 'Chưa có mô tả cho sản phẩm này.'}
                       </p>
                     </div>
