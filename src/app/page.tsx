@@ -243,7 +243,7 @@ export default function HomePage() {
   };
 
   return (
-    <main className="font-sans pb-24 min-h-screen bg-[#05070D] text-slate-100 selection:bg-cyan-500 selection:text-black">
+    <main className="font-sans pb-24 min-h-screen bg-transparent text-slate-100 selection:bg-cyan-500 selection:text-black">
       {isLoading ? (
         <div className="min-h-[70vh] flex items-center justify-center">
           <div className="w-10 h-10 border-4 border-cyan-500/20 border-t-cyan-400 rounded-full animate-spin"></div>
@@ -277,7 +277,7 @@ export default function HomePage() {
           )}
 
           {/* HERO BANNER CAO CẤP */}
-          <div className="relative rounded-3xl bg-[#0B101B]/90 border border-slate-800/80 p-8 sm:p-12 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+          <div className="relative rounded-3xl bg-[#0B101B]/75 border border-slate-800/80 p-8 sm:p-12 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] backdrop-blur-md">
             <div className="absolute top-0 -left-20 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
             <div className="absolute -bottom-20 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
             
@@ -397,7 +397,7 @@ export default function HomePage() {
                 <div 
                   key={tool.id} 
                   onClick={() => handleOpenDetail(tool)}
-                  className="bg-[#0B1019] border-2 border-slate-800/80 hover:border-cyan-500/50 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-lg hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] hover:-translate-y-1.5 transition-all duration-300 cursor-pointer group relative"
+                  className="bg-[#0B1019]/80 backdrop-blur-md border-2 border-slate-800/80 hover:border-cyan-500/50 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-lg hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] hover:-translate-y-1.5 transition-all duration-300 cursor-pointer group relative"
                 >
                   <div className="space-y-3">
                     <div className="w-full aspect-square bg-[#05080E] border border-slate-800/80 rounded-2xl overflow-hidden relative">
@@ -468,7 +468,7 @@ export default function HomePage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {projects.slice(0, 3).map((p) => (
-                  <div key={p.id} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-5 space-y-3 hover:border-cyan-500/40 transition">
+                  <div key={p.id} className="bg-[#0B1019]/80 backdrop-blur-md border border-slate-800/80 rounded-3xl p-5 space-y-3 hover:border-cyan-500/40 transition">
                     {p.image && (
                       <div className="w-full aspect-square bg-[#05080E] border border-slate-800/80 rounded-2xl overflow-hidden">
                         <img src={p.image} alt={p.title} className="w-full h-full object-cover" />

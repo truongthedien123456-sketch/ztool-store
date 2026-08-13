@@ -39,7 +39,7 @@ export default function RootLayout({
       <body 
         className="min-h-screen bg-[#05080d] text-white relative bg-cover bg-center bg-no-repeat bg-fixed selection:bg-cyan-500 selection:text-black"
         style={{
-          backgroundImage: `linear-gradient(to bottom, rgba(5, 8, 13, 0.8), rgba(5, 8, 13, 0.92)), url('/bg-hero.jpg')`
+          backgroundImage: `linear-gradient(to bottom, rgba(5, 8, 13, 0.45), rgba(5, 8, 13, 0.65)), url('/bg-hero.jpg')`
         }}
       >
         
