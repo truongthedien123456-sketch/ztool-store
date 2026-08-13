@@ -422,8 +422,17 @@ export default function ToolsPage() {
                             <div className="font-bold">{pkg.name}</div>
                             <div>
                               {appliedCoupon && discountAmt > 0 && originalPrice > 0 ? (
-                                <div className="flex items-center gap-2"><span className="line-through text-slate-500 text-[10px]">{formatPrice(originalPrice)}đ</span><span className="text-emerald-400 font-extrabold">{formatPrice(finalPkgPrice)} VNĐ</span></div>
-                              ) : (<span className="text-emerald-400 font-extrabold">{formatPrice(originalPrice)} VNĐ</span>)}
+                                <div className="flex items-center gap-2">
+                                  <span className="line-through text-slate-500 text-[10px]">{formatPrice(originalPrice)}đ</span>
+                                  <span className="text-emerald-400 font-extrabold">
+                                    {finalPkgPrice === 0 ? '0 VNĐ' : `${formatPrice(finalPkgPrice)} VNĐ`}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-emerald-400 font-extrabold">
+                                  {originalPrice === 0 ? '0 VNĐ' : `${formatPrice(originalPrice)} VNĐ`}
+                                </span>
+                              )}
                             </div>
                           </button>
                         );
