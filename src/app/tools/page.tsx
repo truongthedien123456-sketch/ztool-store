@@ -367,7 +367,7 @@ export default function ToolsPage() {
             )}
           </AnimatePresence>
 
-          {/* MODAL MUA SẢN PHẨM (BỐ CỤC 2 CỘT NẰM NGANG: ẢNH BÊN TRÁI TO - THÔNG TIN BÊN PHẢI) */}
+          {/* MODAL MUA SẢN PHẨM (BỐ CỤC 2 CỘT: ẢNH SIÊU TO NÉT BÊN TRÁI - BỎ CHỮ ĐANG HOẠT ĐỘNG) */}
           <AnimatePresence>
             {selectedToolForBuy && (
               <motion.div 
@@ -393,17 +393,14 @@ export default function ToolsPage() {
                     <h2 className="text-2xl font-black text-white tracking-wide">{selectedToolForBuy.name}</h2>
                   </div>
 
-                  {/* BỐ CỤC 2 CỘT (GRID 12 CỘT) */}
+                  {/* BỐ CỤC 2 CỘT NẰM NGANG */}
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
                     
-                    {/* CỘT TRÁI: ẢNH SẢN PHẨM TO RÕ NÉT */}
-                    <div className="md:col-span-5 flex flex-col items-center space-y-3">
+                    {/* CỘT TRÁI: ẢNH SẢN PHẨM SIÊU TO RÕ NÉT (ĐÃ BỎ CHỮ ĐANG HOẠT ĐỘNG) */}
+                    <div className="md:col-span-5 flex flex-col items-center">
                       <div className="w-full aspect-square rounded-2xl overflow-hidden border-2 border-cyan-500/40 shadow-[0_0_25px_rgba(6,182,212,0.25)] bg-[#05080E]">
                         <img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover" />
                       </div>
-                      <span className="text-[11px] font-extrabold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-lg uppercase tracking-wider block text-center w-full">
-                        {selectedToolForBuy.status || 'ĐANG HOẠT ĐỘNG'}
-                      </span>
                     </div>
 
                     {/* CỘT PHẢI: MÔ TẢ + MÃ GIẢM GIÁ + GÓI THỜI HẠN */}
@@ -412,7 +409,7 @@ export default function ToolsPage() {
                       {/* KHUNG MÔ TẢ CHI TIẾT */}
                       <div className="bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl space-y-1">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Mô tả tính năng:</span>
-                        <p className="text-xs text-slate-200 leading-relaxed max-h-28 overflow-y-auto pr-1 whitespace-pre-line">
+                        <p className="text-xs text-slate-200 leading-relaxed max-h-32 overflow-y-auto pr-1 whitespace-pre-line">
                           {selectedToolForBuy.description || 'Chưa có nội dung mô tả cho sản phẩm này.'}
                         </p>
                       </div>
