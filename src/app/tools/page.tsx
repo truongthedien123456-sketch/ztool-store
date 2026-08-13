@@ -241,76 +241,67 @@ export default function ToolsPage() {
           <div className="w-10 h-10 border-4 border-cyan-500/20 border-t-cyan-400 rounded-full animate-spin"></div>
         </div>
       ) : (
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="max-w-7xl mx-auto px-4 py-8 space-y-8"
-        >
+        <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
           {/* HEADER TRANG */}
-          <div className="text-center space-y-3 border-b border-slate-800/80 pb-8 bg-[#0B1019]/90 backdrop-blur-md p-6 rounded-3xl border border-cyan-500/20 shadow-[0_0_30px_rgba(6,182,212,0.1)]">
-            <div className="inline-flex items-center gap-2 bg-[#05080E]/90 border border-cyan-400/50 px-4 py-1.5 rounded-full text-xs font-bold text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
-              <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" /> BẢNG HÃNG TOOL AUTO HIGH-QUALITY
+          <div className="text-center space-y-3 border-b border-slate-800/80 pb-8 bg-[#0B1019]/95 p-6 rounded-3xl border border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.15)]">
+            <div className="inline-flex items-center gap-2 bg-[#05080E] border border-cyan-400/50 px-4 py-1.5 rounded-full text-xs font-bold text-cyan-300">
+              <Sparkles className="w-4 h-4 text-cyan-400" /> BẢNG HÃNG TOOL AUTO HIGH-QUALITY
             </div>
             <h1 className="text-3xl sm:text-4xl font-black text-white tracking-wide">
-              DANH SÁCH SẢN PHẨM <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-300 drop-shadow-[0_0_20px_rgba(6,182,212,0.5)]">TOOL AUTO</span>
+              DANH SÁCH SẢN PHẨM <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-300">TOOL AUTO</span>
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto font-medium leading-relaxed">
               Cập nhật liên tục các bản tool tự động mới nhất. Đảm bảo an toàn tuyệt đối, tối ưu hiệu năng và cập nhật tự động.
             </p>
           </div>
 
-          {/* GRID DANH SÁCH TOOL AUTO - BỐ CỤC 90% ĐỘ ĐỤC TỐI ƯU RENDER SLIDE MƯỢT */}
+          {/* GRID DANH SÁCH TOOL AUTO - ĐÃ LOẠI BỎ THUỘC TÍNH BLUR ĐỒ HỌA NẶNG */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tools.map((tool) => (
               <div 
                 key={tool.id} 
                 onClick={() => handleOpenDetail(tool)}
-                className="group bg-[#0B1019]/90 backdrop-blur-sm border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-[0_4px_25px_rgba(6,182,212,0.12)] hover:shadow-[0_0_35px_rgba(6,182,212,0.35)] hover:-translate-y-1.5 transition-all duration-300 cursor-pointer relative"
+                className="group bg-[#0D121D]/95 border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-lg hover:shadow-[0_0_25px_rgba(6,182,212,0.35)] transition-all duration-200 cursor-pointer relative"
               >
                 <div className="space-y-4">
                   {/* Khung Ảnh Banner Tool */}
-                  <div className="w-full aspect-square bg-[#05080E] border border-slate-800 rounded-2xl overflow-hidden relative shadow-inner">
-                    <img src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={tool.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-500 ease-out" />
+                  <div className="w-full aspect-square bg-[#05080E] border border-slate-800 rounded-2xl overflow-hidden relative">
+                    <img src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={tool.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-300 ease-out" />
                     
                     {/* Badge Lượt xem */}
-                    <div className="absolute top-3 left-3 bg-[#05080E]/90 backdrop-blur-sm border border-slate-700/60 px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[10px] text-slate-200 font-extrabold shadow-md">
+                    <div className="absolute top-3 left-3 bg-[#05080E]/90 border border-slate-700/60 px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[10px] text-slate-200 font-extrabold shadow-md">
                       <Eye className="w-3.5 h-3.5 text-cyan-400" /> {tool.views || 0}
                     </div>
 
                     {/* Badge Trạng thái */}
-                    <span className={`absolute top-3 right-3 text-[10px] font-black px-2.5 py-1 rounded-xl backdrop-blur-sm border shadow-md ${tool.status === 'Tạm ngưng' ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'}`}>
+                    <span className={`absolute top-3 right-3 text-[10px] font-black px-2.5 py-1 rounded-xl border shadow-md ${tool.status === 'Tạm ngưng' ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'}`}>
                       {tool.status ? tool.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
                     </span>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-black text-white group-hover:text-cyan-300 transition duration-300">{tool.name}</h3>
+                    <h3 className="text-lg font-black text-white group-hover:text-cyan-300 transition duration-200">{tool.name}</h3>
                     <p className="text-xs text-slate-400 mt-1 line-clamp-1 truncate" title={tool.description}>{tool.description || 'Chưa có mô tả sản phẩm.'}</p>
                   </div>
 
-                  {/* KHUNG GIÁ CẢ DẠNG CHIP CARDS PRO 2 CỘT */}
-                  <div className="grid grid-cols-2 gap-2 bg-[#05080E]/90 border border-slate-800/90 p-3 rounded-2xl text-xs">
-                    {/* Gói Ngày */}
+                  {/* KHUNG GIÁ CẢ TỐI ƯU CỰC NHẸ */}
+                  <div className="grid grid-cols-2 gap-2 bg-[#05080E] border border-slate-800/90 p-3 rounded-2xl text-xs">
                     <div className="bg-[#0B1019] border border-slate-800/80 p-2 rounded-xl flex flex-col justify-center space-y-0.5">
                       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Theo Ngày</span>
                       <b className="text-xs text-emerald-400 font-mono font-black">{tool.priceDay ? `${formatPrice(tool.priceDay)}đ` : '---'}</b>
                     </div>
 
-                    {/* Gói Tuần */}
                     <div className="bg-[#0B1019] border border-slate-800/80 p-2 rounded-xl flex flex-col justify-center space-y-0.5">
                       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Theo Tuần</span>
                       <b className="text-xs text-emerald-400 font-mono font-black">{tool.priceWeek ? `${formatPrice(tool.priceWeek)}đ` : '---'}</b>
                     </div>
 
-                    {/* Gói Tháng */}
                     <div className="bg-[#0B1019] border border-slate-800/80 p-2 rounded-xl flex flex-col justify-center space-y-0.5">
                       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Theo Tháng</span>
                       <b className="text-xs text-emerald-400 font-mono font-black">{tool.priceMonth ? `${formatPrice(tool.priceMonth)}đ` : '---'}</b>
                     </div>
 
-                    {/* Gói Vĩnh Viễn */}
-                    <div className="bg-[#0B1019] border border-cyan-500/30 p-2 rounded-xl flex flex-col justify-center space-y-0.5">
+                    <div className="bg-[#0B1019] border border-cyan-500/40 p-2 rounded-xl flex flex-col justify-center space-y-0.5">
                       <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">Vĩnh Viễn</span>
                       <b className="text-xs text-cyan-300 font-mono font-black">{tool.priceLifetime ? `${formatPrice(tool.priceLifetime)}đ` : '---'}</b>
                     </div>
@@ -329,10 +320,10 @@ export default function ToolsPage() {
                       setAppliedCoupon(null); 
                       setCouponMsg(null); 
                     }}
-                    className={`relative overflow-hidden font-black py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all duration-300 cursor-pointer shadow-md ${
+                    className={`font-black py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer shadow-md ${
                       tool.status === 'Tạm ngưng' 
                         ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' 
-                        : 'bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-400 text-slate-950 hover:brightness-110 shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:scale-[1.02]'
+                        : 'bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 hover:brightness-110 shadow-[0_0_15px_rgba(6,182,212,0.3)]'
                     }`}
                   >
                     <ShoppingBag className="w-4 h-4 text-slate-950 stroke-[2.5]" /> 
@@ -344,7 +335,7 @@ export default function ToolsPage() {
                       e.stopPropagation();
                       handleOpenDetail(tool);
                     }} 
-                    className="bg-[#05080E]/90 border border-slate-800 hover:border-cyan-400/60 text-slate-200 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 text-center transition-all duration-300 cursor-pointer hover:bg-slate-800/50"
+                    className="bg-[#05080E] border border-slate-800 hover:border-cyan-400/60 text-slate-200 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 text-center transition-all duration-200 cursor-pointer hover:bg-slate-800/80"
                   >
                     <Info className="w-4 h-4 text-cyan-400" /> Chi tiết
                   </button>
@@ -360,17 +351,17 @@ export default function ToolsPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.15 }}
                 onClick={() => setSelectedToolForDetail(null)}
-                className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 cursor-pointer"
+                className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-4 cursor-pointer"
               >
                 <motion.div 
-                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                  transition={{ type: "spring", duration: 0.3, bounce: 0.15 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-[#0F141C] border border-[#1A2332] w-full max-w-xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-2xl max-h-[90vh] overflow-y-auto cursor-default"
+                  className="bg-[#0D121D] border border-[#1A2332] w-full max-w-xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-2xl max-h-[90vh] overflow-y-auto cursor-default"
                 >
                   <button onClick={() => setSelectedToolForDetail(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1.5 rounded-xl bg-[#080B10] border border-[#1A2332] transition"><X className="w-5 h-5" /></button>
                   <div className="flex items-center gap-3 border-b border-[#1A2332] pb-4">
@@ -404,46 +395,40 @@ export default function ToolsPage() {
             )}
           </AnimatePresence>
 
-          {/* MODAL MUA SẢN PHẨM CYBERPUNK HIGH-END */}
+          {/* MODAL MUA SẢN PHẨM */}
           <AnimatePresence>
             {selectedToolForBuy && (
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.15 }}
                 onClick={() => setSelectedToolForBuy(null)}
-                className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4 cursor-pointer"
+                className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center px-4 cursor-pointer"
               >
                 <motion.div 
-                  initial={{ opacity: 0, scale: 0.92, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.92, y: 20 }}
-                  transition={{ type: "spring", duration: 0.35, bounce: 0.12 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-5xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_60px_rgba(6,182,212,0.35)] max-h-[92vh] overflow-y-auto cursor-default"
+                  className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-5xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-2xl max-h-[92vh] overflow-y-auto cursor-default"
                 >
-                  <button onClick={() => setSelectedToolForBuy(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition-all hover:border-cyan-400 hover:scale-105 z-10"><X className="w-5 h-5" /></button>
+                  <button onClick={() => setSelectedToolForBuy(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400 z-10"><X className="w-5 h-5" /></button>
                   
                   <div className="space-y-1.5 border-b border-slate-800/80 pb-4">
                     <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">XÁC NHẬN MUA BẢN QUYỀN</span>
                     <h2 className="text-2xl font-black text-white tracking-wide">{selectedToolForBuy.name}</h2>
                   </div>
 
-                  {/* BỐ CỤC 2 CỘT NẰM NGANG CÂN ĐỐI */}
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-                    
-                    {/* CỘT TRÁI: ẢNH SẢN PHẨM SIÊU TO CHUẨN TỶ LỆ VUÔNG 1:1 + HOVER ZOOM */}
                     <div className="md:col-span-6 flex flex-col items-center group">
-                      <div className="w-full aspect-square rounded-3xl overflow-hidden border-2 border-cyan-500/50 shadow-[0_0_30px_rgba(6,182,212,0.25)] bg-[#05080E] transition-all duration-500 group-hover:border-cyan-400 group-hover:shadow-[0_0_40px_rgba(6,182,212,0.45)]">
-                        <img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]" />
+                      <div className="w-full aspect-square rounded-3xl overflow-hidden border-2 border-cyan-500/50 shadow-md bg-[#05080E]">
+                        <img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover" />
                       </div>
                     </div>
 
-                    {/* CỘT PHẢI: MÔ TẢ + MÃ GIẢM GIÁ + GÓI THỜI HẠN */}
                     <div className="md:col-span-6 space-y-5 text-left">
-                      
-                      {/* KHUNG MÔ TẢ CHI TIẾT */}
                       <div className="bg-[#05080E] border border-slate-800/90 p-4.5 rounded-2xl space-y-1.5 shadow-inner">
                         <span className="text-[10px] font-extrabold text-cyan-400 uppercase tracking-wider block">Mô tả tính năng:</span>
                         <p className="text-xs text-slate-200 leading-relaxed max-h-36 overflow-y-auto pr-1 whitespace-pre-line font-medium">
@@ -451,17 +436,15 @@ export default function ToolsPage() {
                         </p>
                       </div>
 
-                      {/* Ô NHẬP MÃ GIẢM GIÁ HOVER GLOW */}
-                      <div className="space-y-2 bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl transition duration-300 focus-within:border-cyan-500/50">
+                      <div className="space-y-2 bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl">
                         <label className="block text-xs font-bold text-slate-300 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-cyan-400" /> Mã giảm giá (nếu có):</label>
                         <div className="flex gap-2">
-                          <input type="text" placeholder="Nhập mã giảm giá..." value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="flex-1 bg-[#0B1019] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 uppercase font-mono transition" />
-                          <button onClick={handleApplyCoupon} className="bg-cyan-500/20 border border-cyan-500/40 hover:bg-cyan-400 hover:text-slate-950 hover:scale-[1.02] text-cyan-300 font-black px-4 py-2.5 rounded-xl text-xs transition-all duration-300 cursor-pointer shadow-sm">Áp dụng</button>
+                          <input type="text" placeholder="Nhập mã giảm giá..." value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="flex-1 bg-[#0B1019] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 uppercase font-mono" />
+                          <button onClick={handleApplyCoupon} className="bg-cyan-500/20 border border-cyan-500/40 hover:bg-cyan-400 hover:text-slate-950 text-cyan-300 font-black px-4 py-2.5 rounded-xl text-xs transition cursor-pointer">Áp dụng</button>
                         </div>
                         {couponMsg && <p className={`text-[11px] font-bold ${couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>{couponMsg.text}</p>}
                       </div>
 
-                      {/* CHỌN GÓI THỜI HẠN */}
                       <div className="space-y-2.5">
                         <label className="block text-xs font-bold text-slate-300">Chọn gói thời hạn sử dụng:</label>
                         <div className="grid grid-cols-2 gap-3">
@@ -475,10 +458,10 @@ export default function ToolsPage() {
                               <button 
                                 key={pkg.key} 
                                 onClick={() => setSelectedDuration(pkg.key as any)} 
-                                className={`p-3.5 rounded-2xl border text-left text-xs space-y-1 relative transition-all duration-300 cursor-pointer ${
+                                className={`p-3.5 rounded-2xl border text-left text-xs space-y-1 relative transition cursor-pointer ${
                                   isSelected 
-                                    ? 'bg-gradient-to-r from-cyan-500/25 to-blue-500/25 border-cyan-400 text-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.3)] font-black scale-[1.02]' 
-                                    : 'bg-[#05080E] border-slate-800/90 hover:border-cyan-500/50 hover:text-slate-200 hover:-translate-y-1'
+                                    ? 'bg-[#121E2E] border-cyan-400 text-cyan-300 font-black' 
+                                    : 'bg-[#05080E] border-slate-800 text-slate-400 hover:border-slate-700'
                                 }`}
                               >
                                 {isSelected && (
@@ -520,7 +503,7 @@ export default function ToolsPage() {
                   <button 
                     disabled={loadingBuy} 
                     onClick={handleBuyTool} 
-                    className="w-full bg-gradient-to-r from-cyan-500 via-cyan-400 to-teal-300 hover:brightness-110 text-slate-950 font-black py-4 rounded-2xl text-xs shadow-[0_0_30px_rgba(6,182,212,0.4)] hover:shadow-[0_0_40px_rgba(6,182,212,0.6)] transition-all duration-300 hover:scale-[1.02] cursor-pointer flex items-center justify-center gap-2 border border-cyan-300/50"
+                    className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black py-4 rounded-2xl text-xs shadow-lg transition cursor-pointer flex items-center justify-center gap-2"
                   >
                     {loadingBuy ? (
                       <><Loader2 className="w-4 h-4 animate-spin text-slate-950" /><span>ĐANG KHỞI TẠO TÀI KHOẢN...</span></>
@@ -533,7 +516,7 @@ export default function ToolsPage() {
             )}
           </AnimatePresence>
 
-        </motion.div>
+        </div>
       )}
     </main>
   );

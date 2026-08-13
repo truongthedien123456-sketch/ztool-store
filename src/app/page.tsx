@@ -249,17 +249,11 @@ export default function HomePage() {
           <div className="w-10 h-10 border-4 border-cyan-500/20 border-t-cyan-400 rounded-full animate-spin"></div>
         </div>
       ) : (
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
-          className="max-w-7xl mx-auto px-4 py-6 space-y-12"
-        >
+        <div className="max-w-7xl mx-auto px-4 py-6 space-y-12">
 
           {/* KHUNG THÔNG BÁO ADMIN */}
           {systemNotice?.active && systemNotice?.text && (
-            <div className="bg-[#0E1522]/85 backdrop-blur-sm border border-amber-500/50 rounded-2xl p-4 flex items-center gap-4 shadow-[0_4px_30px_rgba(245,158,11,0.15)] relative overflow-hidden group">
-              <div className="absolute -left-10 top-0 bottom-0 w-24 bg-amber-500/10 blur-xl group-hover:bg-amber-500/20 transition duration-500"></div>
+            <div className="bg-[#0E1522]/90 border border-amber-500/50 rounded-2xl p-4 flex items-center gap-4 shadow-md relative overflow-hidden group">
               <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0 shadow-inner">
                 <Bell className="w-5 h-5 text-amber-400 animate-[bounce_2s_infinite]" />
               </div>
@@ -276,20 +270,17 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* HERO BANNER CAO CẤP - NỔI BẬT ÁNH NỀN NEON */}
-          <div className="relative rounded-3xl bg-[#0B1019]/90 border-2 border-cyan-500/40 p-8 sm:p-12 overflow-hidden shadow-[0_10px_50px_rgba(6,182,212,0.2)] backdrop-blur-sm">
-            <div className="absolute top-0 -left-20 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none"></div>
-            <div className="absolute -bottom-20 right-0 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
-            
+          {/* HERO BANNER CAO CẤP */}
+          <div className="relative rounded-3xl bg-[#0B1019]/90 border-2 border-cyan-500/40 p-8 sm:p-12 overflow-hidden shadow-xl">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center relative z-10">
               <div className="lg:col-span-7 space-y-6">
-                <div className="inline-flex items-center gap-2 bg-[#05080E]/90 border border-cyan-400/50 px-4 py-1.5 rounded-full text-xs font-bold text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
-                  <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" /> HỆ THỐNG AUTOMATION FIVEM HIGH-QUALITY
+                <div className="inline-flex items-center gap-2 bg-[#05080E] border border-cyan-400/50 px-4 py-1.5 rounded-full text-xs font-bold text-cyan-300">
+                  <Sparkles className="w-4 h-4 text-cyan-400" /> HỆ THỐNG AUTOMATION FIVEM HIGH-QUALITY
                 </div>
                 
                 <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white leading-[1.15] tracking-tight">
                   TỰ ĐỘNG HÓA <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-cyan-200 drop-shadow-[0_0_25px_rgba(6,182,212,0.6)]">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-cyan-200">
                     TRẢI NGHIỆM GAME
                   </span>
                 </h1>
@@ -299,13 +290,13 @@ export default function HomePage() {
                 </p>
 
                 <div className="flex flex-wrap gap-3 text-xs font-bold text-slate-200 pt-1">
-                  <span className="bg-[#05080E]/90 border border-slate-700/80 px-3.5 py-2 rounded-xl flex items-center gap-2 backdrop-blur-md">
+                  <span className="bg-[#05080E] border border-slate-700/80 px-3.5 py-2 rounded-xl flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-emerald-400" /> Hoạt động ổn định
                   </span>
-                  <span className="bg-[#05080E]/90 border border-slate-700/80 px-3.5 py-2 rounded-xl flex items-center gap-2 backdrop-blur-md">
+                  <span className="bg-[#05080E] border border-slate-700/80 px-3.5 py-2 rounded-xl flex items-center gap-2">
                     <Zap className="w-4 h-4 text-amber-400" /> Update liên tục
                   </span>
-                  <span className="bg-[#05080E]/90 border border-slate-700/80 px-3.5 py-2 rounded-xl flex items-center gap-2 backdrop-blur-md">
+                  <span className="bg-[#05080E] border border-slate-700/80 px-3.5 py-2 rounded-xl flex items-center gap-2">
                     <Wrench className="w-4 h-4 text-cyan-400" /> Key tự động 24/7
                   </span>
                 </div>
@@ -313,9 +304,8 @@ export default function HomePage() {
                 <div className="pt-3">
                   <Link
                     href="/tools"
-                    className="relative group overflow-hidden inline-flex items-center gap-2.5 bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-300 text-slate-950 font-black px-8 py-4 rounded-2xl text-xs shadow-[0_0_30px_rgba(6,182,212,0.4)] hover:shadow-[0_0_45px_rgba(6,182,212,0.7)] transition-all duration-300 hover:scale-[1.03]"
+                    className="relative inline-flex items-center gap-2.5 bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-300 text-slate-950 font-black px-8 py-4 rounded-2xl text-xs shadow-md transition hover:scale-[1.02]"
                   >
-                    <span className="absolute top-0 -left-[100%] w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:left-[100%] transition-all duration-700 ease-in-out"></span>
                     <ShoppingBag className="w-4 h-4 text-slate-950 stroke-[2.5]" /> TRUY CẬP CỬA HÀNG TOOL
                   </Link>
                 </div>
@@ -325,7 +315,7 @@ export default function HomePage() {
                 <div className="lg:col-span-5">
                   <div 
                     onClick={() => handleOpenDetail(featuredTool)}
-                    className="group bg-[#0B1019]/90 border-2 border-amber-500/50 hover:border-amber-400 rounded-3xl p-5 space-y-4 shadow-[0_0_35px_rgba(245,158,11,0.2)] hover:shadow-[0_0_45px_rgba(245,158,11,0.35)] transition-all duration-500 cursor-pointer relative backdrop-blur-md"
+                    className="group bg-[#0B1019] border-2 border-amber-500/50 hover:border-amber-400 rounded-3xl p-5 space-y-4 shadow-lg transition-all duration-300 cursor-pointer relative"
                   >
                     <div className="flex justify-between items-center border-b border-slate-800/80 pb-3">
                       <div className="flex items-center gap-2">
@@ -340,20 +330,20 @@ export default function HomePage() {
                       </span>
                     </div>
 
-                    <div className="w-full aspect-square bg-[#05080E] border border-slate-800 rounded-2xl overflow-hidden relative shadow-inner">
+                    <div className="w-full aspect-square bg-[#05080E] border border-slate-800 rounded-2xl overflow-hidden relative">
                       <img 
                         src={featuredTool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
                         alt={featuredTool.name} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-700 ease-out" 
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
                       />
                       
-                      <div className="absolute top-3 left-3 bg-[#05080E]/80 backdrop-blur-md border border-slate-700/60 px-3 py-1 rounded-xl flex items-center gap-1.5 text-[11px] text-slate-200 font-extrabold shadow-lg">
+                      <div className="absolute top-3 left-3 bg-[#05080E]/90 border border-slate-700/60 px-3 py-1 rounded-xl flex items-center gap-1.5 text-[11px] text-slate-200 font-extrabold">
                         <Eye className="w-3.5 h-3.5 text-cyan-400" /> {featuredTool.views || 0} lượt xem
                       </div>
                     </div>
 
                     <div className="space-y-1">
-                      <h3 className="font-black text-white text-base group-hover:text-amber-400 transition duration-300">
+                      <h3 className="font-black text-white text-base group-hover:text-amber-400 transition">
                         {featuredTool.name}
                       </h3>
                       <p className="text-xs text-slate-400 line-clamp-1">
@@ -371,7 +361,7 @@ export default function HomePage() {
                           e.stopPropagation();
                           handleOpenBuyModal(featuredTool);
                         }}
-                        className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1.5 transition bg-amber-500/10 border border-amber-500/30 px-3.5 py-1.5 rounded-xl hover:bg-amber-500/20"
+                        className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1.5 transition bg-amber-500/10 border border-amber-500/30 px-3.5 py-1.5 rounded-xl"
                       >
                         <ShoppingBag className="w-3.5 h-3.5" /> Mua ngay
                       </span>
@@ -401,21 +391,21 @@ export default function HomePage() {
                 <div 
                   key={tool.id} 
                   onClick={() => handleOpenDetail(tool)}
-                  className="bg-[#0B1019]/90 backdrop-blur-sm border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-[0_4px_25px_rgba(6,182,212,0.12)] hover:shadow-[0_0_35px_rgba(6,182,212,0.35)] hover:-translate-y-1.5 transition-all duration-300 cursor-pointer group relative"
+                  className="bg-[#0D121D]/95 border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-lg hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:-translate-y-1.5 transition-all duration-200 cursor-pointer group relative"
                 >
                   <div className="space-y-3">
                     <div className="w-full aspect-square bg-[#05080E] border border-slate-800/80 rounded-2xl overflow-hidden relative">
                       <img 
                         src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
                         alt={tool.name} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300" 
                       />
                       
-                      <div className="absolute top-3 left-3 bg-[#05080E]/80 backdrop-blur-md border border-slate-700/60 px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[10px] text-slate-200 font-bold">
+                      <div className="absolute top-3 left-3 bg-[#05080E]/90 border border-slate-700/60 px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[10px] text-slate-200 font-bold">
                         <Eye className="w-3.5 h-3.5 text-cyan-400" /> {tool.views || 0}
                       </div>
 
-                      <span className={`absolute top-3 right-3 text-[10px] font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md border ${
+                      <span className={`absolute top-3 right-3 text-[10px] font-extrabold px-2.5 py-1 rounded-lg border ${
                         tool.status === 'Tạm ngưng'
                           ? 'bg-rose-500/20 text-rose-400 border-rose-500/40'
                           : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
@@ -472,7 +462,7 @@ export default function HomePage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {projects.slice(0, 3).map((p) => (
-                  <div key={p.id} className="bg-[#0B1019]/90 backdrop-blur-sm border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-5 space-y-3 shadow-[0_4px_25px_rgba(6,182,212,0.1)] hover:shadow-[0_0_35px_rgba(6,182,212,0.3)] transition-all duration-300">
+                  <div key={p.id} className="bg-[#0D121D]/95 border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-5 space-y-3 shadow-md">
                     {p.image && (
                       <div className="w-full aspect-square bg-[#05080E] border border-slate-800/80 rounded-2xl overflow-hidden">
                         <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
@@ -496,15 +486,15 @@ export default function HomePage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.15 }}
                 onClick={() => setSelectedToolForDetail(null)}
-                className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 cursor-pointer"
+                className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-4 cursor-pointer"
               >
                 <motion.div 
-                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                  transition={{ type: "spring", duration: 0.3, bounce: 0.15 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
                   onClick={(e) => e.stopPropagation()}
                   className="bg-[#0F141C] border border-[#1A2332] w-full max-w-xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-2xl max-h-[90vh] overflow-y-auto cursor-default"
                 >
@@ -547,39 +537,33 @@ export default function HomePage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.15 }}
                 onClick={() => setSelectedToolForBuy(null)}
-                className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4 cursor-pointer"
+                className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center px-4 cursor-pointer"
               >
                 <motion.div 
-                  initial={{ opacity: 0, scale: 0.92, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.92, y: 20 }}
-                  transition={{ type: "spring", duration: 0.35, bounce: 0.12 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-5xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_60px_rgba(6,182,212,0.35)] max-h-[92vh] overflow-y-auto cursor-default"
+                  className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-5xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-2xl max-h-[92vh] overflow-y-auto cursor-default"
                 >
-                  <button onClick={() => setSelectedToolForBuy(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition-all hover:border-cyan-400 hover:scale-105 z-10"><X className="w-5 h-5" /></button>
+                  <button onClick={() => setSelectedToolForBuy(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400 z-10"><X className="w-5 h-5" /></button>
                   
                   <div className="space-y-1.5 border-b border-slate-800/80 pb-4">
                     <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">XÁC NHẬN MUA BẢN QUYỀN</span>
                     <h2 className="text-2xl font-black text-white tracking-wide">{selectedToolForBuy.name}</h2>
                   </div>
 
-                  {/* BỐ CỤC 2 CỘT NẰM NGANG CÂN ĐỐI */}
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-                    
-                    {/* CỘT TRÁI: ẢNH SẢN PHẨM SIÊU TO CHUẨN TỶ LỆ VUÔNG 1:1 + HOVER ZOOM */}
                     <div className="md:col-span-6 flex flex-col items-center group">
-                      <div className="w-full aspect-square rounded-3xl overflow-hidden border-2 border-cyan-500/50 shadow-[0_0_30px_rgba(6,182,212,0.25)] bg-[#05080E] transition-all duration-500 group-hover:border-cyan-400 group-hover:shadow-[0_0_40px_rgba(6,182,212,0.45)]">
-                        <img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]" />
+                      <div className="w-full aspect-square rounded-3xl overflow-hidden border-2 border-cyan-500/50 shadow-md bg-[#05080E]">
+                        <img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover" />
                       </div>
                     </div>
 
-                    {/* CỘT PHẢI: MÔ TẢ + MÃ GIẢM GIÁ + GÓI THỜI HẠN */}
                     <div className="md:col-span-6 space-y-5 text-left">
-                      
-                      {/* KHUNG MÔ TẢ CHI TIẾT */}
                       <div className="bg-[#05080E] border border-slate-800/90 p-4.5 rounded-2xl space-y-1.5 shadow-inner">
                         <span className="text-[10px] font-extrabold text-cyan-400 uppercase tracking-wider block">Mô tả tính năng:</span>
                         <p className="text-xs text-slate-200 leading-relaxed max-h-36 overflow-y-auto pr-1 whitespace-pre-line font-medium">
@@ -587,17 +571,15 @@ export default function HomePage() {
                         </p>
                       </div>
 
-                      {/* Ô NHẬP MÃ GIẢM GIÁ HOVER GLOW */}
-                      <div className="space-y-2 bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl transition duration-300 focus-within:border-cyan-500/50">
+                      <div className="space-y-2 bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl">
                         <label className="block text-xs font-bold text-slate-300 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-cyan-400" /> Mã giảm giá (nếu có):</label>
                         <div className="flex gap-2">
                           <input type="text" placeholder="Nhập mã giảm giá..." value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="flex-1 bg-[#0B1019] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 uppercase font-mono transition" />
-                          <button onClick={handleApplyCoupon} className="bg-cyan-500/20 border border-cyan-500/40 hover:bg-cyan-400 hover:text-slate-950 hover:scale-[1.02] text-cyan-300 font-black px-4 py-2.5 rounded-xl text-xs transition-all duration-300 cursor-pointer shadow-sm">Áp dụng</button>
+                          <button onClick={handleApplyCoupon} className="bg-cyan-500/20 border border-cyan-500/40 hover:bg-cyan-400 hover:text-slate-950 text-cyan-300 font-black px-4 py-2.5 rounded-xl text-xs transition cursor-pointer">Áp dụng</button>
                         </div>
                         {couponMsg && <p className={`text-[11px] font-bold ${couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>{couponMsg.text}</p>}
                       </div>
 
-                      {/* CHỌN GÓI THỜI HẠN */}
                       <div className="space-y-2.5">
                         <label className="block text-xs font-bold text-slate-300">Chọn gói thời hạn sử dụng:</label>
                         <div className="grid grid-cols-2 gap-3">
@@ -611,10 +593,10 @@ export default function HomePage() {
                               <button 
                                 key={pkg.key} 
                                 onClick={() => setSelectedDuration(pkg.key as any)} 
-                                className={`p-3.5 rounded-2xl border text-left text-xs space-y-1 relative transition-all duration-300 cursor-pointer ${
+                                className={`p-3.5 rounded-2xl border text-left text-xs space-y-1 relative transition cursor-pointer ${
                                   isSelected 
-                                    ? 'bg-gradient-to-r from-cyan-500/25 to-blue-500/25 border-cyan-400 text-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.3)] font-black scale-[1.02]' 
-                                    : 'bg-[#05080E] border-slate-800/90 hover:border-cyan-500/50 hover:text-slate-200 hover:-translate-y-1'
+                                    ? 'bg-[#121E2E] border-cyan-400 text-cyan-300 font-black' 
+                                    : 'bg-[#05080E] border-slate-800 text-slate-400 hover:border-slate-700'
                                 }`}
                               >
                                 {isSelected && (
@@ -656,7 +638,7 @@ export default function HomePage() {
                   <button 
                     disabled={loadingBuy} 
                     onClick={handleBuyTool} 
-                    className="w-full bg-gradient-to-r from-cyan-500 via-cyan-400 to-teal-300 hover:brightness-110 text-slate-950 font-black py-4 rounded-2xl text-xs shadow-[0_0_30px_rgba(6,182,212,0.4)] hover:shadow-[0_0_40px_rgba(6,182,212,0.6)] transition-all duration-300 hover:scale-[1.02] cursor-pointer flex items-center justify-center gap-2 border border-cyan-300/50"
+                    className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black py-4 rounded-2xl text-xs shadow-lg transition cursor-pointer flex items-center justify-center gap-2"
                   >
                     {loadingBuy ? (
                       <><Loader2 className="w-4 h-4 animate-spin text-slate-950" /><span>ĐANG KHỞI TẠO TÀI KHOẢN...</span></>
@@ -669,7 +651,7 @@ export default function HomePage() {
             )}
           </AnimatePresence>
 
-        </motion.div>
+        </div>
       )}
     </main>
   );
