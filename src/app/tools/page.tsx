@@ -260,13 +260,13 @@ export default function ToolsPage() {
             </p>
           </div>
 
-          {/* GRID DANH SÁCH TOOL AUTO */}
+          {/* GRID DANH SÁCH TOOL AUTO - KHUNG BỔ SUNG ĐỘ ĐỤC VÀ ÁNH NỀN NEON */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tools.map((tool) => (
               <div 
                 key={tool.id} 
                 onClick={() => handleOpenDetail(tool)}
-                className="group bg-[#0B1019]/60 backdrop-blur-md border-2 border-slate-800/80 hover:border-cyan-400/80 rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-xl hover:shadow-[0_0_35px_rgba(6,182,212,0.25)] hover:-translate-y-1.5 transition-all duration-500 cursor-pointer relative"
+                className="group bg-[#0B1019]/85 backdrop-blur-xl border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-[0_4px_25px_rgba(6,182,212,0.15)] hover:shadow-[0_0_35px_rgba(6,182,212,0.4)] hover:-translate-y-1.5 transition-all duration-500 cursor-pointer relative"
               >
                 <div className="space-y-4">
                   {/* Khung Ảnh Banner Tool */}
@@ -289,8 +289,8 @@ export default function ToolsPage() {
                     <p className="text-xs text-slate-400 mt-1 line-clamp-1 truncate" title={tool.description}>{tool.description || 'Chưa có mô tả sản phẩm.'}</p>
                   </div>
 
-                  {/* KHUNG GIÁ CẢ ĐÃ ĐƯỢC CHỈNH HÀI HÒA & ĐỒNG BỘ */}
-                  <div className="grid grid-cols-2 gap-2 bg-[#05080E]/80 border border-slate-800/80 p-3 rounded-2xl text-xs backdrop-blur-sm">
+                  {/* KHUNG GIÁ CẢ DẠNG CHIP CARDS PRO 2 CỘT */}
+                  <div className="grid grid-cols-2 gap-2 bg-[#05080E]/90 border border-slate-800/90 p-3 rounded-2xl text-xs backdrop-blur-sm">
                     {/* Gói Ngày */}
                     <div className="bg-[#0B1019] border border-slate-800/80 p-2 rounded-xl flex flex-col justify-center space-y-0.5">
                       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Theo Ngày</span>
@@ -309,7 +309,7 @@ export default function ToolsPage() {
                       <b className="text-xs text-emerald-400 font-mono font-black">{tool.priceMonth ? `${formatPrice(tool.priceMonth)}đ` : '---'}</b>
                     </div>
 
-                    {/* Gói Vĩnh Viễn Chỉnh Nhẹ Nhàng & Đồng Bộ */}
+                    {/* Gói Vĩnh Viễn */}
                     <div className="bg-[#0B1019] border border-cyan-500/30 p-2 rounded-xl flex flex-col justify-center space-y-0.5">
                       <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">Vĩnh Viễn</span>
                       <b className="text-xs text-cyan-300 font-mono font-black">{tool.priceLifetime ? `${formatPrice(tool.priceLifetime)}đ` : '---'}</b>

@@ -256,9 +256,9 @@ export default function HomePage() {
           className="max-w-7xl mx-auto px-4 py-6 space-y-12"
         >
 
-          {/* KHUNG THÔNG BÁO ADMIN - KÍNH MỜ TRONG SUỐT */}
+          {/* KHUNG THÔNG BÁO ADMIN */}
           {systemNotice?.active && systemNotice?.text && (
-            <div className="bg-[#0E1522]/50 backdrop-blur-md border border-amber-500/40 rounded-2xl p-4 flex items-center gap-4 shadow-[0_0_30px_rgba(245,158,11,0.1)] relative overflow-hidden group">
+            <div className="bg-[#0E1522]/85 backdrop-blur-xl border border-amber-500/50 rounded-2xl p-4 flex items-center gap-4 shadow-[0_4px_30px_rgba(245,158,11,0.15)] relative overflow-hidden group">
               <div className="absolute -left-10 top-0 bottom-0 w-24 bg-amber-500/10 blur-xl group-hover:bg-amber-500/20 transition duration-500"></div>
               <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0 shadow-inner">
                 <Bell className="w-5 h-5 text-amber-400 animate-[bounce_2s_infinite]" />
@@ -276,19 +276,17 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* HERO BANNER CAO CẤP GLASSMORPHISM XUYÊN THẤU */}
-          <div className="relative rounded-3xl bg-[#0B101B]/40 border border-cyan-500/30 p-8 sm:p-12 overflow-hidden shadow-[0_0_50px_rgba(6,182,212,0.15)] backdrop-blur-xl">
-            {/* Đổ quầng sáng dạ quang */}
+          {/* HERO BANNER CAO CẤP - NỔI BẬT ÁNH NỀN NEON */}
+          <div className="relative rounded-3xl bg-[#0B1019]/85 border-2 border-cyan-500/40 p-8 sm:p-12 overflow-hidden shadow-[0_10px_50px_rgba(6,182,212,0.2)] backdrop-blur-xl">
             <div className="absolute top-0 -left-20 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none"></div>
             <div className="absolute -bottom-20 right-0 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
             
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center relative z-10">
               <div className="lg:col-span-7 space-y-6">
-                <div className="inline-flex items-center gap-2 bg-[#05080E]/80 border border-cyan-400/50 px-4 py-1.5 rounded-full text-xs font-bold text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+                <div className="inline-flex items-center gap-2 bg-[#05080E]/90 border border-cyan-400/50 px-4 py-1.5 rounded-full text-xs font-bold text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
                   <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" /> HỆ THỐNG AUTOMATION FIVEM HIGH-QUALITY
                 </div>
                 
-                {/* Tiêu đề có Gradient Neon Cyan dạ quang */}
                 <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white leading-[1.15] tracking-tight">
                   TỰ ĐỘNG HÓA <br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-cyan-200 drop-shadow-[0_0_25px_rgba(6,182,212,0.6)]">
@@ -301,18 +299,17 @@ export default function HomePage() {
                 </p>
 
                 <div className="flex flex-wrap gap-3 text-xs font-bold text-slate-200 pt-1">
-                  <span className="bg-[#05080E]/80 border border-slate-800/80 px-3.5 py-2 rounded-xl flex items-center gap-2 backdrop-blur-md">
+                  <span className="bg-[#05080E]/90 border border-slate-700/80 px-3.5 py-2 rounded-xl flex items-center gap-2 backdrop-blur-md">
                     <ShieldCheck className="w-4 h-4 text-emerald-400" /> Hoạt động ổn định
                   </span>
-                  <span className="bg-[#05080E]/80 border border-slate-800/80 px-3.5 py-2 rounded-xl flex items-center gap-2 backdrop-blur-md">
+                  <span className="bg-[#05080E]/90 border border-slate-700/80 px-3.5 py-2 rounded-xl flex items-center gap-2 backdrop-blur-md">
                     <Zap className="w-4 h-4 text-amber-400" /> Update liên tục
                   </span>
-                  <span className="bg-[#05080E]/80 border border-slate-800/80 px-3.5 py-2 rounded-xl flex items-center gap-2 backdrop-blur-md">
+                  <span className="bg-[#05080E]/90 border border-slate-700/80 px-3.5 py-2 rounded-xl flex items-center gap-2 backdrop-blur-md">
                     <Wrench className="w-4 h-4 text-cyan-400" /> Key tự động 24/7
                   </span>
                 </div>
 
-                {/* NÚT BẤM TRUY CẬP CỬA HÀNG TÍCH HỢP HIỆU ỨNG QUÉT ÁNH SÁNG */}
                 <div className="pt-3">
                   <Link
                     href="/tools"
@@ -328,7 +325,7 @@ export default function HomePage() {
                 <div className="lg:col-span-5">
                   <div 
                     onClick={() => handleOpenDetail(featuredTool)}
-                    className="group bg-[#0B1019]/80 border-2 border-amber-500/40 hover:border-amber-400 rounded-3xl p-5 space-y-4 shadow-[0_0_30px_rgba(245,158,11,0.15)] hover:shadow-[0_0_40px_rgba(245,158,11,0.3)] transition-all duration-500 cursor-pointer relative backdrop-blur-md"
+                    className="group bg-[#0B1019]/90 border-2 border-amber-500/50 hover:border-amber-400 rounded-3xl p-5 space-y-4 shadow-[0_0_35px_rgba(245,158,11,0.2)] hover:shadow-[0_0_45px_rgba(245,158,11,0.35)] transition-all duration-500 cursor-pointer relative backdrop-blur-md"
                   >
                     <div className="flex justify-between items-center border-b border-slate-800/80 pb-3">
                       <div className="flex items-center gap-2">
@@ -385,7 +382,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* SECTION DANH SÁCH TOOL */}
+          {/* SECTION DANH SÁCH TOOL - CÁC CARD TOOL CÓ ÁNH NỀN VÀ VIỀN TÁCH BIỆT */}
           <div className="space-y-6 pt-4">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
               <div>
@@ -404,7 +401,7 @@ export default function HomePage() {
                 <div 
                   key={tool.id} 
                   onClick={() => handleOpenDetail(tool)}
-                  className="bg-[#0B1019]/80 backdrop-blur-md border-2 border-slate-800/80 hover:border-cyan-500/50 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-lg hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] hover:-translate-y-1.5 transition-all duration-300 cursor-pointer group relative"
+                  className="bg-[#0B1019]/85 backdrop-blur-xl border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-[0_4px_25px_rgba(6,182,212,0.15)] hover:shadow-[0_0_35px_rgba(6,182,212,0.4)] hover:-translate-y-1.5 transition-all duration-500 cursor-pointer group relative"
                 >
                   <div className="space-y-3">
                     <div className="w-full aspect-square bg-[#05080E] border border-slate-800/80 rounded-2xl overflow-hidden relative">
@@ -428,7 +425,7 @@ export default function HomePage() {
                     </div>
 
                     <div>
-                      <h3 className="font-bold text-white text-base group-hover:text-cyan-400 transition">{tool.name}</h3>
+                      <h3 className="font-bold text-white text-base group-hover:text-cyan-300 transition">{tool.name}</h3>
                       <p className="text-xs text-slate-400 mt-1 line-clamp-1">{tool.description}</p>
                     </div>
                   </div>
@@ -475,7 +472,7 @@ export default function HomePage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {projects.slice(0, 3).map((p) => (
-                  <div key={p.id} className="bg-[#0B1019]/80 backdrop-blur-md border border-slate-800/80 rounded-3xl p-5 space-y-3 hover:border-cyan-500/40 transition">
+                  <div key={p.id} className="bg-[#0B1019]/85 backdrop-blur-xl border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-5 space-y-3 shadow-[0_4px_25px_rgba(6,182,212,0.1)] hover:shadow-[0_0_35px_rgba(6,182,212,0.3)] transition-all duration-500">
                     {p.image && (
                       <div className="w-full aspect-square bg-[#05080E] border border-slate-800/80 rounded-2xl overflow-hidden">
                         <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
