@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Sparkles, Wrench, ShieldCheck, Zap, ArrowRight, ShoppingBag, FolderKanban, Bell, Flame, Eye, Info, X, Tag, CheckCircle2, AlertCircle, Loader2
+  Sparkles, Wrench, ShieldCheck, Zap, ArrowRight, ShoppingBag, FolderKanban, Bell, Flame, Eye, Info, X, Tag, CheckCircle2, AlertCircle, Loader2, Shield
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -92,7 +92,6 @@ export default function HomePage() {
   const activeTools = [...tools].filter(t => t.status !== 'Tạm ngưng').sort((a, b) => b.views - a.views);
   const featuredTool = activeTools.length > 0 ? activeTools[0] : null;
 
-  // Xử lý mở Modal Chi Tiết và cộng view ngầm
   const handleOpenDetail = async (tool: any) => {
     if (!tool) return;
     setSelectedToolForDetail(tool);
@@ -105,7 +104,6 @@ export default function HomePage() {
     }
   };
 
-  // Xử lý mở Modal Mua Ngay
   const handleOpenBuyModal = (tool: any) => {
     if (!tool || tool.status === 'Tạm ngưng') return;
     setSelectedToolForBuy(tool);
@@ -538,7 +536,7 @@ export default function HomePage() {
             )}
           </AnimatePresence>
 
-          {/* MODAL MUA SẢN PHẨM */}
+          {/* MODAL MUA SẢN PHẨM (ĐÃ NÂNG CẤP GIAO DIỆN PRO - ẨN MÃ TOOL, ẢNH TO RÕ) */}
           <AnimatePresence>
             {selectedToolForBuy && (
               <motion.div 
@@ -547,58 +545,86 @@ export default function HomePage() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
                 onClick={() => setSelectedToolForBuy(null)}
-                className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 cursor-pointer"
+                className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4 cursor-pointer"
               >
                 <motion.div 
-                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  initial={{ opacity: 0, scale: 0.92, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                  exit={{ opacity: 0, scale: 0.92, y: 20 }}
                   transition={{ type: "spring", duration: 0.3, bounce: 0.15 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-[#0F141C] border border-[#1A2332] w-full max-w-lg rounded-3xl p-6 space-y-6 relative shadow-2xl max-h-[90vh] overflow-y-auto cursor-default"
+                  className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-lg rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[90vh] overflow-y-auto cursor-default"
                 >
-                  <button onClick={() => setSelectedToolForBuy(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#080B10] border border-[#1A2332] transition"><X className="w-5 h-5" /></button>
-                  <div className="space-y-1"><span className="text-xs text-cyan-400 font-bold">XÁC NHẬN MUA SẢN PHẨM</span><h2 className="text-xl font-black text-white">{selectedToolForBuy.name}</h2></div>
-                  <div className="bg-[#080B10] border border-[#1A2332] p-4 rounded-2xl flex gap-4 items-center">
-                    <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-[#1A2332]"><img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover" /></div>
-                    <div className="space-y-1 flex-1 min-w-0"><span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider block">Mã Tool: {selectedToolForBuy.toolCode || selectedToolForBuy.tool_code || '---'}</span><p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">{selectedToolForBuy.description || 'Chưa có mô tả cho sản phẩm này.'}</p></div>
+                  <button onClick={() => setSelectedToolForBuy(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
+                  
+                  <div className="space-y-1.5 border-b border-slate-800/80 pb-4">
+                    <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">XÁC NHẬN MUA BẢN QUYỀN</span>
+                    <h2 className="text-xl font-black text-white tracking-wide">{selectedToolForBuy.name}</h2>
                   </div>
 
-                  <div className="space-y-2 bg-[#080B10] border border-[#1A2332] p-3.5 rounded-2xl">
+                  {/* KHUNG THÔNG TIN SẢN PHẨM: ẢNH RÕ NÉT - ẨN MÃ TOOL */}
+                  <div className="bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl flex flex-col sm:flex-row gap-4 items-center">
+                    <div className="w-24 h-20 sm:w-28 sm:h-28 rounded-xl overflow-hidden shrink-0 border-2 border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.15)] bg-[#0B1019]">
+                      <img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="space-y-1.5 flex-1 min-w-0 text-left">
+                      <span className="text-[10px] font-extrabold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded-md inline-block uppercase tracking-wider">
+                        {selectedToolForBuy.status || 'ĐANG HOẠT ĐỘNG'}
+                      </span>
+                      <p className="text-xs text-slate-300 leading-relaxed max-h-24 overflow-y-auto pr-1 whitespace-pre-line">
+                        {selectedToolForBuy.description || 'Chưa có mô tả cho sản phẩm này.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Ô NHẬP MÃ GIẢM GIÁ */}
+                  <div className="space-y-2 bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl">
                     <label className="block text-xs font-bold text-slate-300 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-cyan-400" /> Mã giảm giá (nếu có):</label>
                     <div className="flex gap-2">
-                      <input type="text" placeholder="Nhập mã giảm giá..." value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="flex-1 bg-[#0F141C] border border-[#1C2638] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 uppercase font-mono" />
-                      <button onClick={handleApplyCoupon} className="bg-cyan-500/20 border border-cyan-500/40 hover:bg-cyan-500/30 text-cyan-300 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer">Áp dụng</button>
+                      <input type="text" placeholder="Nhập mã giảm giá..." value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="flex-1 bg-[#0B1019] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 uppercase font-mono transition" />
+                      <button onClick={handleApplyCoupon} className="bg-cyan-500/20 border border-cyan-500/40 hover:bg-cyan-500/30 text-cyan-300 font-bold px-4 py-2.5 rounded-xl text-xs transition cursor-pointer shadow-sm">Áp dụng</button>
                     </div>
                     {couponMsg && <p className={`text-[11px] font-bold ${couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>{couponMsg.text}</p>}
                   </div>
 
                   {purchaseMsg && (
-                    <div className={`p-3.5 rounded-xl text-xs font-bold flex items-start gap-2 ${purchaseMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'}`}>
-                      {purchaseMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}<span>{purchaseMsg.text}</span>
+                    <div className={`p-4 rounded-xl text-xs font-bold flex items-start gap-2.5 ${purchaseMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'}`}>
+                      {purchaseMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />}
+                      <span className="leading-relaxed">{purchaseMsg.text}</span>
                     </div>
                   )}
 
-                  <div className="space-y-2">
+                  {/* CHỌN GÓI THỜI HẠN */}
+                  <div className="space-y-2.5">
                     <label className="block text-xs font-bold text-slate-300">Chọn gói thời hạn sử dụng:</label>
                     <div className="grid grid-cols-2 gap-3">
                       {[ { key: 'day', name: 'Gói 1 Ngày', price: selectedToolForBuy.priceDay }, { key: 'week', name: 'Gói 7 Ngày', price: selectedToolForBuy.priceWeek }, { key: 'month', name: 'Gói 30 Ngày', price: selectedToolForBuy.priceMonth }, { key: 'lifetime', name: 'Gói Vĩnh Viễn', price: selectedToolForBuy.priceLifetime }, ].map((pkg) => {
                         const originalPrice = Number(String(pkg.price || '0').replace(/[^0-9]/g, '')) || 0;
                         const discountAmt = appliedCoupon ? Number(appliedCoupon.discount_amount) || 0 : 0;
                         const finalPkgPrice = Math.max(0, originalPrice - discountAmt);
+                        const isSelected = selectedDuration === pkg.key;
+
                         return (
-                          <button key={pkg.key} onClick={() => setSelectedDuration(pkg.key as any)} className={`p-3 rounded-2xl border text-left text-xs space-y-1 transition ${selectedDuration === pkg.key ? 'bg-cyan-500/10 border-cyan-400 text-cyan-400' : 'bg-[#080B10] border-[#1A2332] text-slate-400'}`}>
-                            <div className="font-bold">{pkg.name}</div>
+                          <button 
+                            key={pkg.key} 
+                            onClick={() => setSelectedDuration(pkg.key as any)} 
+                            className={`p-3.5 rounded-2xl border text-left text-xs space-y-1 transition-all duration-200 cursor-pointer ${
+                              isSelected 
+                                ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.25)] font-black' 
+                                : 'bg-[#05080E] border-slate-800/90 hover:border-slate-700 text-slate-400'
+                            }`}
+                          >
+                            <div className="font-bold text-slate-200">{pkg.name}</div>
                             <div>
                               {appliedCoupon && discountAmt > 0 && originalPrice > 0 ? (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="line-through text-slate-500 text-[10px]">{formatPrice(originalPrice)}đ</span>
-                                  <span className="text-emerald-400 font-extrabold">
+                                  <span className="text-emerald-400 font-extrabold font-mono">
                                     {finalPkgPrice === 0 ? '0 VNĐ' : `${formatPrice(finalPkgPrice)} VNĐ`}
                                   </span>
                                 </div>
                               ) : (
-                                <span className="text-emerald-400 font-extrabold">
+                                <span className="text-emerald-400 font-extrabold font-mono">
                                   {originalPrice === 0 ? '0 VNĐ' : `${formatPrice(originalPrice)} VNĐ`}
                                 </span>
                               )}
@@ -609,8 +635,16 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  <button disabled={loadingBuy} onClick={handleBuyTool} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black py-3.5 rounded-2xl text-xs shadow-lg shadow-cyan-500/20 transition cursor-pointer flex items-center justify-center gap-2">
-                    {loadingBuy ? (<><Loader2 className="w-4 h-4 animate-spin text-slate-950" /><span>ĐANG KHỞI TẠO TÀI KHOẢN</span></>) : (<><ShieldCheck className="w-4 h-4" /> XÁC NHẬN THANH TOÁN TỪ VÍ</>)}
+                  <button 
+                    disabled={loadingBuy} 
+                    onClick={handleBuyTool} 
+                    className="w-full bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 font-black py-4 rounded-2xl text-xs shadow-[0_0_25px_rgba(6,182,212,0.35)] transition duration-300 hover:scale-[1.02] cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    {loadingBuy ? (
+                      <><Loader2 className="w-4 h-4 animate-spin text-slate-950" /><span>ĐANG KHỞI TẠO TÀI KHOẢN...</span></>
+                    ) : (
+                      <><Shield className="w-4 h-4" /> XÁC NHẬN THANH TOÁN TỪ VÍ</>
+                    )}
                   </button>
                 </motion.div>
               </motion.div>
