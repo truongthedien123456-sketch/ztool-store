@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag, Eye, Shield, Check, Crown
+  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag, Eye, Shield, Check
 } from 'lucide-react';
 
 export default function ToolsPage() {
@@ -247,7 +247,7 @@ export default function ToolsPage() {
           transition={{ duration: 0.3, ease: 'easeOut' }}
           className="max-w-7xl mx-auto px-4 py-8 space-y-8"
         >
-          {/* HEADER TRANG KÍNH MỜ GLASSMORPHISM */}
+          {/* HEADER TRANG */}
           <div className="text-center space-y-3 border-b border-slate-800/80 pb-8 bg-[#0B1019]/40 backdrop-blur-md p-6 rounded-3xl border border-cyan-500/20 shadow-[0_0_30px_rgba(6,182,212,0.1)]">
             <div className="inline-flex items-center gap-2 bg-[#05080E]/80 border border-cyan-400/50 px-4 py-1.5 rounded-full text-xs font-bold text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
               <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" /> BẢNG HÃNG TOOL AUTO HIGH-QUALITY
@@ -260,7 +260,7 @@ export default function ToolsPage() {
             </p>
           </div>
 
-          {/* GRID CARD TẤT CẢ CÁC TOOL */}
+          {/* GRID DANH SÁCH TOOL AUTO */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tools.map((tool) => (
               <div 
@@ -269,16 +269,16 @@ export default function ToolsPage() {
                 className="group bg-[#0B1019]/60 backdrop-blur-md border-2 border-slate-800/80 hover:border-cyan-400/80 rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-xl hover:shadow-[0_0_35px_rgba(6,182,212,0.25)] hover:-translate-y-1.5 transition-all duration-500 cursor-pointer relative"
               >
                 <div className="space-y-4">
-                  {/* Khung Ảnh Banner Sản Phẩm */}
+                  {/* Khung Ảnh Banner Tool */}
                   <div className="w-full aspect-square bg-[#05080E] border border-slate-800 rounded-2xl overflow-hidden relative shadow-inner">
                     <img src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={tool.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-700 ease-out" />
                     
-                    {/* Badge Lượt xem ở GÓC TRÁI TRÊN */}
+                    {/* Badge Lượt xem */}
                     <div className="absolute top-3 left-3 bg-[#05080E]/80 backdrop-blur-md border border-slate-700/60 px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[10px] text-slate-200 font-extrabold shadow-md">
                       <Eye className="w-3.5 h-3.5 text-cyan-400" /> {tool.views || 0}
                     </div>
 
-                    {/* Badge Trạng thái ở GÓC PHẢI TRÊN */}
+                    {/* Badge Trạng thái */}
                     <span className={`absolute top-3 right-3 text-[10px] font-black px-2.5 py-1 rounded-xl backdrop-blur-md border shadow-md ${tool.status === 'Tạm ngưng' ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'}`}>
                       {tool.status ? tool.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
                     </span>
@@ -289,7 +289,7 @@ export default function ToolsPage() {
                     <p className="text-xs text-slate-400 mt-1 line-clamp-1 truncate" title={tool.description}>{tool.description || 'Chưa có mô tả sản phẩm.'}</p>
                   </div>
 
-                  {/* KHUNG GIÁ CẢ DẠNG CHIP MINI-BADGES PRO 2 CỘT */}
+                  {/* KHUNG GIÁ CẢ ĐÃ ĐƯỢC CHỈNH HÀI HÒA & ĐỒNG BỘ */}
                   <div className="grid grid-cols-2 gap-2 bg-[#05080E]/80 border border-slate-800/80 p-3 rounded-2xl text-xs backdrop-blur-sm">
                     {/* Gói Ngày */}
                     <div className="bg-[#0B1019] border border-slate-800/80 p-2 rounded-xl flex flex-col justify-center space-y-0.5">
@@ -309,17 +309,15 @@ export default function ToolsPage() {
                       <b className="text-xs text-emerald-400 font-mono font-black">{tool.priceMonth ? `${formatPrice(tool.priceMonth)}đ` : '---'}</b>
                     </div>
 
-                    {/* Gói Vĩnh Viễn Glow Neon Cyan với Icon Crown */}
-                    <div className="bg-gradient-to-r from-cyan-500/15 to-blue-500/15 border border-cyan-400/50 p-2 rounded-xl flex flex-col justify-center space-y-0.5 shadow-[0_0_12px_rgba(6,182,212,0.15)]">
-                      <span className="text-[10px] text-cyan-300 font-black uppercase tracking-wider flex items-center gap-1">
-                        <Crown className="w-3 h-3 text-cyan-300" /> Vĩnh Viễn
-                      </span>
+                    {/* Gói Vĩnh Viễn Chỉnh Nhẹ Nhàng & Đồng Bộ */}
+                    <div className="bg-[#0B1019] border border-cyan-500/30 p-2 rounded-xl flex flex-col justify-center space-y-0.5">
+                      <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">Vĩnh Viễn</span>
                       <b className="text-xs text-cyan-300 font-mono font-black">{tool.priceLifetime ? `${formatPrice(tool.priceLifetime)}đ` : '---'}</b>
                     </div>
                   </div>
                 </div>
 
-                {/* HÀNG NÚT BẤM "MUA NGAY" GRADIENT GLOW & "CHI TIẾT" */}
+                {/* HÀNG NÚT BẤM "MUA NGAY" & "CHI TIẾT" */}
                 <div className="grid grid-cols-2 gap-3 pt-1">
                   <button
                     disabled={tool.status === 'Tạm ngưng'}
@@ -463,7 +461,7 @@ export default function ToolsPage() {
                         {couponMsg && <p className={`text-[11px] font-bold ${couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>{couponMsg.text}</p>}
                       </div>
 
-                      {/* CHỌN GÓI THỜI HẠN DẠNG GAMING CARDS */}
+                      {/* CHỌN GÓI THỜI HẠN */}
                       <div className="space-y-2.5">
                         <label className="block text-xs font-bold text-slate-300">Chọn gói thời hạn sử dụng:</label>
                         <div className="grid grid-cols-2 gap-3">
