@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag, Eye, Shield
+  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag, Eye, Shield, Check, Sparkle
 } from 'lucide-react';
 
 export default function ToolsPage() {
@@ -266,12 +266,10 @@ export default function ToolsPage() {
                   <div className="w-full aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
                     <img src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={tool.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
                     
-                    {/* Badge Mắt xem ở GÓC TRÁI TRÊN */}
                     <div className="absolute top-3 left-3 bg-[#080B10]/80 backdrop-blur-md border border-[#1A2332] px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-[10px] text-slate-300 font-bold">
                       <Eye className="w-3.5 h-3.5 text-cyan-400" /> {tool.views || 0}
                     </div>
 
-                    {/* Badge Trạng thái ở GÓC PHẢI TRÊN */}
                     <span className={`absolute top-3 right-3 text-[10px] font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md border ${tool.status === 'Tạm ngưng' ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'}`}>
                       {tool.status ? tool.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
                     </span>
@@ -369,7 +367,7 @@ export default function ToolsPage() {
             )}
           </AnimatePresence>
 
-          {/* MODAL MUA SẢN PHẨM (BỐ CỤC 2 CỘT: ẢNH SIÊU TO VUÔNG 1:1 - BỎ CHỮ ĐANG HOẠT ĐỘNG) */}
+          {/* MODAL MUA SẢN PHẨM CYBERPUNK HIGH-END */}
           <AnimatePresence>
             {selectedToolForBuy && (
               <motion.div 
@@ -384,11 +382,11 @@ export default function ToolsPage() {
                   initial={{ opacity: 0, scale: 0.92, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.92, y: 20 }}
-                  transition={{ type: "spring", duration: 0.3, bounce: 0.15 }}
+                  transition={{ type: "spring", duration: 0.35, bounce: 0.12 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-5xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[90vh] overflow-y-auto cursor-default"
+                  className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-5xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_60px_rgba(6,182,212,0.35)] max-h-[92vh] overflow-y-auto cursor-default"
                 >
-                  <button onClick={() => setSelectedToolForBuy(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400 z-10"><X className="w-5 h-5" /></button>
+                  <button onClick={() => setSelectedToolForBuy(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition-all hover:border-cyan-400 hover:scale-105 z-10"><X className="w-5 h-5" /></button>
                   
                   <div className="space-y-1.5 border-b border-slate-800/80 pb-4">
                     <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">XÁC NHẬN MUA BẢN QUYỀN</span>
@@ -398,10 +396,10 @@ export default function ToolsPage() {
                   {/* BỐ CỤC 2 CỘT NẰM NGANG CÂN ĐỐI */}
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
                     
-                    {/* CỘT TRÁI: ẢNH SẢN PHẨM SIÊU TO CHUẨN TỶ LỆ VUÔNG 1:1 (MD:COL-SPAN-6) */}
-                    <div className="md:col-span-6 flex flex-col items-center">
-                      <div className="w-full aspect-square rounded-2xl overflow-hidden border-2 border-cyan-500/50 shadow-[0_0_30px_rgba(6,182,212,0.3)] bg-[#05080E]">
-                        <img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover" />
+                    {/* CỘT TRÁI: ẢNH SẢN PHẨM SIÊU TO CHUẨN TỶ LỆ VUÔNG 1:1 + HOVER ZOOM */}
+                    <div className="md:col-span-6 flex flex-col items-center group">
+                      <div className="w-full aspect-square rounded-3xl overflow-hidden border-2 border-cyan-500/50 shadow-[0_0_30px_rgba(6,182,212,0.25)] bg-[#05080E] transition-all duration-500 group-hover:border-cyan-400 group-hover:shadow-[0_0_40px_rgba(6,182,212,0.45)]">
+                        <img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]" />
                       </div>
                     </div>
 
@@ -409,27 +407,27 @@ export default function ToolsPage() {
                     <div className="md:col-span-6 space-y-5 text-left">
                       
                       {/* KHUNG MÔ TẢ CHI TIẾT */}
-                      <div className="bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl space-y-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Mô tả tính năng:</span>
-                        <p className="text-xs text-slate-200 leading-relaxed max-h-36 overflow-y-auto pr-1 whitespace-pre-line">
+                      <div className="bg-[#05080E] border border-slate-800/90 p-4.5 rounded-2xl space-y-1.5 shadow-inner">
+                        <span className="text-[10px] font-extrabold text-cyan-400 uppercase tracking-wider block">Mô tả tính năng:</span>
+                        <p className="text-xs text-slate-200 leading-relaxed max-h-36 overflow-y-auto pr-1 whitespace-pre-line font-medium">
                           {selectedToolForBuy.description || 'Chưa có nội dung mô tả cho sản phẩm này.'}
                         </p>
                       </div>
 
-                      {/* Ô NHẬP MÃ GIẢM GIÁ */}
-                      <div className="space-y-2 bg-[#05080E] border border-slate-800/90 p-3.5 rounded-2xl">
+                      {/* Ô NHẬP MÃ GIẢM GIÁ HOVER GLOW */}
+                      <div className="space-y-2 bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl transition duration-300 focus-within:border-cyan-500/50">
                         <label className="block text-xs font-bold text-slate-300 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-cyan-400" /> Mã giảm giá (nếu có):</label>
                         <div className="flex gap-2">
-                          <input type="text" placeholder="Nhập mã giảm giá..." value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="flex-1 bg-[#0B1019] border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 uppercase font-mono transition" />
-                          <button onClick={handleApplyCoupon} className="bg-cyan-500/20 border border-cyan-500/40 hover:bg-cyan-500/30 text-cyan-300 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer shadow-sm">Áp dụng</button>
+                          <input type="text" placeholder="Nhập mã giảm giá..." value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="flex-1 bg-[#0B1019] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 uppercase font-mono transition" />
+                          <button onClick={handleApplyCoupon} className="bg-cyan-500/20 border border-cyan-500/40 hover:bg-cyan-400 hover:text-slate-950 hover:scale-[1.02] text-cyan-300 font-black px-4 py-2.5 rounded-xl text-xs transition-all duration-300 cursor-pointer shadow-sm">Áp dụng</button>
                         </div>
                         {couponMsg && <p className={`text-[11px] font-bold ${couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>{couponMsg.text}</p>}
                       </div>
 
-                      {/* CHỌN GÓI THỜI HẠN */}
-                      <div className="space-y-2">
+                      {/* CHỌN GÓI THỜI HẠN DẠNG GAMING CARDS */}
+                      <div className="space-y-2.5">
                         <label className="block text-xs font-bold text-slate-300">Chọn gói thời hạn sử dụng:</label>
-                        <div className="grid grid-cols-2 gap-2.5">
+                        <div className="grid grid-cols-2 gap-3">
                           {[ { key: 'day', name: 'Gói 1 Ngày', price: selectedToolForBuy.priceDay }, { key: 'week', name: 'Gói 7 Ngày', price: selectedToolForBuy.priceWeek }, { key: 'month', name: 'Gói 30 Ngày', price: selectedToolForBuy.priceMonth }, { key: 'lifetime', name: 'Gói Vĩnh Viễn', price: selectedToolForBuy.priceLifetime }, ].map((pkg) => {
                             const originalPrice = Number(String(pkg.price || '0').replace(/[^0-9]/g, '')) || 0;
                             const discountAmt = appliedCoupon ? Number(appliedCoupon.discount_amount) || 0 : 0;
@@ -440,13 +438,18 @@ export default function ToolsPage() {
                               <button 
                                 key={pkg.key} 
                                 onClick={() => setSelectedDuration(pkg.key as any)} 
-                                className={`p-3 rounded-2xl border text-left text-xs space-y-1 transition-all duration-200 cursor-pointer ${
+                                className={`p-3.5 rounded-2xl border text-left text-xs space-y-1 relative transition-all duration-300 cursor-pointer ${
                                   isSelected 
-                                    ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.25)] font-black' 
-                                    : 'bg-[#05080E] border-slate-800/90 hover:border-slate-700 text-slate-400'
+                                    ? 'bg-gradient-to-r from-cyan-500/25 to-blue-500/25 border-cyan-400 text-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.3)] font-black scale-[1.02]' 
+                                    : 'bg-[#05080E] border-slate-800/90 hover:border-cyan-500/50 hover:text-slate-200 hover:-translate-y-1'
                                 }`}
                               >
-                                <div className="font-bold text-slate-200">{pkg.name}</div>
+                                {isSelected && (
+                                  <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-cyan-400 flex items-center justify-center text-slate-950">
+                                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                  </div>
+                                )}
+                                <div className="font-extrabold text-slate-200">{pkg.name}</div>
                                 <div>
                                   {appliedCoupon && discountAmt > 0 && originalPrice > 0 ? (
                                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -480,7 +483,7 @@ export default function ToolsPage() {
                   <button 
                     disabled={loadingBuy} 
                     onClick={handleBuyTool} 
-                    className="w-full bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 font-black py-4 rounded-2xl text-xs shadow-[0_0_25px_rgba(6,182,212,0.35)] transition duration-300 hover:scale-[1.02] cursor-pointer flex items-center justify-center gap-2"
+                    className="w-full bg-gradient-to-r from-cyan-500 via-cyan-400 to-teal-300 hover:brightness-110 text-slate-950 font-black py-4 rounded-2xl text-xs shadow-[0_0_30px_rgba(6,182,212,0.4)] hover:shadow-[0_0_40px_rgba(6,182,212,0.6)] transition-all duration-300 hover:scale-[1.02] cursor-pointer flex items-center justify-center gap-2 border border-cyan-300/50"
                   >
                     {loadingBuy ? (
                       <><Loader2 className="w-4 h-4 animate-spin text-slate-950" /><span>ĐANG KHỞI TẠO TÀI KHOẢN...</span></>
