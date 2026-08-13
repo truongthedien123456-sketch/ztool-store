@@ -35,6 +35,8 @@ export default function AdminPage() {
 
   const [userSearch, setUserSearch] = useState('');
   const [newUserForm, setNewUserForm] = useState({ username: '', password: '', balance: 0 });
+  
+  // Modals Quản lý người dùng
   const [editUserPass, setEditUserPass] = useState<{ username: string; newPass: string } | null>(null);
   const [adjustBal, setAdjustBal] = useState<{ username: string; amount: number; isAdd: boolean } | null>(null);
   const [showPasswords, setShowPasswords] = useState<{ [key: string]: boolean }>({});
@@ -98,7 +100,6 @@ export default function AdminPage() {
     } catch (err) { console.error(err); } finally { setLoadingGist(false); }
   };
 
-  // HÀM RESET MÃ THIẾT BỊ (HWID / DEVICE_ID)
   const handleResetHwid = async (accountName: string) => {
     if (!confirm(`Xác nhận xóa Mã thiết bị (HWID) cho tài khoản "${accountName}"?`)) return;
     setResettingHwid(accountName);
@@ -181,10 +182,13 @@ export default function AdminPage() {
   const handleAdminLogout = () => { localStorage.removeItem('ztool_admin_authenticated'); setIsAuthenticated(false); };
   const handleToggleShowPass = (username: string) => { setShowPasswords(prev => ({ ...prev, [username]: !prev[username] })); };
 
+  // XEM LỊCH SỬ GIAO DỊCH CỦA TÀI KHOẢN
   const handleViewUserTransactions = async (username: string) => {
-    setLoadingUserHistory(true); setSelectedUserHistory({ username, logs: [] });
+    setLoadingUserHistory(true); 
+    setSelectedUserHistory({ username, logs: [] });
     const { data, error } = await supabase.from('transactions').select('*').eq('username', username).order('id', { ascending: false });
-    setLoadingUserHistory(false); if (!error && data) setSelectedUserHistory({ username, logs: data });
+    setLoadingUserHistory(false); 
+    if (!error && data) setSelectedUserHistory({ username, logs: data });
   };
 
   const handleFileChange = (e: React.FormEvent<HTMLInputElement>) => { 
@@ -217,16 +221,36 @@ export default function AdminPage() {
 
   const handleToggleBanUser = async (u: any) => { const { error } = await supabase.from('users').update({ isBanned: !u.isBanned }).eq('id', u.id); if (!error) loadAllSyncData(); };
   const handleDeleteUser = async (id: number, username: string) => { if (!confirm(`Xóa tài khoản ${username}?`)) return; const { error } = await supabase.from('users').delete().eq('id', id); if (!error) loadAllSyncData(); };
-  const handleSaveUserPassword = async (id: number) => { if (!editUserPass?.newPass) return; const { error } = await supabase.from('users').update({ password: editUserPass.newPass }).eq('id', id); if (!error) { setEditUserPass(null); alert('Đã cập nhật mật khẩu thành công!'); loadAllSyncData(); } };
   
-  const handleExecAdjustBalance = async (u: any, isAddMode: boolean) => {
-    if (!adjustBal || !adjustBal.amount) return alert('Vui lòng nhập số tiền hợp lệ!');
-    const cur = Number(u.balance) || 0; const changeAmt = Number(adjustBal.amount); const next = isAddMode ? cur + changeAmt : Math.max(0, cur - changeAmt);
-    const { error: updateError } = await supabase.from('users').update({ balance: next }).eq('id', u.id);
+  // ĐỔI MẬT KHẨU TÀI KHOẢN
+  const handleSaveUserPassword = async () => { 
+    if (!editUserPass || !editUserPass.newPass.trim()) return alert('Vui lòng nhập mật khẩu mới!'); 
+    const { error } = await supabase.from('users').update({ password: editUserPass.newPass.trim() }).eq('username', editUserPass.username); 
+    if (error) alert('Lỗi đổi mật khẩu: ' + error.message);
+    else { 
+      setEditUserPass(null); 
+      alert(`Đã cập nhật mật khẩu mới cho ${editUserPass.username} thành công!`); 
+      loadAllSyncData(); 
+    } 
+  };
+  
+  // CỘNG/TRỪ TIỀN VÍ
+  const handleExecAdjustBalance = async (isAddMode: boolean) => {
+    if (!adjustBal || !adjustBal.amount || adjustBal.amount <= 0) return alert('Vui lòng nhập số tiền hợp lệ!');
+    const targetUser = users.find(u => u.username === adjustBal.username);
+    if (!targetUser) return alert('Không tìm thấy người dùng!');
+
+    const cur = Number(targetUser.balance) || 0; 
+    const changeAmt = Number(adjustBal.amount); 
+    const next = isAddMode ? cur + changeAmt : Math.max(0, cur - changeAmt);
+
+    const { error: updateError } = await supabase.from('users').update({ balance: next }).eq('id', targetUser.id);
     if (updateError) alert('Lỗi cập nhật số dư: ' + updateError.message);
     else {
-      await supabase.from('transactions').insert([{ username: u.username, type: isAddMode ? 'ADMIN_ADD' : 'ADMIN_SUB', title: isAddMode ? 'Admin cộng tiền vào ví' : 'Admin trừ tiền khỏi ví', amount: isAddMode ? changeAmt : -changeAmt, status: 'Thành công' }]);
-      setAdjustBal(null); alert(`${isAddMode ? 'Cộng' : 'Trừ'} tiền thành công cho ${u.username}!`); loadAllSyncData();
+      await supabase.from('transactions').insert([{ username: targetUser.username, type: isAddMode ? 'ADMIN_ADD' : 'ADMIN_SUB', title: isAddMode ? 'Admin cộng tiền vào ví' : 'Admin trừ tiền khỏi ví', amount: isAddMode ? changeAmt : -changeAmt, status: 'Thành công' }]);
+      setAdjustBal(null); 
+      alert(`${isAddMode ? 'Cộng' : 'Trừ'} ${changeAmt.toLocaleString('vi-VN')}đ thành công cho tài khoản ${targetUser.username}!`); 
+      loadAllSyncData();
     }
   };
 
@@ -292,7 +316,6 @@ export default function AdminPage() {
     }
   };
 
-  // ĐĂNG NHẬP ADMIN FORM
   if (!isAuthenticated) {
     return (
       <main className="min-h-screen bg-[#05070D] text-white font-sans flex flex-col justify-center items-center px-4">
@@ -327,15 +350,13 @@ export default function AdminPage() {
     );
   }
 
-  // TÍNH TOÁN STATS TỔNG QUAN
-  const totalRevenue = sepayLogs.reduce((acc, s) => acc + (Number(s.amount) || 0), 0);
   const totalUserBalance = users.reduce((acc, u) => acc + (Number(u.balance) || 0), 0);
 
   return (
-    <main className="min-h-screen bg-[#05070D] text-slate-200 font-sans flex flex-col pb-20">
+    <main className="min-h-screen bg-[#05070D] text-slate-200 font-sans flex flex-col pb-20 relative">
       
       {/* HEADER DÀNH CHO ADMIN */}
-      <header className="bg-[#0B1019]/90 backdrop-blur-xl border-b border-slate-800/80 px-6 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-50 shadow-xl">
+      <header className="bg-[#0B1019]/90 backdrop-blur-xl border-b border-slate-800/80 px-6 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-40 shadow-xl">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.25)]"><Settings className="w-5 h-5 animate-spin" style={{ animationDuration: '12s' }} /></div>
           <div>
@@ -357,7 +378,7 @@ export default function AdminPage() {
 
       <div className="max-w-7xl w-full mx-auto px-4 py-8 space-y-8 flex-1">
         
-        {/* TOP OVERVIEW STATS CARDS */}
+        {/* OVERVIEW STATS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-[#0B1019] border border-slate-800/80 p-5 rounded-2xl flex items-center justify-between hover:border-cyan-500/40 transition">
             <div className="space-y-1">
@@ -392,7 +413,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* THANH MENU TABS HỆ THỐNG QUẢN TRỊ */}
+        {/* MENU TABS */}
         <div className="flex flex-wrap items-center gap-2 bg-[#0B1019] p-2.5 rounded-2xl border border-slate-800/80 shadow-lg">
           <button onClick={() => setActiveTab('users')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'users' ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}><Users className="w-4 h-4" /> QUẢN LÝ NGƯỜI DÙNG ({users.length})</button>
           <button onClick={() => setActiveTab('tools')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'tools' ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}><Wrench className="w-4 h-4" /> SẢN PHẨM TOOL ({tools.length})</button>
@@ -480,10 +501,10 @@ export default function AdminPage() {
                             )}
                           </td>
                           <td className="p-3.5 text-right space-x-2">
-                            <button onClick={() => handleViewUserTransactions(u.username)} className="bg-cyan-500/10 text-cyan-400 p-2 rounded-xl border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer transition" title="Xem lịch sử">
+                            <button onClick={() => handleViewUserTransactions(u.username)} className="bg-cyan-500/10 text-cyan-400 p-2 rounded-xl border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer transition" title="Xem lịch sử giao dịch">
                               <History className="w-3.5 h-3.5" />
                             </button>
-                            <button onClick={() => setAdjustBal({ username: u.username, amount: 0, isAdd: true })} className="bg-emerald-500/10 text-emerald-400 p-2 rounded-xl border border-emerald-500/20 hover:bg-emerald-500/20 cursor-pointer transition" title="Cộng/Trừ tiền"><DollarSign className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => setAdjustBal({ username: u.username, amount: 0, isAdd: true })} className="bg-emerald-500/10 text-emerald-400 p-2 rounded-xl border border-emerald-500/20 hover:bg-emerald-500/20 cursor-pointer transition" title="Cộng/Trừ tiền ví"><DollarSign className="w-3.5 h-3.5" /></button>
                             <button onClick={() => setEditUserPass({ username: u.username, newPass: '' })} className="bg-cyan-500/10 text-cyan-400 p-2 rounded-xl border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer transition" title="Đổi mật khẩu"><Key className="w-3.5 h-3.5" /></button>
                             <button onClick={() => handleToggleBanUser(u)} className={`p-2 rounded-xl border cursor-pointer transition ${u.isBanned ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
                               {u.isBanned ? <CheckCircle className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
@@ -500,7 +521,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 2: KHO ACC TOOL TRÊN GITHUB GIST (BỔ SUNG NÚT RESET HWID XÓA THIẾT BỊ) */}
+        {/* TAB 2: KHO ACC TOOL TRÊN GITHUB GIST */}
         {activeTab === 'gist_accounts' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-2xl p-6 space-y-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
@@ -802,6 +823,112 @@ export default function AdminPage() {
         )}
 
       </div>
+
+      {/* ==================== POPUP 1: LỊCH SỬ GIAO DỊCH NỔI ==================== */}
+      {selectedUserHistory && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0B1019] border-2 border-cyan-500/50 w-full max-w-2xl rounded-3xl p-6 space-y-4 relative shadow-[0_0_50px_rgba(6,182,212,0.25)] max-h-[85vh] flex flex-col">
+            <button onClick={() => setSelectedUserHistory(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 transition"><X className="w-5 h-5" /></button>
+
+            <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400"><History className="w-5 h-5" /></div>
+              <div>
+                <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest">LỊCH SỬ TÀI KHOẢN</span>
+                <h2 className="text-base font-black text-white">{selectedUserHistory.username}</h2>
+              </div>
+            </div>
+
+            <div className="overflow-y-auto flex-1 pr-1">
+              {loadingUserHistory ? (
+                <div className="flex items-center justify-center gap-2 py-10 text-xs text-slate-400"><Loader2 className="w-5 h-5 animate-spin text-cyan-400" /> Đang tải lịch sử...</div>
+              ) : selectedUserHistory.logs.length === 0 ? (
+                <div className="text-center py-10 text-xs text-slate-500">Tài khoản này chưa có lịch sử giao dịch nào.</div>
+              ) : (
+                <div className="space-y-2.5">
+                  {selectedUserHistory.logs.map((log, idx) => (
+                    <div key={idx} className="bg-[#05080E] border border-slate-800/80 p-3.5 rounded-2xl flex items-center justify-between text-xs">
+                      <div className="space-y-0.5">
+                        <span className="font-bold text-white block">{log.title || 'Biến động số dư'}</span>
+                        <span className="text-[10px] text-slate-500 font-mono">{log.created_at ? new Date(log.created_at).toLocaleString('vi-VN') : ''}</span>
+                      </div>
+                      <span className={`font-mono font-black text-sm ${log.amount > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {log.amount > 0 ? `+${log.amount.toLocaleString('vi-VN')}đ` : `${log.amount.toLocaleString('vi-VN')}đ`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== POPUP 2: ĐỔI MẬT KHẨU NỔI ==================== */}
+      {editUserPass && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0B1019] border-2 border-cyan-500/50 w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-[0_0_50px_rgba(6,182,212,0.25)]">
+            <button onClick={() => setEditUserPass(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 transition"><X className="w-5 h-5" /></button>
+
+            <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400"><Key className="w-5 h-5" /></div>
+              <div>
+                <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest">ĐỔI MẬT KHẨU</span>
+                <h2 className="text-base font-black text-white">{editUserPass.username}</h2>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-xs font-bold text-slate-300">Mật khẩu mới:</label>
+              <input 
+                type="text" 
+                placeholder="Nhập mật khẩu mới..." 
+                value={editUserPass.newPass} 
+                onChange={e => setEditUserPass({ ...editUserPass, newPass: e.target.value })} 
+                className="w-full bg-[#05080E] border border-slate-800 focus:border-cyan-400 rounded-xl p-3 text-xs text-white focus:outline-none transition font-mono" 
+              />
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button onClick={handleSaveUserPassword} className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black py-3 rounded-xl text-xs transition cursor-pointer shadow-md">LƯU MẬT KHẨU MỚI</button>
+              <button onClick={() => setEditUserPass(null)} className="px-4 bg-[#05080E] border border-slate-800 hover:border-slate-700 text-slate-400 font-bold py-3 rounded-xl text-xs transition cursor-pointer">Hủy</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== POPUP 3: CỘT/TRỪ TIỀN VÍ NỔI ==================== */}
+      {adjustBal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0B1019] border-2 border-emerald-500/50 w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-[0_0_50px_rgba(16,185,129,0.25)]">
+            <button onClick={() => setAdjustBal(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 transition"><X className="w-5 h-5" /></button>
+
+            <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400"><DollarSign className="w-5 h-5" /></div>
+              <div>
+                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">ĐIỀU CHỈNH SỐ DƯ VÍ</span>
+                <h2 className="text-base font-black text-white">{adjustBal.username}</h2>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-xs font-bold text-slate-300">Số tiền biến động (VNĐ):</label>
+              <input 
+                type="number" 
+                placeholder="Nhập số tiền (VD: 50000)..." 
+                value={adjustBal.amount || ''} 
+                onChange={e => setAdjustBal({ ...adjustBal, amount: Number(e.target.value) })} 
+                className="w-full bg-[#05080E] border border-slate-800 focus:border-emerald-400 rounded-xl p-3 text-xs text-white focus:outline-none transition font-mono" 
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button onClick={() => handleExecAdjustBalance(true)} className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl text-xs transition cursor-pointer shadow-md">+ CỘNG VÀO VÍ</button>
+              <button onClick={() => handleExecAdjustBalance(false)} className="bg-rose-500 hover:bg-rose-400 text-white font-black py-3 rounded-xl text-xs transition cursor-pointer shadow-md">- TRỪ KHỎI VÍ</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </main>
   );
 }
