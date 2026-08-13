@@ -266,10 +266,12 @@ export default function ToolsPage() {
                   <div className="w-full aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
                     <img src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={tool.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
                     
+                    {/* Badge Mắt xem ở GÓC TRÁI TRÊN */}
                     <div className="absolute top-3 left-3 bg-[#080B10]/80 backdrop-blur-md border border-[#1A2332] px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-[10px] text-slate-300 font-bold">
                       <Eye className="w-3.5 h-3.5 text-cyan-400" /> {tool.views || 0}
                     </div>
 
+                    {/* Badge Trạng thái ở GÓC PHẢI TRÊN */}
                     <span className={`absolute top-3 right-3 text-[10px] font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md border ${tool.status === 'Tạm ngưng' ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'}`}>
                       {tool.status ? tool.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
                     </span>
@@ -367,7 +369,7 @@ export default function ToolsPage() {
             )}
           </AnimatePresence>
 
-          {/* MODAL MUA SẢN PHẨM (BỐ CỤC 2 CỘT: ẢNH SIÊU TO NÉT BÊN TRÁI - BỎ CHỮ ĐANG HOẠT ĐỘNG) */}
+          {/* MODAL MUA SẢN PHẨM (BỐ CỤC 2 CỘT: ẢNH SIÊU TO VUÔNG 1:1 - BỎ CHỮ ĐANG HOẠT ĐỘNG) */}
           <AnimatePresence>
             {selectedToolForBuy && (
               <motion.div 
@@ -384,7 +386,7 @@ export default function ToolsPage() {
                   exit={{ opacity: 0, scale: 0.92, y: 20 }}
                   transition={{ type: "spring", duration: 0.3, bounce: 0.15 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-4xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[90vh] overflow-y-auto cursor-default"
+                  className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-5xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[90vh] overflow-y-auto cursor-default"
                 >
                   <button onClick={() => setSelectedToolForBuy(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400 z-10"><X className="w-5 h-5" /></button>
                   
@@ -393,23 +395,23 @@ export default function ToolsPage() {
                     <h2 className="text-2xl font-black text-white tracking-wide">{selectedToolForBuy.name}</h2>
                   </div>
 
-                  {/* BỐ CỤC 2 CỘT NẰM NGANG */}
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                  {/* BỐ CỤC 2 CỘT NẰM NGANG CÂN ĐỐI */}
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
                     
-                    {/* CỘT TRÁI: ẢNH SẢN PHẨM SIÊU TO RÕ NÉT (ĐÃ BỎ CHỮ ĐANG HOẠT ĐỘNG) */}
-                    <div className="md:col-span-5 flex flex-col items-center">
-                      <div className="w-full aspect-square rounded-2xl overflow-hidden border-2 border-cyan-500/40 shadow-[0_0_25px_rgba(6,182,212,0.25)] bg-[#05080E]">
+                    {/* CỘT TRÁI: ẢNH SẢN PHẨM SIÊU TO CHUẨN TỶ LỆ VUÔNG 1:1 (MD:COL-SPAN-6) */}
+                    <div className="md:col-span-6 flex flex-col items-center">
+                      <div className="w-full aspect-square rounded-2xl overflow-hidden border-2 border-cyan-500/50 shadow-[0_0_30px_rgba(6,182,212,0.3)] bg-[#05080E]">
                         <img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover" />
                       </div>
                     </div>
 
                     {/* CỘT PHẢI: MÔ TẢ + MÃ GIẢM GIÁ + GÓI THỜI HẠN */}
-                    <div className="md:col-span-7 space-y-5 text-left">
+                    <div className="md:col-span-6 space-y-5 text-left">
                       
                       {/* KHUNG MÔ TẢ CHI TIẾT */}
                       <div className="bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl space-y-1">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Mô tả tính năng:</span>
-                        <p className="text-xs text-slate-200 leading-relaxed max-h-32 overflow-y-auto pr-1 whitespace-pre-line">
+                        <p className="text-xs text-slate-200 leading-relaxed max-h-36 overflow-y-auto pr-1 whitespace-pre-line">
                           {selectedToolForBuy.description || 'Chưa có nội dung mô tả cho sản phẩm này.'}
                         </p>
                       </div>
