@@ -23,8 +23,8 @@ const geistMono = Geist_Mono({
 
 // ================= BỘ METADATA SEO & XÁC MINH GOOGLE =================
 export const metadata: Metadata = {
-  title: "ZTOOL.STORE - Chuyên Cung Cấp Tool Auto Farm FiveM High-Quality 24/7",
-  description: "Hệ thống tự động hóa trải nghiệm game FiveM hàng đầu Việt Nam. Cung cấp Tool Auto Câu Cá, Auto Đào Đá, Auto Công Trường chuẩn xác, bypass hiện đại, kích hoạt key tự động 24/7.",
+  title: "ZTool - Chuyên cung cấp Tool Auto Farm GTA/Fivem",
+  description: "Hệ thống auto farm Fivem/Launcher hàng đầu Việt Nam. Cung Cấp Tool Auto Câu Cá, Auto Đào Đá, ... Uy Tín, Bảo Mật, An Toàn, Key tự động 24/7",
   keywords: [
     "Tool Auto Farm FiveM", 
     "Tool FiveM", 
@@ -40,10 +40,10 @@ export const metadata: Metadata = {
     google: "googlef85e0221c678e202", // Mã xác minh Google Search Console
   },
   openGraph: {
-    title: "ZTOOL.STORE - Chuyên Cung Cấp Tool Auto Farm FiveM",
-    description: "Tự động hóa trải nghiệm game FiveM chuẩn xác, an toàn, kích hoạt 24/7.",
+    title: "ZTool - Chuyên cung cấp Tool Auto Farm GTA/Fivem",
+    description: "Hệ thống auto farm Fivem/Launcher hàng đầu Việt Nam. Cung Cấp Tool Auto Câu Cá, Auto Đào Đá, ... Uy Tín, Bảo Mật, An Toàn, Key tự động 24/7",
     url: "https://ztool-store.vercel.app",
-    siteName: "ZTOOL.STORE",
+    siteName: "ZTOOL",
     images: [
       {
         url: "https://ztool-store.vercel.app/logo.jpg",
