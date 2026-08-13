@@ -536,7 +536,7 @@ export default function HomePage() {
             )}
           </AnimatePresence>
 
-          {/* MODAL MUA SẢN PHẨM (ĐÃ NÂNG CẤP GIAO DIỆN PRO - ẨN MÃ TOOL, ẢNH TO RÕ) */}
+          {/* MODAL MUA SẢN PHẨM (BỐ CỤC 2 CỘT NẰM NGANG: ẢNH TRÁI TO - THÔNG TIN PHẢI) */}
           <AnimatePresence>
             {selectedToolForBuy && (
               <motion.div 
@@ -553,38 +553,91 @@ export default function HomePage() {
                   exit={{ opacity: 0, scale: 0.92, y: 20 }}
                   transition={{ type: "spring", duration: 0.3, bounce: 0.15 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-lg rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[90vh] overflow-y-auto cursor-default"
+                  className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-4xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[90vh] overflow-y-auto cursor-default"
                 >
-                  <button onClick={() => setSelectedToolForBuy(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
+                  <button onClick={() => setSelectedToolForBuy(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400 z-10"><X className="w-5 h-5" /></button>
                   
                   <div className="space-y-1.5 border-b border-slate-800/80 pb-4">
                     <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">XÁC NHẬN MUA BẢN QUYỀN</span>
-                    <h2 className="text-xl font-black text-white tracking-wide">{selectedToolForBuy.name}</h2>
+                    <h2 className="text-2xl font-black text-white tracking-wide">{selectedToolForBuy.name}</h2>
                   </div>
 
-                  {/* KHUNG THÔNG TIN SẢN PHẨM: ẢNH RÕ NÉT - ẨN MÃ TOOL */}
-                  <div className="bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl flex flex-col sm:flex-row gap-4 items-center">
-                    <div className="w-24 h-20 sm:w-28 sm:h-28 rounded-xl overflow-hidden shrink-0 border-2 border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.15)] bg-[#0B1019]">
-                      <img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover" />
-                    </div>
-                    <div className="space-y-1.5 flex-1 min-w-0 text-left">
-                      <span className="text-[10px] font-extrabold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded-md inline-block uppercase tracking-wider">
+                  {/* BỐ CỤC 2 CỘT (GRID 12 CỘT) */}
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                    
+                    {/* CỘT TRÁI: ẢNH SẢN PHẨM TO RÕ NÉT */}
+                    <div className="md:col-span-5 flex flex-col items-center space-y-3">
+                      <div className="w-full aspect-square rounded-2xl overflow-hidden border-2 border-cyan-500/40 shadow-[0_0_25px_rgba(6,182,212,0.25)] bg-[#05080E]">
+                        <img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover" />
+                      </div>
+                      <span className="text-[11px] font-extrabold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-lg uppercase tracking-wider block text-center w-full">
                         {selectedToolForBuy.status || 'ĐANG HOẠT ĐỘNG'}
                       </span>
-                      <p className="text-xs text-slate-300 leading-relaxed max-h-24 overflow-y-auto pr-1 whitespace-pre-line">
-                        {selectedToolForBuy.description || 'Chưa có mô tả cho sản phẩm này.'}
-                      </p>
                     </div>
-                  </div>
 
-                  {/* Ô NHẬP MÃ GIẢM GIÁ */}
-                  <div className="space-y-2 bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl">
-                    <label className="block text-xs font-bold text-slate-300 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-cyan-400" /> Mã giảm giá (nếu có):</label>
-                    <div className="flex gap-2">
-                      <input type="text" placeholder="Nhập mã giảm giá..." value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="flex-1 bg-[#0B1019] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 uppercase font-mono transition" />
-                      <button onClick={handleApplyCoupon} className="bg-cyan-500/20 border border-cyan-500/40 hover:bg-cyan-500/30 text-cyan-300 font-bold px-4 py-2.5 rounded-xl text-xs transition cursor-pointer shadow-sm">Áp dụng</button>
+                    {/* CỘT PHẢI: MÔ TẢ + MÃ GIẢM GIÁ + GÓI THỜI HẠN */}
+                    <div className="md:col-span-7 space-y-5 text-left">
+                      
+                      {/* KHUNG MÔ TẢ CHI TIẾT */}
+                      <div className="bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl space-y-1">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Mô tả tính năng:</span>
+                        <p className="text-xs text-slate-200 leading-relaxed max-h-28 overflow-y-auto pr-1 whitespace-pre-line">
+                          {selectedToolForBuy.description || 'Chưa có nội dung mô tả cho sản phẩm này.'}
+                        </p>
+                      </div>
+
+                      {/* Ô NHẬP MÃ GIẢM GIÁ */}
+                      <div className="space-y-2 bg-[#05080E] border border-slate-800/90 p-3.5 rounded-2xl">
+                        <label className="block text-xs font-bold text-slate-300 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-cyan-400" /> Mã giảm giá (nếu có):</label>
+                        <div className="flex gap-2">
+                          <input type="text" placeholder="Nhập mã giảm giá..." value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="flex-1 bg-[#0B1019] border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 uppercase font-mono transition" />
+                          <button onClick={handleApplyCoupon} className="bg-cyan-500/20 border border-cyan-500/40 hover:bg-cyan-500/30 text-cyan-300 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer shadow-sm">Áp dụng</button>
+                        </div>
+                        {couponMsg && <p className={`text-[11px] font-bold ${couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>{couponMsg.text}</p>}
+                      </div>
+
+                      {/* CHỌN GÓI THỜI HẠN */}
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold text-slate-300">Chọn gói thời hạn sử dụng:</label>
+                        <div className="grid grid-cols-2 gap-2.5">
+                          {[ { key: 'day', name: 'Gói 1 Ngày', price: selectedToolForBuy.priceDay }, { key: 'week', name: 'Gói 7 Ngày', price: selectedToolForBuy.priceWeek }, { key: 'month', name: 'Gói 30 Ngày', price: selectedToolForBuy.priceMonth }, { key: 'lifetime', name: 'Gói Vĩnh Viễn', price: selectedToolForBuy.priceLifetime }, ].map((pkg) => {
+                            const originalPrice = Number(String(pkg.price || '0').replace(/[^0-9]/g, '')) || 0;
+                            const discountAmt = appliedCoupon ? Number(appliedCoupon.discount_amount) || 0 : 0;
+                            const finalPkgPrice = Math.max(0, originalPrice - discountAmt);
+                            const isSelected = selectedDuration === pkg.key;
+
+                            return (
+                              <button 
+                                key={pkg.key} 
+                                onClick={() => setSelectedDuration(pkg.key as any)} 
+                                className={`p-3 rounded-2xl border text-left text-xs space-y-1 transition-all duration-200 cursor-pointer ${
+                                  isSelected 
+                                    ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.25)] font-black' 
+                                    : 'bg-[#05080E] border-slate-800/90 hover:border-slate-700 text-slate-400'
+                                }`}
+                              >
+                                <div className="font-bold text-slate-200">{pkg.name}</div>
+                                <div>
+                                  {appliedCoupon && discountAmt > 0 && originalPrice > 0 ? (
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="line-through text-slate-500 text-[10px]">{formatPrice(originalPrice)}đ</span>
+                                      <span className="text-emerald-400 font-extrabold font-mono">
+                                        {finalPkgPrice === 0 ? '0 VNĐ' : `${formatPrice(finalPkgPrice)} VNĐ`}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-emerald-400 font-extrabold font-mono">
+                                      {originalPrice === 0 ? '0 VNĐ' : `${formatPrice(originalPrice)} VNĐ`}
+                                    </span>
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
                     </div>
-                    {couponMsg && <p className={`text-[11px] font-bold ${couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>{couponMsg.text}</p>}
                   </div>
 
                   {purchaseMsg && (
@@ -593,47 +646,6 @@ export default function HomePage() {
                       <span className="leading-relaxed">{purchaseMsg.text}</span>
                     </div>
                   )}
-
-                  {/* CHỌN GÓI THỜI HẠN */}
-                  <div className="space-y-2.5">
-                    <label className="block text-xs font-bold text-slate-300">Chọn gói thời hạn sử dụng:</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[ { key: 'day', name: 'Gói 1 Ngày', price: selectedToolForBuy.priceDay }, { key: 'week', name: 'Gói 7 Ngày', price: selectedToolForBuy.priceWeek }, { key: 'month', name: 'Gói 30 Ngày', price: selectedToolForBuy.priceMonth }, { key: 'lifetime', name: 'Gói Vĩnh Viễn', price: selectedToolForBuy.priceLifetime }, ].map((pkg) => {
-                        const originalPrice = Number(String(pkg.price || '0').replace(/[^0-9]/g, '')) || 0;
-                        const discountAmt = appliedCoupon ? Number(appliedCoupon.discount_amount) || 0 : 0;
-                        const finalPkgPrice = Math.max(0, originalPrice - discountAmt);
-                        const isSelected = selectedDuration === pkg.key;
-
-                        return (
-                          <button 
-                            key={pkg.key} 
-                            onClick={() => setSelectedDuration(pkg.key as any)} 
-                            className={`p-3.5 rounded-2xl border text-left text-xs space-y-1 transition-all duration-200 cursor-pointer ${
-                              isSelected 
-                                ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.25)] font-black' 
-                                : 'bg-[#05080E] border-slate-800/90 hover:border-slate-700 text-slate-400'
-                            }`}
-                          >
-                            <div className="font-bold text-slate-200">{pkg.name}</div>
-                            <div>
-                              {appliedCoupon && discountAmt > 0 && originalPrice > 0 ? (
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="line-through text-slate-500 text-[10px]">{formatPrice(originalPrice)}đ</span>
-                                  <span className="text-emerald-400 font-extrabold font-mono">
-                                    {finalPkgPrice === 0 ? '0 VNĐ' : `${formatPrice(finalPkgPrice)} VNĐ`}
-                                  </span>
-                                </div>
-                              ) : (
-                                <span className="text-emerald-400 font-extrabold font-mono">
-                                  {originalPrice === 0 ? '0 VNĐ' : `${formatPrice(originalPrice)} VNĐ`}
-                                </span>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
 
                   <button 
                     disabled={loadingBuy} 
