@@ -248,8 +248,8 @@ export default function ToolsPage() {
           className="max-w-7xl mx-auto px-4 py-8 space-y-8"
         >
           {/* HEADER TRANG */}
-          <div className="text-center space-y-3 border-b border-slate-800/80 pb-8 bg-[#0B1019]/40 backdrop-blur-md p-6 rounded-3xl border border-cyan-500/20 shadow-[0_0_30px_rgba(6,182,212,0.1)]">
-            <div className="inline-flex items-center gap-2 bg-[#05080E]/80 border border-cyan-400/50 px-4 py-1.5 rounded-full text-xs font-bold text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+          <div className="text-center space-y-3 border-b border-slate-800/80 pb-8 bg-[#0B1019]/90 backdrop-blur-md p-6 rounded-3xl border border-cyan-500/20 shadow-[0_0_30px_rgba(6,182,212,0.1)]">
+            <div className="inline-flex items-center gap-2 bg-[#05080E]/90 border border-cyan-400/50 px-4 py-1.5 rounded-full text-xs font-bold text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
               <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" /> BẢNG HÃNG TOOL AUTO HIGH-QUALITY
             </div>
             <h1 className="text-3xl sm:text-4xl font-black text-white tracking-wide">
@@ -260,26 +260,26 @@ export default function ToolsPage() {
             </p>
           </div>
 
-          {/* GRID DANH SÁCH TOOL AUTO - KHUNG BỔ SUNG ĐỘ ĐỤC VÀ ÁNH NỀN NEON */}
+          {/* GRID DANH SÁCH TOOL AUTO - BỐ CỤC 90% ĐỘ ĐỤC TỐI ƯU RENDER SLIDE MƯỢT */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tools.map((tool) => (
               <div 
                 key={tool.id} 
                 onClick={() => handleOpenDetail(tool)}
-                className="group bg-[#0B1019]/85 backdrop-blur-xl border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-[0_4px_25px_rgba(6,182,212,0.15)] hover:shadow-[0_0_35px_rgba(6,182,212,0.4)] hover:-translate-y-1.5 transition-all duration-500 cursor-pointer relative"
+                className="group bg-[#0B1019]/90 backdrop-blur-sm border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-[0_4px_25px_rgba(6,182,212,0.12)] hover:shadow-[0_0_35px_rgba(6,182,212,0.35)] hover:-translate-y-1.5 transition-all duration-300 cursor-pointer relative"
               >
                 <div className="space-y-4">
                   {/* Khung Ảnh Banner Tool */}
                   <div className="w-full aspect-square bg-[#05080E] border border-slate-800 rounded-2xl overflow-hidden relative shadow-inner">
-                    <img src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={tool.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-700 ease-out" />
+                    <img src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={tool.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-500 ease-out" />
                     
                     {/* Badge Lượt xem */}
-                    <div className="absolute top-3 left-3 bg-[#05080E]/80 backdrop-blur-md border border-slate-700/60 px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[10px] text-slate-200 font-extrabold shadow-md">
+                    <div className="absolute top-3 left-3 bg-[#05080E]/90 backdrop-blur-sm border border-slate-700/60 px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[10px] text-slate-200 font-extrabold shadow-md">
                       <Eye className="w-3.5 h-3.5 text-cyan-400" /> {tool.views || 0}
                     </div>
 
                     {/* Badge Trạng thái */}
-                    <span className={`absolute top-3 right-3 text-[10px] font-black px-2.5 py-1 rounded-xl backdrop-blur-md border shadow-md ${tool.status === 'Tạm ngưng' ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'}`}>
+                    <span className={`absolute top-3 right-3 text-[10px] font-black px-2.5 py-1 rounded-xl backdrop-blur-sm border shadow-md ${tool.status === 'Tạm ngưng' ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'}`}>
                       {tool.status ? tool.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
                     </span>
                   </div>
@@ -290,7 +290,7 @@ export default function ToolsPage() {
                   </div>
 
                   {/* KHUNG GIÁ CẢ DẠNG CHIP CARDS PRO 2 CỘT */}
-                  <div className="grid grid-cols-2 gap-2 bg-[#05080E]/90 border border-slate-800/90 p-3 rounded-2xl text-xs backdrop-blur-sm">
+                  <div className="grid grid-cols-2 gap-2 bg-[#05080E]/90 border border-slate-800/90 p-3 rounded-2xl text-xs">
                     {/* Gói Ngày */}
                     <div className="bg-[#0B1019] border border-slate-800/80 p-2 rounded-xl flex flex-col justify-center space-y-0.5">
                       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Theo Ngày</span>

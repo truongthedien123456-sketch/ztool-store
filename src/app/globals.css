@@ -12,6 +12,18 @@ body {
   background-color: var(--color-darkBg);
   color: #ffffff;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  scroll-behavior: smooth;
+  text-rendering: optimizeSpeed;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* TỐI ƯU HIỆU NĂNG RENDER CHO CÁC KHUNG KÍNH MỜ & CARD */
+.backdrop-blur-sm,
+.backdrop-blur-md,
+.backdrop-blur-lg,
+.backdrop-blur-xl {
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 /* Tùy chỉnh thanh cuộn phong cách Gaming Cyan phù hợp với toàn trang */

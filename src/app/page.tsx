@@ -258,7 +258,7 @@ export default function HomePage() {
 
           {/* KHUNG THÔNG BÁO ADMIN */}
           {systemNotice?.active && systemNotice?.text && (
-            <div className="bg-[#0E1522]/85 backdrop-blur-xl border border-amber-500/50 rounded-2xl p-4 flex items-center gap-4 shadow-[0_4px_30px_rgba(245,158,11,0.15)] relative overflow-hidden group">
+            <div className="bg-[#0E1522]/85 backdrop-blur-sm border border-amber-500/50 rounded-2xl p-4 flex items-center gap-4 shadow-[0_4px_30px_rgba(245,158,11,0.15)] relative overflow-hidden group">
               <div className="absolute -left-10 top-0 bottom-0 w-24 bg-amber-500/10 blur-xl group-hover:bg-amber-500/20 transition duration-500"></div>
               <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0 shadow-inner">
                 <Bell className="w-5 h-5 text-amber-400 animate-[bounce_2s_infinite]" />
@@ -277,7 +277,7 @@ export default function HomePage() {
           )}
 
           {/* HERO BANNER CAO CẤP - NỔI BẬT ÁNH NỀN NEON */}
-          <div className="relative rounded-3xl bg-[#0B1019]/85 border-2 border-cyan-500/40 p-8 sm:p-12 overflow-hidden shadow-[0_10px_50px_rgba(6,182,212,0.2)] backdrop-blur-xl">
+          <div className="relative rounded-3xl bg-[#0B1019]/90 border-2 border-cyan-500/40 p-8 sm:p-12 overflow-hidden shadow-[0_10px_50px_rgba(6,182,212,0.2)] backdrop-blur-sm">
             <div className="absolute top-0 -left-20 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none"></div>
             <div className="absolute -bottom-20 right-0 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
             
@@ -382,7 +382,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* SECTION DANH SÁCH TOOL - CÁC CARD TOOL CÓ ÁNH NỀN VÀ VIỀN TÁCH BIỆT */}
+          {/* SECTION DANH SÁCH TOOL */}
           <div className="space-y-6 pt-4">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
               <div>
@@ -401,7 +401,7 @@ export default function HomePage() {
                 <div 
                   key={tool.id} 
                   onClick={() => handleOpenDetail(tool)}
-                  className="bg-[#0B1019]/85 backdrop-blur-xl border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-[0_4px_25px_rgba(6,182,212,0.15)] hover:shadow-[0_0_35px_rgba(6,182,212,0.4)] hover:-translate-y-1.5 transition-all duration-500 cursor-pointer group relative"
+                  className="bg-[#0B1019]/90 backdrop-blur-sm border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-[0_4px_25px_rgba(6,182,212,0.12)] hover:shadow-[0_0_35px_rgba(6,182,212,0.35)] hover:-translate-y-1.5 transition-all duration-300 cursor-pointer group relative"
                 >
                   <div className="space-y-3">
                     <div className="w-full aspect-square bg-[#05080E] border border-slate-800/80 rounded-2xl overflow-hidden relative">
@@ -472,7 +472,7 @@ export default function HomePage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {projects.slice(0, 3).map((p) => (
-                  <div key={p.id} className="bg-[#0B1019]/85 backdrop-blur-xl border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-5 space-y-3 shadow-[0_4px_25px_rgba(6,182,212,0.1)] hover:shadow-[0_0_35px_rgba(6,182,212,0.3)] transition-all duration-500">
+                  <div key={p.id} className="bg-[#0B1019]/90 backdrop-blur-sm border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-5 space-y-3 shadow-[0_4px_25px_rgba(6,182,212,0.1)] hover:shadow-[0_0_35px_rgba(6,182,212,0.3)] transition-all duration-300">
                     {p.image && (
                       <div className="w-full aspect-square bg-[#05080E] border border-slate-800/80 rounded-2xl overflow-hidden">
                         <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
@@ -597,7 +597,7 @@ export default function HomePage() {
                         {couponMsg && <p className={`text-[11px] font-bold ${couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>{couponMsg.text}</p>}
                       </div>
 
-                      {/* CHỌN GÓI THỜI HẠN DẠNG GAMING CARDS */}
+                      {/* CHỌN GÓI THỜI HẠN */}
                       <div className="space-y-2.5">
                         <label className="block text-xs font-bold text-slate-300">Chọn gói thời hạn sử dụng:</label>
                         <div className="grid grid-cols-2 gap-3">
