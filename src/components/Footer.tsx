@@ -5,9 +5,9 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="relative mt-24 overflow-hidden border-t border-cyan-400/10 bg-[#05080d]">
-      {/* Glow nền */}
-      <div className="pointer-events-none absolute left-1/2 top-0 h-[300px] w-[600px] -translate-x-1/2 rounded-full bg-cyan-500/[0.04] blur-[120px]" />
+    <footer className="relative mt-20 overflow-hidden border-t border-cyan-500/20 bg-[#080D15]/40 backdrop-blur-xl shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
+      {/* Glow nền phía trên Footer */}
+      <div className="pointer-events-none absolute left-1/2 top-0 h-[250px] w-[800px] -translate-x-1/2 rounded-full bg-cyan-500/[0.08] blur-[150px]" />
 
       <div className="relative mx-auto max-w-6xl px-6">
 
@@ -15,38 +15,38 @@ export default function Footer() {
         <div className="grid grid-cols-1 gap-12 py-16 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] lg:gap-16">
 
           {/* ================= BRAND ================= */}
-          <div className="max-w-md">
+          <div className="max-w-md space-y-4">
 
             {/* Logo ZTOOL */}
-            <Link href="/" className="group inline-flex items-center gap-3">
+            <Link href="/" className="group inline-flex items-center gap-3.5">
 
               <div
                 className="
                   relative flex h-12 w-12 items-center justify-center
-                  overflow-hidden rounded-xl
-                  border border-cyan-400/50
-                  bg-[#07101a]
-                  shadow-[0_0_20px_rgba(34,211,238,0.10)]
+                  overflow-hidden rounded-2xl
+                  border-2 border-cyan-400/80
+                  bg-[#05080E] p-1
+                  shadow-[0_0_20px_rgba(6,182,212,0.3)]
                   transition-all duration-300
-                  group-hover:border-cyan-300
-                  group-hover:shadow-[0_0_25px_rgba(34,211,238,0.22)]
+                  group-hover:scale-105 group-hover:border-cyan-300
+                  group-hover:shadow-[0_0_30px_rgba(6,182,212,0.6)]
                 "
               >
                 <Image
-                  src="/icon.jpg"
+                  src="/logo.jpg"
                   alt="ZTOOL"
                   fill
                   sizes="48px"
-                  className="object-cover"
+                  className="rounded-xl object-cover"
                 />
               </div>
 
               <div>
-                <div className="text-xl font-extrabold tracking-wide text-white">
-                  ZTOOL
+                <div className="text-xl font-black tracking-wider text-white transition duration-300 group-hover:text-cyan-300 drop-shadow-[0_0_10px_rgba(6,182,212,0.6)]">
+                  ZTOOL<span className="text-cyan-400">.STORE</span>
                 </div>
 
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-cyan-400">
+                <div className="text-[10px] font-extrabold uppercase tracking-widest text-cyan-400">
                   Chuyên Cung Cấp Tool FiveM
                 </div>
               </div>
@@ -55,20 +55,20 @@ export default function Footer() {
 
 
             {/* Mô tả */}
-            <p className="mt-6 text-sm leading-7 text-slate-400">
+            <p className="mt-4 text-xs leading-relaxed font-medium text-slate-300">
               ZTOOL cung cấp các công cụ hỗ trợ FiveM, giúp tự động hóa
               những thao tác cần thiết và mang đến trải nghiệm thuận tiện,
               nhanh chóng cho người dùng.
             </p>
 
-            <p className="mt-3 text-xs leading-6 text-slate-600">
+            <p className="mt-2 text-[11px] leading-relaxed italic text-slate-500">
               Các sản phẩm của ZTOOL được phát triển độc lập và cung cấp nhằm
               hỗ trợ người dùng trong quá trình sử dụng.
             </p>
 
 
             {/* ================= SOCIAL ================= */}
-            <div className="mt-6 flex items-center gap-3">
+            <div className="mt-6 flex items-center gap-3 pt-1">
 
               {/* Discord */}
               <a
@@ -77,14 +77,15 @@ export default function Footer() {
                 className="
                   flex h-10 w-10 items-center justify-center
                   rounded-xl
-                  border border-white/[0.07]
-                  bg-white/[0.025]
+                  border border-slate-800/80
+                  bg-[#05080E]/80
                   text-slate-400
                   transition-all duration-300
-                  hover:-translate-y-0.5
-                  hover:border-cyan-400/40
-                  hover:bg-cyan-400/[0.06]
+                  hover:-translate-y-1
+                  hover:border-cyan-400/60
+                  hover:bg-cyan-500/10
                   hover:text-cyan-300
+                  hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]
                 "
               >
                 <svg
@@ -106,14 +107,15 @@ export default function Footer() {
                 className="
                   flex h-10 w-10 items-center justify-center
                   rounded-xl
-                  border border-white/[0.07]
-                  bg-white/[0.025]
+                  border border-slate-800/80
+                  bg-[#05080E]/80
                   text-slate-400
                   transition-all duration-300
-                  hover:-translate-y-0.5
-                  hover:border-cyan-400/40
-                  hover:bg-cyan-400/[0.06]
-                  hover:text-cyan-300
+                  hover:-translate-y-1
+                  hover:border-blue-500/60
+                  hover:bg-blue-500/10
+                  hover:text-blue-400
+                  hover:shadow-[0_0_15px_rgba(59,130,246,0.3)]
                 "
               >
                 <svg
@@ -133,14 +135,15 @@ export default function Footer() {
                 className="
                   flex h-10 w-10 items-center justify-center
                   rounded-xl
-                  border border-white/[0.07]
-                  bg-white/[0.025]
+                  border border-slate-800/80
+                  bg-[#05080E]/80
                   text-slate-400
                   transition-all duration-300
-                  hover:-translate-y-0.5
-                  hover:border-cyan-400/40
-                  hover:bg-cyan-400/[0.06]
+                  hover:-translate-y-1
+                  hover:border-cyan-400/60
+                  hover:bg-cyan-500/10
                   hover:text-cyan-300
+                  hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]
                 "
               >
                 <svg
@@ -158,25 +161,25 @@ export default function Footer() {
 
           {/* ================= SẢN PHẨM ================= */}
           <div>
-            <h3 className="mb-6 text-sm font-bold tracking-wide text-white">
-              SẢN PHẨM
+            <h3 className="mb-5 text-xs font-black tracking-widest text-white uppercase flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> SẢN PHẨM
             </h3>
 
-            <div className="space-y-4">
-              <FooterLink href="/tools" text="Tất cả Tool" />
-              <FooterLink href="/projects" text="Dự án" />
+            <div className="space-y-3.5">
+              <FooterLink href="/tools" text="Tất cả Tool Auto" />
+              <FooterLink href="/projects" text="Dự án nổi bật" />
             </div>
           </div>
 
 
           {/* ================= HỖ TRỢ ================= */}
           <div>
-            <h3 className="mb-6 text-sm font-bold tracking-wide text-white">
-              HỖ TRỢ
+            <h3 className="mb-5 text-xs font-black tracking-widest text-white uppercase flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> HỖ TRỢ HỆ THỐNG
             </h3>
 
-            <div className="space-y-4">
-              <FooterLink href="#" text="Hướng dẫn" />
+            <div className="space-y-3.5">
+              <FooterLink href="#" text="Hướng dẫn kích hoạt" />
               
               {/* Nút bấm Liên hệ kích hoạt Popup Zalo */}
               <button
@@ -187,9 +190,9 @@ export default function Footer() {
                 }}
                 className="
                   group flex items-center
-                  text-sm text-slate-500
+                  text-xs font-bold text-slate-400
                   transition-all duration-200
-                  hover:translate-x-1
+                  hover:translate-x-1.5
                   hover:text-cyan-300
                   cursor-pointer text-left bg-transparent border-none p-0 outline-none
                 "
@@ -197,7 +200,7 @@ export default function Footer() {
                 <span className="mr-2 text-[10px] text-cyan-500/50 transition-colors group-hover:text-cyan-400">
                   •
                 </span>
-                Liên hệ
+                Liên hệ Admin (Zalo)
               </button>
             </div>
           </div>
@@ -205,11 +208,11 @@ export default function Footer() {
 
           {/* ================= CHÍNH SÁCH ================= */}
           <div>
-            <h3 className="mb-6 text-sm font-bold tracking-wide text-white">
-              CHÍNH SÁCH
+            <h3 className="mb-5 text-xs font-black tracking-widest text-white uppercase flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> CHÍNH SÁCH & BẢO MẬT
             </h3>
 
-            <div className="space-y-4">
+            <div className="space-y-3.5">
               <FooterLink href="#" text="Chính sách bảo mật" />
               <FooterLink href="#" text="Điều khoản sử dụng" />
             </div>
@@ -219,20 +222,20 @@ export default function Footer() {
 
 
         {/* ================= FOOTER BOTTOM ================= */}
-        <div className="flex flex-col gap-3 border-t border-white/[0.06] py-6 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-t border-slate-800/80 py-6 text-xs text-slate-500 font-medium sm:flex-row sm:items-center sm:justify-between">
 
           <p>
             © 2026{" "}
-            <span className="font-semibold text-slate-500">
-              ZTOOL
+            <span className="font-extrabold text-slate-300">
+              ZTOOL.STORE
             </span>
             . Tất cả quyền được bảo lưu.
           </p>
 
-          <p>
-            Thiết kế bởi{" "}
-            <span className="font-semibold text-cyan-400">
-              ZTOOL
+          <p className="flex items-center gap-1.5">
+            Thiết kế & Vận hành bởi{" "}
+            <span className="font-black text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]">
+              ZTOOL TEAM
             </span>
           </p>
 
@@ -260,9 +263,9 @@ function FooterLink({
       href={href}
       className="
         group flex items-center
-        text-sm text-slate-500
+        text-xs font-bold text-slate-400
         transition-all duration-200
-        hover:translate-x-1
+        hover:translate-x-1.5
         hover:text-cyan-300
       "
     >
