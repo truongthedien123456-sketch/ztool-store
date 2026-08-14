@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag, Eye, Shield, Check
+  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag, Eye, Shield, Check, ZoomIn
 } from 'lucide-react';
 
 export default function ToolsPage() {
@@ -24,6 +24,9 @@ export default function ToolsPage() {
 
   // Modal Xem Chi Tiết Tool
   const [selectedToolForDetail, setSelectedToolForDetail] = useState<any | null>(null);
+
+  // State Phóng To Ảnh (Lightbox)
+  const [zoomImage, setZoomImage] = useState<string | null>(null);
 
   useEffect(() => {
     loadToolsData();
@@ -255,7 +258,7 @@ export default function ToolsPage() {
             </p>
           </div>
 
-          {/* GRID DANH SÁCH TOOL AUTO - ĐÃ LOẠI BỎ THUỘC TÍNH BLUR ĐỒ HỌA NẶNG */}
+          {/* GRID DANH SÁCH TOOL AUTO */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tools.map((tool) => (
               <div 
@@ -284,7 +287,7 @@ export default function ToolsPage() {
                     <p className="text-xs text-slate-400 mt-1 line-clamp-1 truncate" title={tool.description}>{tool.description || 'Chưa có mô tả sản phẩm.'}</p>
                   </div>
 
-                  {/* KHUNG GIÁ CẢ TỐI ƯU CỰC NHẸ */}
+                  {/* KHUNG GIÁ CẢ */}
                   <div className="grid grid-cols-2 gap-2 bg-[#05080E] border border-slate-800/90 p-3 rounded-2xl text-xs">
                     <div className="bg-[#0B1019] border border-slate-800/80 p-2 rounded-xl flex flex-col justify-center space-y-0.5">
                       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Theo Ngày</span>
@@ -344,7 +347,7 @@ export default function ToolsPage() {
             ))}
           </div>
 
-          {/* Modal Chi tiết */}
+          {/* Modal Chi tiết - ĐÃ BỔ SUNG ZOOM ẢNH KHI NHẤP */}
           <AnimatePresence>
             {selectedToolForDetail && (
               <motion.div 
@@ -368,9 +371,21 @@ export default function ToolsPage() {
                     <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0"><Info className="w-6 h-6" /></div>
                     <div><span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">THÔNG TIN CHI TIẾT SẢN PHẨM</span><h2 className="text-xl font-black text-white">{selectedToolForDetail.name}</h2></div>
                   </div>
-                  <div className="w-full max-w-md mx-auto aspect-square bg-[#080B10] border border-[#1A2332] rounded-2xl overflow-hidden relative">
-                    <img src={selectedToolForDetail.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForDetail.name} className="w-full h-full object-cover" />
+
+                  {/* KHUNG ẢNH BẤM ĐỂ PHÓNG TO */}
+                  <div 
+                    onClick={() => setZoomImage(selectedToolForDetail.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg')}
+                    className="w-full max-w-md mx-auto aspect-square bg-[#080B10] border-2 border-slate-800 hover:border-cyan-400/80 rounded-2xl overflow-hidden relative group cursor-zoom-in transition-all duration-300 shadow-md"
+                    title="Bấm để xem ảnh phóng to đầy đủ"
+                  >
+                    <img src={selectedToolForDetail.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForDetail.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity duration-300 backdrop-blur-[2px]">
+                      <span className="bg-cyan-500 text-slate-950 px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-lg">
+                        <ZoomIn className="w-4 h-4" /> BẤM ĐỂ PHÓNG TO
+                      </span>
+                    </div>
                   </div>
+
                   <div className="space-y-2">
                     <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Mô tả tính năng đầy đủ:</h4>
                     <p className="text-xs text-slate-300 bg-[#080B10] border border-[#1A2332] p-4 rounded-2xl leading-relaxed whitespace-pre-line">{selectedToolForDetail.description || 'Chưa có nội dung mô tả chi tiết cho sản phẩm này.'}</p>
@@ -395,7 +410,7 @@ export default function ToolsPage() {
             )}
           </AnimatePresence>
 
-          {/* MODAL MUA SẢN PHẨM */}
+          {/* MODAL MUA SẢN PHẨM - ĐÃ BỔ SUNG ZOOM ẢNH KHI NHẤP */}
           <AnimatePresence>
             {selectedToolForBuy && (
               <motion.div 
@@ -422,9 +437,20 @@ export default function ToolsPage() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+                    
+                    {/* CỘT TRÁI: KHUNG ẢNH CÓ ICON ZOOM KHI HOVER */}
                     <div className="md:col-span-6 flex flex-col items-center group">
-                      <div className="w-full aspect-square rounded-3xl overflow-hidden border-2 border-cyan-500/50 shadow-md bg-[#05080E]">
-                        <img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover" />
+                      <div 
+                        onClick={() => setZoomImage(selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg')}
+                        className="w-full aspect-square rounded-3xl overflow-hidden border-2 border-cyan-500/50 hover:border-cyan-400 shadow-md bg-[#05080E] relative cursor-zoom-in transition-all duration-300"
+                        title="Bấm để xem ảnh phóng to đầy đủ"
+                      >
+                        <img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity duration-300 backdrop-blur-[2px]">
+                          <span className="bg-cyan-500 text-slate-950 px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-xl">
+                            <ZoomIn className="w-4 h-4" /> PHÓNG TO ẢNH
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -439,7 +465,7 @@ export default function ToolsPage() {
                       <div className="space-y-2 bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl">
                         <label className="block text-xs font-bold text-slate-300 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-cyan-400" /> Mã giảm giá (nếu có):</label>
                         <div className="flex gap-2">
-                          <input type="text" placeholder="Nhập mã giảm giá..." value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="flex-1 bg-[#0B1019] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 uppercase font-mono" />
+                          <input type="text" placeholder="Nhập mã giảm giá..." value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="flex-1 bg-[#0B1019] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 uppercase font-mono transition" />
                           <button onClick={handleApplyCoupon} className="bg-cyan-500/20 border border-cyan-500/40 hover:bg-cyan-400 hover:text-slate-950 text-cyan-300 font-black px-4 py-2.5 rounded-xl text-xs transition cursor-pointer">Áp dụng</button>
                         </div>
                         {couponMsg && <p className={`text-[11px] font-bold ${couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>{couponMsg.text}</p>}
@@ -511,6 +537,43 @@ export default function ToolsPage() {
                       <><Shield className="w-4 h-4" /> XÁC NHẬN THANH TOÁN TỪ VÍ</>
                     )}
                   </button>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ================= MODAL PHÓNG TO ẢNH FULLSCREEN LIGHTBOX ================= */}
+          <AnimatePresence>
+            {zoomImage && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                onClick={() => setZoomImage(null)}
+                className="fixed inset-0 bg-black/95 z-[999] flex items-center justify-center p-4 sm:p-8 cursor-zoom-out"
+              >
+                <button
+                  onClick={() => setZoomImage(null)}
+                  className="absolute top-6 right-6 text-slate-300 hover:text-white p-3 rounded-2xl bg-[#080B10]/80 border border-slate-700 hover:border-cyan-400 transition shadow-2xl z-50 cursor-pointer"
+                  title="Đóng xem ảnh"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.85 }}
+                  transition={{ type: "spring", duration: 0.25, bounce: 0.1 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="relative max-w-4xl max-h-[90vh] w-full flex items-center justify-center rounded-3xl overflow-hidden border-2 border-cyan-500/50 shadow-[0_0_60px_rgba(6,182,212,0.3)] bg-[#05080E] cursor-default"
+                >
+                  <img
+                    src={zoomImage}
+                    alt="Phóng to sản phẩm"
+                    className="max-w-full max-h-[85vh] object-contain rounded-2xl select-none"
+                  />
                 </motion.div>
               </motion.div>
             )}
