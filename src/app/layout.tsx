@@ -21,29 +21,39 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// ================= BỘ METADATA SEO & XÁC MINH GOOGLE =================
+// ================= BỘ METADATA SEO, LOGO & XÁC MINH GOOGLE =================
 export const metadata: Metadata = {
-  title: "ZTool - Chuyên cung cấp Tool Auto Farm GTA/Fivem",
+  title: "ZTool - Chuyên Cung Cấp Tool Auto Farm GTA / FiveM",
   description: "Hệ thống auto farm Fivem/Launcher hàng đầu Việt Nam. Cung Cấp Tool Auto Câu Cá, Auto Đào Đá, ... Uy Tín, Bảo Mật, An Toàn, Key tự động 24/7",
   keywords: [
+    "ZTool",
+    "ZTool FiveM",
+    "ztool auto fivem",
     "Tool Auto Farm FiveM", 
     "Tool FiveM", 
     "Auto câu cá FiveM", 
     "Auto đào đá FiveM", 
     "Tool FiveM giá rẻ", 
-    "ZTOOL", 
     "ZTOOL STORE",
     "Hack FiveM", 
     "Auto farm GTA V"
   ],
+  icons: {
+    icon: [
+      { url: "/icon.png" },
+      { url: "/favicon.ico" }
+    ],
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
   verification: {
     google: "googlef85e0221c678e202", // Mã xác minh Google Search Console
   },
   openGraph: {
-    title: "ZTool - Chuyên cung cấp Tool Auto Farm GTA/Fivem",
+    title: "ZTool - Chuyên Cung Cấp Tool Auto Farm GTA / FiveM",
     description: "Hệ thống auto farm Fivem/Launcher hàng đầu Việt Nam. Cung Cấp Tool Auto Câu Cá, Auto Đào Đá, ... Uy Tín, Bảo Mật, An Toàn, Key tự động 24/7",
     url: "https://ztool-store.vercel.app",
-    siteName: "ZTOOL",
+    siteName: "ZTool",
     images: [
       {
         url: "https://ztool-store.vercel.app/logo.jpg",
@@ -66,11 +76,26 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "ZTool",
+    "alternateName": ["ZTool Store", "ZTool FiveM", "ZTool Auto Farm"],
+    "url": "https://ztool-store.vercel.app",
+    "logo": "https://ztool-store.vercel.app/logo.jpg"
+  };
+
   return (
     <html
       lang="vi"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className="min-h-screen bg-[#05080d] text-white relative selection:bg-cyan-500 selection:text-black overflow-x-hidden">
         
         {/* NỀN THÀNH PHỐ DẠNG FIXED LAYER SEPARATE (TRIỆT TIỆU LAG KHI CUỘN) */}
