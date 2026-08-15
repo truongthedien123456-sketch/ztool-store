@@ -27,6 +27,9 @@ export const metadata: Metadata = {
   description: "Hệ thống auto farm Fivem/Launcher hàng đầu Việt Nam. Cung Cấp Tool Auto Câu Cá, Auto Đào Đá, ... Uy Tín, Bảo Mật, An Toàn, Key tự động 24/7",
   keywords: [
     "ZTool",
+    "Auto farm gta",
+    "Auto farm nghề fivem",
+    "Auto farm nghề gta fivem", 
     "ZTool FiveM",
     "ztool auto fivem",
     "Tool Auto Farm FiveM", 
