@@ -42,12 +42,9 @@ export const metadata: Metadata = {
     "Auto farm GTA V"
   ],
   icons: {
-    icon: [
-      { url: "/icon.png" },
-      { url: "/favicon.ico" }
-    ],
-    shortcut: "/icon.png",
-    apple: "/icon.png",
+    icon: "/icon.jpg",
+    shortcut: "/icon.jpg",
+    apple: "/icon.jpg",
   },
   verification: {
     google: "googlef85e0221c678e202", // Mã xác minh Google Search Console
