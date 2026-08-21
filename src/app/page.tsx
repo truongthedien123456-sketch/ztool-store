@@ -92,6 +92,7 @@ export default function HomePage() {
     }
   };
 
+  // Chỉ lấy danh sách các tool ĐANG HOẠT ĐỘNG
   const activeTools = [...tools].filter(t => t.status !== 'Tạm ngưng').sort((a, b) => b.views - a.views);
   const featuredTool = activeTools.length > 0 ? activeTools[0] : null;
 
@@ -375,77 +376,74 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* SECTION DANH SÁCH TOOL */}
+          {/* SECTION DANH SÁCH TOOL - CHỈ HIỂN THỊ CÁC TOOL ĐANG HOẠT ĐỘNG */}
           <div className="space-y-6 pt-4">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
               <div>
                 <h2 className="text-xl font-black text-white flex items-center gap-2.5 tracking-wide uppercase">
                   <Wrench className="w-5 h-5 text-cyan-400" /> DANH SÁCH TOOL AUTO
                 </h2>
-                <p className="text-xs text-slate-400 mt-1">Các bản tool được cập nhật liên tục</p>
+                <p className="text-xs text-slate-400 mt-1">Các bản tool đang hoạt động và cập nhật liên tục</p>
               </div>
               <Link href="/tools" className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition">
                 Xem tất cả <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {tools.slice(0, 3).map((tool) => (
-                <div 
-                  key={tool.id} 
-                  onClick={() => handleOpenDetail(tool)}
-                  className="bg-[#0D121D]/95 border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-lg hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:-translate-y-1.5 transition-all duration-200 cursor-pointer group relative"
-                >
-                  <div className="space-y-3">
-                    <div className="w-full aspect-square bg-[#05080E] border border-slate-800/80 rounded-2xl overflow-hidden relative">
-                      <img 
-                        src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
-                        alt={tool.name} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300" 
-                      />
-                      
-                      <div className="absolute top-3 left-3 bg-[#05080E]/90 border border-slate-700/60 px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[10px] text-slate-200 font-bold">
-                        <Eye className="w-3.5 h-3.5 text-cyan-400" /> {tool.views || 0}
+            {activeTools.length === 0 ? (
+              <div className="text-center py-10 bg-[#0D121D]/50 rounded-2xl border border-slate-800 text-slate-400 text-xs">
+                Hiện tại chưa có tool nào ở trạng thái hoạt động.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {activeTools.slice(0, 3).map((tool) => (
+                  <div 
+                    key={tool.id} 
+                    onClick={() => handleOpenDetail(tool)}
+                    className="bg-[#0D121D]/95 border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-lg hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:-translate-y-1.5 transition-all duration-200 cursor-pointer group relative"
+                  >
+                    <div className="space-y-3">
+                      <div className="w-full aspect-square bg-[#05080E] border border-slate-800/80 rounded-2xl overflow-hidden relative">
+                        <img 
+                          src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
+                          alt={tool.name} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300" 
+                        />
+                        
+                        <div className="absolute top-3 left-3 bg-[#05080E]/90 border border-slate-700/60 px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[10px] text-slate-200 font-bold">
+                          <Eye className="w-3.5 h-3.5 text-cyan-400" /> {tool.views || 0}
+                        </div>
+
+                        <span className="absolute top-3 right-3 text-[10px] font-extrabold px-2.5 py-1 rounded-lg border bg-emerald-500/20 text-emerald-400 border-emerald-500/40">
+                          {tool.status ? tool.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
+                        </span>
                       </div>
 
-                      <span className={`absolute top-3 right-3 text-[10px] font-extrabold px-2.5 py-1 rounded-lg border ${
-                        tool.status === 'Tạm ngưng'
-                          ? 'bg-rose-500/20 text-rose-400 border-rose-500/40'
-                          : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                      }`}>
-                        {tool.status ? tool.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
-                      </span>
+                      <div>
+                        <h3 className="font-bold text-white text-base group-hover:text-cyan-300 transition">{tool.name}</h3>
+                        <p className="text-xs text-slate-400 mt-1 line-clamp-1">{tool.description}</p>
+                      </div>
                     </div>
 
-                    <div>
-                      <h3 className="font-bold text-white text-base group-hover:text-cyan-300 transition">{tool.name}</h3>
-                      <p className="text-xs text-slate-400 mt-1 line-clamp-1">{tool.description}</p>
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-800/80">
+                      <div className="leading-none">
+                        <span className="text-[10px] text-slate-500 block mb-1 uppercase font-bold">Gói ngày</span>
+                        <span className="text-xs text-emerald-400 font-black">{tool.priceDay ? `${formatPrice(tool.priceDay)} VNĐ` : '---'}</span>
+                      </div>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenBuyModal(tool);
+                        }} 
+                        className="font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer flex items-center gap-1.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500 hover:text-slate-950"
+                      >
+                        <ShoppingBag className="w-3.5 h-3.5" /> Mua Ngay
+                      </button>
                     </div>
                   </div>
-
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-800/80">
-                    <div className="leading-none">
-                      <span className="text-[10px] text-slate-500 block mb-1 uppercase font-bold">Gói ngày</span>
-                      <span className="text-xs text-emerald-400 font-black">{tool.priceDay ? `${formatPrice(tool.priceDay)} VNĐ` : '---'}</span>
-                    </div>
-                    <button 
-                      disabled={tool.status === 'Tạm ngưng'}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenBuyModal(tool);
-                      }} 
-                      className={`font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer flex items-center gap-1.5 ${
-                        tool.status === 'Tạm ngưng'
-                          ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
-                          : 'bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500 hover:text-slate-950'
-                      }`}
-                    >
-                      <ShoppingBag className="w-3.5 h-3.5" /> {tool.status === 'Tạm ngưng' ? 'Tạm Ngưng' : 'Mua Ngay'}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* SECTION DỰ ÁN NỔI BẬT */}
@@ -482,7 +480,7 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* MODAL CHI TIẾT TOOL - ĐÃ BỔ SUNG ZOOM ẢNH KHI NHẤP */}
+          {/* MODAL CHI TIẾT TOOL */}
           <AnimatePresence>
             {selectedToolForDetail && (
               <motion.div 
@@ -545,7 +543,7 @@ export default function HomePage() {
             )}
           </AnimatePresence>
 
-          {/* MODAL MUA SẢN PHẨM - ĐÃ BỔ SUNG ZOOM ẢNH KHI NHẤP */}
+          {/* MODAL MUA SẢN PHẨM */}
           <AnimatePresence>
             {selectedToolForBuy && (
               <motion.div 
@@ -573,7 +571,7 @@ export default function HomePage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
                     
-                    {/* CỘT TRÁI: KHUNG ẢNH CÓ ICON ZOOM KHI HOVER */}
+                    {/* CỘT TRÁI: KHUNG ẢNH */}
                     <div className="md:col-span-6 flex flex-col items-center group">
                       <div 
                         onClick={() => setZoomImage(selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg')}
@@ -677,7 +675,7 @@ export default function HomePage() {
             )}
           </AnimatePresence>
 
-          {/* ================= MODAL PHÓNG TO ẢNH FULLSCREEN LIGHTBOX ================= */}
+          {/* MODAL PHÓNG TO ẢNH FULLSCREEN LIGHTBOX */}
           <AnimatePresence>
             {zoomImage && (
               <motion.div
