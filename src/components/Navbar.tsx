@@ -108,9 +108,7 @@ export default function Navbar() {
   const [currentPath, setCurrentPath] = useState<string>('');
 
   useEffect(() => {
-    if (pathname) {
-      setCurrentPath(pathname);
-    }
+    if (pathname) setCurrentPath(pathname);
   }, [pathname]);
 
   useEffect(() => {
@@ -134,9 +132,7 @@ export default function Navbar() {
 
   const loadAllToolsMeta = async () => {
     const { data } = await supabase.from('tools').select('*');
-    if (data) {
-      setToolsList(data);
-    }
+    if (data) setToolsList(data);
   };
 
   useEffect(() => {
@@ -236,7 +232,7 @@ export default function Navbar() {
     }
   };
 
-  // Cấu hình bậc VIP: Khung viền ngoài tĩnh, nhịp đập & họa tiết nằm trên Badge VIP bên trong
+  // Cấu hình bậc VIP: Khung viền ngoài vững chãi, nhịp đập & phát quang nằm trên Badge VIP bên trong
   const getVipInfo = (amount: number) => {
     if (amount >= 5000000) {
       return {
@@ -244,9 +240,9 @@ export default function Navbar() {
         title: 'VIP 5',
         sub: 'Kim Cương Đỏ Tối Thượng',
         color: 'text-rose-400',
-        badgeBg: 'bg-gradient-to-r from-rose-600/30 via-pink-600/30 to-amber-500/30 border-rose-400 text-rose-100 shadow-[0_0_15px_rgba(244,63,94,0.8)] animate-pulse',
+        badgeBg: 'bg-gradient-to-r from-rose-600/30 via-pink-600/30 to-amber-500/30 border-rose-400 text-rose-100 shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-pulse',
         border: 'border-2 border-rose-500/80 shadow-[0_0_20px_rgba(244,63,94,0.35)]',
-        avatarBg: 'bg-gradient-to-tr from-rose-600 via-pink-500 to-amber-400 text-white shadow-[0_0_15px_rgba(244,63,94,0.6)]',
+        avatarBg: 'bg-gradient-to-tr from-rose-600 via-pink-500 to-amber-400 text-white shadow-[0_0_12px_rgba(244,63,94,0.5)]',
         icon: Flame,
         nextGoal: 5000000,
         progress: 100,
@@ -857,12 +853,22 @@ export default function Navbar() {
                   <PlusCircle className="w-4 h-4 text-slate-950 stroke-[2.5]" /> Nạp tiền
                 </button>
 
-                {/* Ô THÔNG TIN KHÁCH HÀNG */}
+                {/* Ô THÔNG TIN KHÁCH HÀNG (HỌA TIẾT 4 GÓC MẠ VÀNG CHO KHUNG NGOÀI VIP 5) */}
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setShowUserDropdown(!showUserDropdown)}
-                    className={`flex items-center gap-3 bg-[#0D131F]/95 p-1.5 pr-3.5 rounded-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer group backdrop-blur-md relative ${vipInfo.border}`}
+                    className={`flex items-center gap-3 bg-[#0D131F]/95 p-1.5 pr-3.5 rounded-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer group backdrop-blur-md relative overflow-visible ${vipInfo.border}`}
                   >
+                    {/* Họa tiết 4 góc ôm khung ngoài cùng cho VIP 5 */}
+                    {vipInfo.level === 5 && (
+                      <>
+                        <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-amber-300 rounded-tl-sm pointer-events-none shadow-[0_0_6px_#fde047] z-20"></div>
+                        <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-amber-300 rounded-tr-sm pointer-events-none shadow-[0_0_6px_#fde047] z-20"></div>
+                        <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-amber-300 rounded-bl-sm pointer-events-none shadow-[0_0_6px_#fde047] z-20"></div>
+                        <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-amber-300 rounded-br-sm pointer-events-none shadow-[0_0_6px_#fde047] z-20"></div>
+                      </>
+                    )}
+
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs uppercase shadow-inner relative ${vipInfo.avatarBg}`}>
                       {currentUser.username.substring(0, 1).toUpperCase()}
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#0D131F] absolute -bottom-0.5 -right-0.5 animate-pulse"></span>
@@ -874,21 +880,11 @@ export default function Navbar() {
                           {currentUser.username}
                         </span>
                         
-                        {/* Khung VIP bên trong có nhịp đập & góc mạ vàng cho VIP 5 */}
+                        {/* Khung VIP bên trong */}
                         {vipInfo.level > 0 && (
-                          <div className="relative inline-flex items-center">
-                            {vipInfo.level === 5 && (
-                              <>
-                                <span className="absolute -top-0.5 -left-0.5 w-1.5 h-1.5 border-t border-l border-amber-300 rounded-tl-sm pointer-events-none z-10 shadow-[0_0_4px_#fde047]"></span>
-                                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 border-t border-r border-amber-300 rounded-tr-sm pointer-events-none z-10 shadow-[0_0_4px_#fde047]"></span>
-                                <span className="absolute -bottom-0.5 -left-0.5 w-1.5 h-1.5 border-b border-l border-amber-300 rounded-bl-sm pointer-events-none z-10 shadow-[0_0_4px_#fde047]"></span>
-                                <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 border-b border-r border-amber-300 rounded-br-sm pointer-events-none z-10 shadow-[0_0_4px_#fde047]"></span>
-                              </>
-                            )}
-                            <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${vipInfo.badgeBg}`}>
-                              V{vipInfo.level}
-                            </span>
-                          </div>
+                          <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${vipInfo.badgeBg}`}>
+                            V{vipInfo.level}
+                          </span>
                         )}
                       </div>
                       <span className="text-[10px] text-emerald-400 font-black block mt-0.5 font-mono">
@@ -1068,6 +1064,16 @@ export default function Navbar() {
         <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
           <div className={`bg-[#0A0F18] ${vipInfo.border} w-full max-w-lg rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_60px_rgba(6,182,212,0.3)] text-slate-200 max-h-[92vh] overflow-y-auto`}>
             
+            {/* Họa tiết 4 góc vương miện Cyberpunk cao cấp cho riêng biệt VIP 5 */}
+            {vipInfo.level === 5 && (
+              <>
+                <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-amber-300 rounded-tl-md pointer-events-none shadow-[0_0_10px_#fde047] z-20"></div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-amber-300 rounded-tr-md pointer-events-none shadow-[0_0_10px_#fde047] z-20"></div>
+                <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-amber-300 rounded-bl-md pointer-events-none shadow-[0_0_10px_#fde047] z-20"></div>
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-amber-300 rounded-br-md pointer-events-none shadow-[0_0_10px_#fde047] z-20"></div>
+              </>
+            )}
+
             <button onClick={() => { setShowAccountInfoModal(false); setEmailActionMsg(null); setIsOtpSent(false); setPassMsg(null); }} className="absolute top-5 right-5 text-slate-400 hover:text-white p-2 rounded-2xl bg-[#05080E] border border-slate-800 cursor-pointer hover:border-cyan-400 transition"><X className="w-5 h-5" /></button>
             
             {/* Header Avatar Theo Khung VIP */}
@@ -1077,17 +1083,9 @@ export default function Navbar() {
                   {currentUser.username.substring(0, 1).toUpperCase()}
                 </div>
                 
-                {/* Badge VIP trong Profile có họa tiết góc cho VIP 5 */}
+                {/* Badge VIP trong Profile */}
                 <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2">
                   <div className="relative inline-flex items-center">
-                    {vipInfo.level === 5 && (
-                      <>
-                        <span className="absolute -top-0.5 -left-0.5 w-2 h-2 border-t-2 border-l-2 border-amber-300 rounded-tl-sm pointer-events-none z-10 shadow-[0_0_6px_#fde047]"></span>
-                        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 border-t-2 border-r-2 border-amber-300 rounded-tr-sm pointer-events-none z-10 shadow-[0_0_6px_#fde047]"></span>
-                        <span className="absolute -bottom-0.5 -left-0.5 w-2 h-2 border-b-2 border-l-2 border-amber-300 rounded-bl-sm pointer-events-none z-10 shadow-[0_0_6px_#fde047]"></span>
-                        <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 border-b-2 border-r-2 border-amber-300 rounded-br-sm pointer-events-none z-10 shadow-[0_0_6px_#fde047]"></span>
-                      </>
-                    )}
                     <span className={`text-[10px] font-black px-3 py-0.5 rounded-full border flex items-center gap-1 shadow-lg whitespace-nowrap ${vipInfo.badgeBg}`}>
                       <VipIcon className={`w-3.5 h-3.5 ${vipInfo.color}`} />
                       <span className={vipInfo.color}>{vipInfo.title}</span>
