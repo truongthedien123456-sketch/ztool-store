@@ -66,7 +66,7 @@ export default function Navbar() {
   const [passMsg, setPassMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [passLoading, setPassLoading] = useState(false);
 
-  // Tổng tiền nạp tích lũy tính VIP
+  // Tổng tiền nạp tích lũy tính VIP (RECHARGE + ADMIN_ADD - ADMIN_SUB)
   const [totalDeposited, setTotalDeposited] = useState(0);
 
   // Trạng thái Xác thực Email trong Modal Account Info
@@ -157,18 +157,23 @@ export default function Navbar() {
     return () => clearInterval(interval);
   }, [currentUser?.username]);
 
-  // Tính tổng nạp để xếp hạng VIP (Gồm nạp SePay và Admin cộng)
+  // Tính tổng nạp để xếp hạng VIP (+ Nạp SePay + Admin cộng tiền - Admin trừ tiền)
   const fetchUserTotalDeposited = async (username: string) => {
     try {
       const { data } = await supabase
         .from('transactions')
         .select('amount, type')
         .eq('username', username)
-        .in('type', ['RECHARGE', 'ADMIN_ADD']);
+        .in('type', ['RECHARGE', 'ADMIN_ADD', 'ADMIN_SUB']);
 
       if (data && data.length > 0) {
-        const total = data.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-        setTotalDeposited(total);
+        const total = data.reduce((sum, item) => {
+          if (item.type === 'ADMIN_SUB') {
+            return sum - Math.abs(Number(item.amount) || 0);
+          }
+          return sum + (Number(item.amount) || 0);
+        }, 0);
+        setTotalDeposited(Math.max(0, total));
       } else {
         setTotalDeposited(0);
       }
@@ -231,7 +236,7 @@ export default function Navbar() {
     }
   };
 
-  // Hệ thống cấu hình bậc VIP và khung viền riêng biệt
+  // Cấu hình bậc VIP
   const getVipInfo = (amount: number) => {
     if (amount >= 5000000) {
       return {
@@ -882,21 +887,42 @@ export default function Navbar() {
                     <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition duration-300 ml-0.5 ${showUserDropdown ? 'rotate-180 text-cyan-400' : 'group-hover:text-cyan-400'}`} />
                   </button>
 
-                  {/* USER DROPDOWN MENU */}
+                  {/* USER DROPDOWN MENU (ĐÃ BỎ MỤC ĐỔI MẬT KHẨU TÁCH RỜI) */}
                   {showUserDropdown && (
                     <div className="absolute right-0 mt-2.5 w-64 bg-[#0D121D] border border-slate-800 rounded-3xl p-2.5 shadow-2xl space-y-1 z-50 backdrop-blur-2xl">
-                      <button onClick={() => { setShowAccountInfoModal(true); setShowUserDropdown(false); setProfileTab('info'); }} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer">
+                      <button 
+                        onClick={() => { 
+                          setShowAccountInfoModal(true); 
+                          setShowUserDropdown(false); 
+                          setProfileTab('info'); 
+                        }} 
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer"
+                      >
                         <User className="w-4 h-4 text-cyan-400" /> Thông tin & Cấp bậc VIP
                       </button>
-                      <button onClick={() => { setShowAccountInfoModal(true); setShowUserDropdown(false); setProfileTab('password'); }} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer">
-                        <Key className="w-4 h-4 text-amber-400" /> Đổi mật khẩu
-                      </button>
-                      <button onClick={() => { if (currentUser) loadUserGistData(currentUser.username); setShowPurchasedToolsModal(true); setShowUserDropdown(false); }} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer">
+
+                      <button 
+                        onClick={() => { 
+                          if (currentUser) loadUserGistData(currentUser.username); 
+                          setShowPurchasedToolsModal(true); 
+                          setShowUserDropdown(false); 
+                        }} 
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer"
+                      >
                         <Wrench className="w-4 h-4 text-cyan-300" /> Tool đã mua
                       </button>
-                      <button onClick={() => { if (currentUser) loadUserTransactionsFromCloud(currentUser.username); setShowHistoryModal(true); setShowUserDropdown(false); }} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer">
+
+                      <button 
+                        onClick={() => { 
+                          if (currentUser) loadUserTransactionsFromCloud(currentUser.username); 
+                          setShowHistoryModal(true); 
+                          setShowUserDropdown(false); 
+                        }} 
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer"
+                      >
                         <History className="w-4 h-4 text-emerald-400" /> Lịch sử giao dịch
                       </button>
+
                       <div className="border-t border-slate-800/80 my-1" />
                       <button onClick={handleLogout} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-rose-400 hover:bg-rose-500/10 transition cursor-pointer">
                         <LogOut className="w-4 h-4" /> Đăng xuất
@@ -1031,7 +1057,7 @@ export default function Navbar() {
           <div className={`bg-[#0A0F18] border-2 ${vipInfo.border} w-full max-w-lg rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_60px_rgba(6,182,212,0.3)] text-slate-200 max-h-[92vh] overflow-y-auto`}>
             <button onClick={() => { setShowAccountInfoModal(false); setEmailActionMsg(null); setIsOtpSent(false); setPassMsg(null); }} className="absolute top-5 right-5 text-slate-400 hover:text-white p-2 rounded-2xl bg-[#05080E] border border-slate-800 cursor-pointer hover:border-cyan-400 transition"><X className="w-5 h-5" /></button>
             
-            {/* Header Avatar Cực Bắt Mắt Theo Khung VIP */}
+            {/* Header Avatar Theo Khung VIP */}
             <div className="text-center space-y-3 pt-2">
               <div className="relative inline-block">
                 <div className={`w-24 h-24 rounded-3xl p-1 flex items-center justify-center mx-auto text-4xl font-black ${vipInfo.avatarBg} ${vipInfo.border}`}>
@@ -1251,7 +1277,7 @@ export default function Navbar() {
                         placeholder="6 số OTP..."
                         value={otpInput}
                         onChange={(e) => setOtpInput(e.target.value)}
-                        className="flex-1 bg-[#05080E] border border-cyan-500/50 rounded-xl px-3.5 py-2.5 text-xs text-center font-mono font-black text-cyan-300 tracking-widest focus:outline-none focus:border-cyan-400"
+                        className="flex-1 bg-[#0B1019] border border-cyan-500/50 rounded-xl px-3.5 py-2.5 text-xs text-center font-mono font-black text-cyan-300 tracking-widest focus:outline-none focus:border-cyan-400"
                       />
                       <button
                         disabled={emailActionLoading}
@@ -1277,7 +1303,209 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* MODAL ĐĂNG NHẬP / ĐĂNG KÝ */}
+      {/* ================= MODAL LỊCH SỬ GIAO DỊCH ================= */}
+      {showHistoryModal && currentUser && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
+            <button onClick={() => setShowHistoryModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
+            
+            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-400/50 flex items-center justify-center text-emerald-300 shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                <History className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block">NHẬT KÝ TÀI CHÍNH</span>
+                <h3 className="text-lg font-black text-white tracking-wide">LỊCH SỬ GIAO DỊCH</h3>
+              </div>
+            </div>
+
+            {loadingHistory ? (
+              <div className="flex items-center justify-center gap-2 py-12 text-xs text-slate-400">
+                <Loader2 className="w-5 h-5 animate-spin text-cyan-400" /> Đang tải lịch sử giao dịch...
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                {userTransactions.length === 0 ? (
+                  <div className="bg-[#05080E] border border-slate-800/80 p-8 rounded-2xl text-center text-xs text-slate-500">
+                    Chưa có lịch sử biến động số dư.
+                  </div>
+                ) : (
+                  userTransactions.map((log: any, idx: number) => {
+                    const isPositive = log.amount > 0;
+                    const isCheckin = log.type === 'CHECKIN';
+                    const isBuy = log.type === 'BUY' || log.amount < 0;
+
+                    return (
+                      <div 
+                        key={idx} 
+                        className={`bg-[#05080E] border p-4 rounded-2xl flex items-center justify-between gap-3 text-xs transition duration-300 hover:-translate-y-0.5 ${
+                          isBuy 
+                            ? 'border-slate-800/90 hover:border-rose-500/40 hover:shadow-[0_0_15px_rgba(244,63,94,0.12)]' 
+                            : isCheckin 
+                            ? 'border-slate-800/90 hover:border-cyan-500/40 hover:shadow-[0_0_15px_rgba(6,182,212,0.12)]'
+                            : 'border-slate-800/90 hover:border-emerald-500/40 hover:shadow-[0_0_15px_rgba(16,185,129,0.12)]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                            isBuy 
+                              ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' 
+                              : isCheckin 
+                              ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
+                              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                          }`}>
+                            {isBuy ? <ShoppingBag className="w-5 h-5" /> : isCheckin ? <Gift className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
+                          </div>
+
+                          <div className="space-y-0.5 min-w-0">
+                            <span className="font-extrabold text-slate-100 block truncate text-xs sm:text-sm">
+                              {log.title}
+                            </span>
+                            <span className="text-[10px] font-mono font-bold text-slate-500 block">
+                              {log.created_at ? new Date(log.created_at).toLocaleString('vi-VN') : ''}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <span className={`text-sm font-mono font-black block ${
+                            isPositive ? 'text-emerald-400' : 'text-rose-400'
+                          }`}>
+                            {isPositive ? '+' : ''}{(log.amount || 0).toLocaleString('vi-VN')}đ
+                          </span>
+                          <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider block mt-0.5">
+                            {log.status || 'Thành công'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL TOOL ĐÃ MUA ================= */}
+      {showPurchasedToolsModal && currentUser && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
+            <button onClick={() => setShowPurchasedToolsModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
+            
+            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+                <Wrench className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">QUẢN LÝ BẢN QUYỀN</span>
+                <h3 className="text-lg font-black text-white tracking-wide">DANH SÁCH TOOL ĐÃ MUA</h3>
+              </div>
+            </div>
+
+            {loadingPurchasedTools ? (
+              <div className="flex items-center justify-center gap-2 py-12 text-xs text-slate-400">
+                <Loader2 className="w-5 h-5 animate-spin text-cyan-400" /> Đang kiểm tra dữ liệu bản quyền...
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {!userGistData || userGistData.length === 0 ? (
+                  <div className="bg-[#05080E] border border-slate-800/80 p-8 rounded-2xl text-center text-xs text-slate-400 space-y-2">
+                    <p className="font-bold text-slate-300 text-sm">Bạn chưa sở hữu bản quyền Tool nào.</p>
+                    <p className="text-slate-500">Hãy truy cập mục "TOOL AUTO" để chọn mua và kích hoạt ứng dụng.</p>
+                  </div>
+                ) : (
+                  userGistData.map((toolAcc: any, idx: number) => {
+                    const isLifetime = !toolAcc.expire_timestamp || toolAcc.expire_timestamp === 0;
+                    const isShowPass = showToolPasswords[toolAcc.accountKey] || false;
+
+                    return (
+                      <div key={idx} className="bg-[#05080E] border border-slate-800/90 p-5 rounded-2xl space-y-4 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.12)] hover:-translate-y-0.5 transition duration-300">
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3.5">
+                          <div>
+                            <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">BẢN QUYỀN HOẠT ĐỘNG</span>
+                            <h4 className="font-black text-white text-base mt-0.5">{toolAcc.toolName}</h4>
+                          </div>
+                          <div>
+                            {renderRemainingTime(toolAcc.expire_timestamp)}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#0B1019] border border-slate-800/80 p-3.5 rounded-xl text-xs">
+                          <div className="space-y-1">
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Tài khoản tool</span>
+                            <div className="flex items-center justify-between bg-[#05080E] border border-slate-800/90 focus-within:border-cyan-400/60 px-3 py-2 rounded-lg font-mono font-bold text-cyan-300 transition">
+                              <span className="truncate pr-2">{toolAcc.appUsername}</span>
+                              <button 
+                                onClick={() => copyTextToClipboard(toolAcc.appUsername, `user_${idx}`)} 
+                                className="text-slate-400 hover:text-cyan-400 transition cursor-pointer flex items-center gap-1" 
+                                title="Sao chép tài khoản"
+                              >
+                                {copiedKey === `user_${idx}` ? <span className="text-[10px] text-emerald-400 font-sans">Đã chép!</span> : <Copy className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Mật khẩu tool</span>
+                            <div className="flex items-center justify-between bg-[#05080E] border border-slate-800/90 focus-within:border-cyan-400/60 px-3 py-2 rounded-lg font-mono font-bold text-slate-200 transition">
+                              <span>{isShowPass ? toolAcc.appPassword : '••••••••'}</span>
+                              <div className="flex items-center gap-2">
+                                <button 
+                                  onClick={() => setShowToolPasswords(prev => ({ ...prev, [toolAcc.accountKey]: !prev[toolAcc.accountKey] }))} 
+                                  className="text-slate-400 hover:text-white transition cursor-pointer" 
+                                  title={isShowPass ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                                >
+                                  {isShowPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                </button>
+                                <button 
+                                  onClick={() => copyTextToClipboard(toolAcc.appPassword, `pass_${idx}`)} 
+                                  className="text-slate-400 hover:text-cyan-400 transition cursor-pointer flex items-center gap-1" 
+                                  title="Sao chép mật khẩu"
+                                >
+                                  {copiedKey === `pass_${idx}` ? <span className="text-[10px] text-emerald-400 font-sans">Đã chép!</span> : <Copy className="w-3.5 h-3.5" />}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3 pt-1">
+                          {!isLifetime ? (
+                            <button
+                              onClick={() => handleOpenRenewModal(toolAcc.toolCode)}
+                              className="bg-amber-500/10 border border-amber-500/40 text-amber-400 font-black px-4 py-2.5 rounded-xl text-xs transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-sm hover:scale-[1.03] hover:bg-amber-500/25 hover:border-amber-400 hover:text-amber-300 hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '10s' }} /> GIA HẠN THỜI HẠN
+                            </button>
+                          ) : (
+                            <div className="text-[11px] text-slate-500 font-bold italic flex items-center gap-1">
+                              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" /> Sở hữu vĩnh viễn (Không cần gia hạn)
+                            </div>
+                          )}
+
+                          {toolAcc.downloadLink && (
+                            <a 
+                              href={toolAcc.downloadLink} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-black px-4 py-2.5 rounded-xl text-xs transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-sm hover:scale-[1.03] hover:bg-cyan-500/35 hover:border-cyan-300 hover:text-white hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]"
+                            >
+                              <Download className="w-3.5 h-3.5 text-cyan-400" /> Tải Tool về máy
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL ĐĂNG NHẬP / ĐĂNG KÝ ================= */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
           <div className="bg-[#0D121D] border border-cyan-400/80 w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_30px_rgba(6,182,212,0.25)]">
@@ -1287,7 +1515,6 @@ export default function Navbar() {
             <form onSubmit={handleAuthSubmit} className="space-y-4">
               <div><label className="block text-xs font-bold text-slate-300 mb-1">Tên tài khoản (Username)</label><input type="text" required placeholder="Nhập username..." value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} className="w-full bg-[#06090E] border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-cyan-400 transition" /></div>
               
-              {/* TRƯỜNG NHẬP GMAIL DUY NHẤT KHI ĐĂNG KÝ */}
               {authMode === 'register' && (
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1 flex items-center gap-1.5">
