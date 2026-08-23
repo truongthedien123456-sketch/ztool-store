@@ -236,7 +236,7 @@ export default function Navbar() {
     }
   };
 
-  // Cấu hình bậc VIP
+  // Cấu hình bậc VIP kèm hiệu ứng nhịp đập & họa tiết góc cho VIP 5 độc quyền
   const getVipInfo = (amount: number) => {
     if (amount >= 5000000) {
       return {
@@ -244,9 +244,9 @@ export default function Navbar() {
         title: 'VIP 5 - HUYỀN THOẠI',
         sub: 'Kim Cương Đỏ Tối Thượng',
         color: 'text-rose-400',
-        badgeBg: 'bg-gradient-to-r from-rose-500/20 to-pink-500/20 border-rose-500/50 text-rose-300',
-        border: 'border-rose-500 shadow-[0_0_35px_rgba(244,63,94,0.6)] ring-4 ring-rose-500/30',
-        avatarBg: 'bg-gradient-to-tr from-rose-600 via-pink-500 to-amber-400 text-white',
+        badgeBg: 'bg-gradient-to-r from-rose-500/30 via-pink-500/30 to-amber-500/30 border-rose-400/80 text-rose-200 animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.6)]',
+        border: 'border-2 border-rose-500 shadow-[0_0_35px_rgba(244,63,94,0.9)] ring-2 ring-rose-400/50 animate-pulse',
+        avatarBg: 'bg-gradient-to-tr from-rose-600 via-pink-500 to-amber-400 text-white shadow-[0_0_25px_rgba(244,63,94,0.8)] animate-pulse',
         icon: Flame,
         nextGoal: 5000000,
         progress: 100,
@@ -259,8 +259,8 @@ export default function Navbar() {
         sub: 'Hoàng Gia Tối Cao',
         color: 'text-purple-300',
         badgeBg: 'bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border-purple-500/50 text-purple-300',
-        border: 'border-purple-400 shadow-[0_0_30px_rgba(168,85,247,0.5)] ring-4 ring-purple-500/30',
-        avatarBg: 'bg-gradient-to-tr from-purple-600 via-indigo-500 to-cyan-400 text-white',
+        border: 'border-2 border-purple-400 shadow-[0_0_30px_rgba(168,85,247,0.75)] ring-2 ring-purple-400/40 animate-pulse',
+        avatarBg: 'bg-gradient-to-tr from-purple-600 via-indigo-500 to-cyan-400 text-white shadow-[0_0_20px_rgba(168,85,247,0.6)] animate-pulse',
         icon: Gem,
         nextGoal: 5000000,
         progress: Math.min(100, Math.round(((amount - 3000000) / (5000000 - 3000000)) * 100)),
@@ -273,7 +273,7 @@ export default function Navbar() {
         sub: 'Thương Gia Cao Cấp',
         color: 'text-amber-300',
         badgeBg: 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/50 text-amber-300',
-        border: 'border-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.5)] ring-4 ring-amber-400/30',
+        border: 'border-2 border-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.5)] ring-2 ring-amber-400/20',
         avatarBg: 'bg-gradient-to-tr from-amber-500 via-yellow-400 to-orange-500 text-slate-950',
         icon: Crown,
         nextGoal: 3000000,
@@ -287,7 +287,7 @@ export default function Navbar() {
         sub: 'Hiệp Sĩ Bạc Ánh Thép',
         color: 'text-cyan-300',
         badgeBg: 'bg-gradient-to-r from-slate-400/20 to-cyan-500/20 border-cyan-400/50 text-cyan-300',
-        border: 'border-cyan-300 shadow-[0_0_25px_rgba(6,182,212,0.4)] ring-4 ring-cyan-400/20',
+        border: 'border-2 border-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.4)]',
         avatarBg: 'bg-gradient-to-tr from-slate-400 via-cyan-400 to-blue-500 text-slate-950',
         icon: Star,
         nextGoal: 2000000,
@@ -301,7 +301,7 @@ export default function Navbar() {
         sub: 'Chiến Binh Mới Nổi',
         color: 'text-orange-400',
         badgeBg: 'bg-gradient-to-r from-orange-500/20 to-amber-500/20 border-orange-500/50 text-orange-300',
-        border: 'border-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.35)] ring-2 ring-orange-500/20',
+        border: 'border-2 border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.3)]',
         avatarBg: 'bg-gradient-to-tr from-orange-600 to-amber-500 text-white',
         icon: Award,
         nextGoal: 1000000,
@@ -314,7 +314,7 @@ export default function Navbar() {
       sub: 'Tài Khoản Chuẩn',
       color: 'text-cyan-400',
       badgeBg: 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400',
-      border: 'border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.2)]',
+      border: 'border border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.2)]',
       avatarBg: 'bg-gradient-to-tr from-cyan-500 to-teal-400 text-slate-950',
       icon: User,
       nextGoal: 500000,
@@ -857,12 +857,22 @@ export default function Navbar() {
                   <PlusCircle className="w-4 h-4 text-slate-950 stroke-[2.5]" /> Nạp tiền
                 </button>
 
-                {/* Ô THÔNG TIN KHÁCH HÀNG (VIỀN VIP DYNAMIC) */}
+                {/* Ô THÔNG TIN KHÁCH HÀNG (VIỀN VIP DYNAMIC & HỌA TIẾT VIP 5) */}
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setShowUserDropdown(!showUserDropdown)}
-                    className={`flex items-center gap-3 bg-[#0D131F]/95 border p-1.5 pr-3.5 rounded-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer group backdrop-blur-md ${vipInfo.border}`}
+                    className={`flex items-center gap-3 bg-[#0D131F]/95 p-1.5 pr-3.5 rounded-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer group backdrop-blur-md relative ${vipInfo.border}`}
                   >
+                    {/* Họa tiết góc Cyberpunk đặc biệt cho VIP 5 */}
+                    {vipInfo.level === 5 && (
+                      <>
+                        <div className="absolute -top-1 -left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-amber-300 rounded-tl-sm pointer-events-none shadow-[0_0_5px_#fde047]"></div>
+                        <div className="absolute -top-1 -right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-amber-300 rounded-tr-sm pointer-events-none shadow-[0_0_5px_#fde047]"></div>
+                        <div className="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-b-2 border-l-2 border-amber-300 rounded-bl-sm pointer-events-none shadow-[0_0_5px_#fde047]"></div>
+                        <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-b-2 border-r-2 border-amber-300 rounded-br-sm pointer-events-none shadow-[0_0_5px_#fde047]"></div>
+                      </>
+                    )}
+
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs uppercase shadow-inner relative ${vipInfo.avatarBg}`}>
                       {currentUser.username.substring(0, 1).toUpperCase()}
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#0D131F] absolute -bottom-0.5 -right-0.5 animate-pulse"></span>
@@ -887,7 +897,7 @@ export default function Navbar() {
                     <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition duration-300 ml-0.5 ${showUserDropdown ? 'rotate-180 text-cyan-400' : 'group-hover:text-cyan-400'}`} />
                   </button>
 
-                  {/* USER DROPDOWN MENU (ĐÃ BỎ MỤC ĐỔI MẬT KHẨU TÁCH RỜI) */}
+                  {/* USER DROPDOWN MENU */}
                   {showUserDropdown && (
                     <div className="absolute right-0 mt-2.5 w-64 bg-[#0D121D] border border-slate-800 rounded-3xl p-2.5 shadow-2xl space-y-1 z-50 backdrop-blur-2xl">
                       <button 
@@ -1054,13 +1064,24 @@ export default function Navbar() {
       {/* ================= MODAL THÔNG TIN CÁ NHÂN, VIP & ĐỔI MẬT KHẨU ================= */}
       {showAccountInfoModal && currentUser && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
-          <div className={`bg-[#0A0F18] border-2 ${vipInfo.border} w-full max-w-lg rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_60px_rgba(6,182,212,0.3)] text-slate-200 max-h-[92vh] overflow-y-auto`}>
+          <div className={`bg-[#0A0F18] ${vipInfo.border} w-full max-w-lg rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_60px_rgba(6,182,212,0.3)] text-slate-200 max-h-[92vh] overflow-y-auto`}>
+            
+            {/* Họa tiết 4 góc vương miện Cyberpunk cao cấp cho riêng biệt VIP 5 */}
+            {vipInfo.level === 5 && (
+              <>
+                <div className="absolute -top-1.5 -left-1.5 w-4 h-4 border-t-2 border-l-2 border-amber-300 rounded-tl-md pointer-events-none shadow-[0_0_10px_#fde047]"></div>
+                <div className="absolute -top-1.5 -right-1.5 w-4 h-4 border-t-2 border-r-2 border-amber-300 rounded-tr-md pointer-events-none shadow-[0_0_10px_#fde047]"></div>
+                <div className="absolute -bottom-1.5 -left-1.5 w-4 h-4 border-b-2 border-l-2 border-amber-300 rounded-bl-md pointer-events-none shadow-[0_0_10px_#fde047]"></div>
+                <div className="absolute -bottom-1.5 -right-1.5 w-4 h-4 border-b-2 border-r-2 border-amber-300 rounded-br-md pointer-events-none shadow-[0_0_10px_#fde047]"></div>
+              </>
+            )}
+
             <button onClick={() => { setShowAccountInfoModal(false); setEmailActionMsg(null); setIsOtpSent(false); setPassMsg(null); }} className="absolute top-5 right-5 text-slate-400 hover:text-white p-2 rounded-2xl bg-[#05080E] border border-slate-800 cursor-pointer hover:border-cyan-400 transition"><X className="w-5 h-5" /></button>
             
             {/* Header Avatar Theo Khung VIP */}
             <div className="text-center space-y-3 pt-2">
               <div className="relative inline-block">
-                <div className={`w-24 h-24 rounded-3xl p-1 flex items-center justify-center mx-auto text-4xl font-black ${vipInfo.avatarBg} ${vipInfo.border}`}>
+                <div className={`w-24 h-24 rounded-3xl p-1 flex items-center justify-center mx-auto text-4xl font-black ${vipInfo.avatarBg}`}>
                   {currentUser.username.substring(0, 1).toUpperCase()}
                 </div>
                 <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-[#05080E] border border-slate-800 px-3 py-0.5 rounded-full flex items-center gap-1 shadow-lg whitespace-nowrap">
@@ -1127,7 +1148,7 @@ export default function Navbar() {
                 <div className="bg-[#05080E] border border-slate-800/90 p-4.5 rounded-2xl space-y-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-400 font-bold flex items-center gap-1.5">
-                      <Crown className="w-4 h-4 text-amber-400" /> Tích luỹ nạp:
+                      <Crown className="w-4 h-4 text-amber-400" /> Tích luỹ nạp thực tế:
                     </span>
                     <b className="text-cyan-300 font-mono font-black">{totalDeposited.toLocaleString('vi-VN')} VNĐ</b>
                   </div>
@@ -1303,9 +1324,9 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* ================= MODAL LỊCH SỬ GIAO DỊCH ================= */}
+      {/* MODAL LỊCH SỬ GIAO DỊCH */}
       {showHistoryModal && currentUser && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
           <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
             <button onClick={() => setShowHistoryModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
             
@@ -1387,9 +1408,9 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* ================= MODAL TOOL ĐÃ MUA ================= */}
+      {/* MODAL TOOL ĐÃ MUA */}
       {showPurchasedToolsModal && currentUser && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center px-4">
           <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
             <button onClick={() => setShowPurchasedToolsModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
             
