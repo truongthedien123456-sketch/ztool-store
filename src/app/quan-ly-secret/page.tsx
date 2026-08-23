@@ -6,7 +6,7 @@ import {
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
   Ban, CheckCircle, CreditCard, KeyRound, Search, DollarSign, Settings,
-  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle
+  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -59,7 +59,16 @@ export default function AdminPage() {
   const [projectPreviewUrl, setProjectPreviewUrl] = useState<string>('');
   const [isUploadingProject, setIsUploadingProject] = useState(false);
 
-  const [couponForm, setCouponForm] = useState({ code: '', toolCode: 'ALL', quantity: 50, discountAmount: 5000 });
+  // Form Mã giảm giá nâng cấp (% / VNĐ & Lượt dùng mỗi tài khoản)
+  const [couponForm, setCouponForm] = useState({ 
+    code: '', 
+    toolCode: 'ALL', 
+    discountType: 'FIXED' as 'FIXED' | 'PERCENT', 
+    discountAmount: 5000, 
+    discountPercent: 10, 
+    quantity: 50, 
+    maxUsesPerUser: 1 
+  });
 
   useEffect(() => {
     const isLogged = localStorage.getItem('ztool_admin_authenticated');
@@ -197,9 +206,6 @@ export default function AdminPage() {
   const handleToggleExemptVerification = async (u: any) => {
     setExemptLoadingId(u.id);
     const newExemptState = !u.is_exempt;
-    
-    // Nếu bật miễn xác thực -> true
-    // Nếu bỏ miễn xác thực -> Chỉ true khi đã có email hợp lệ và đã từng xác thực OTP trước đó
     const hasValidEmail = u.email && u.email.trim() !== '' && u.email.includes('@');
     const newVerifiedState = newExemptState ? true : (hasValidEmail ? (u.is_verified === true) : false);
 
@@ -357,11 +363,36 @@ export default function AdminPage() {
   const handleDeleteProject = async (id: number) => { if (!confirm('Xóa dự án này?')) return; const { error } = await supabase.from('projects').delete().eq('id', id); if (!error) loadAllSyncData(); };
   const handleDeleteFeedback = async (id: number) => { const { error } = await supabase.from('feedbacks').delete().eq('id', id); if (!error) loadAllSyncData(); };
 
+  // TẠO MÃ GIẢM GIÁ (CÓ LỰA CHỌN % HOẶC VNĐ VÀ SỐ LẦN DÙNG/USER)
   const handleCreateCoupon = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!couponForm.code.trim()) return alert('Vui lòng nhập mã giảm giá!');
-    const { error } = await supabase.from('coupons').insert([{ code: couponForm.code.trim().toUpperCase(), tool_code: couponForm.toolCode, quantity: Number(couponForm.quantity), discount_amount: Number(couponForm.discountAmount) }]);
+    e.preventDefault(); 
+    if (!couponForm.code.trim()) return alert('Vui lòng nhập mã giảm giá!');
+
+    const payload: any = {
+      code: couponForm.code.trim().toUpperCase(),
+      tool_code: couponForm.toolCode,
+      discount_type: couponForm.discountType,
+      discount_amount: couponForm.discountType === 'FIXED' ? Number(couponForm.discountAmount) : 0,
+      discount_percent: couponForm.discountType === 'PERCENT' ? Number(couponForm.discountPercent) : 0,
+      quantity: Number(couponForm.quantity),
+      max_uses_per_user: Number(couponForm.maxUsesPerUser) || 1
+    };
+
+    const { error } = await supabase.from('coupons').insert([payload]);
     if (error) alert('Lỗi tạo mã giảm giá: ' + error.message);
-    else { alert('Tạo mã giảm giá thành công!'); setCouponForm({ code: '', toolCode: 'ALL', quantity: 50, discountAmount: 5000 }); loadAllSyncData(); }
+    else { 
+      alert('Tạo mã giảm giá thành công!'); 
+      setCouponForm({ 
+        code: '', 
+        toolCode: 'ALL', 
+        discountType: 'FIXED', 
+        discountAmount: 5000, 
+        discountPercent: 10, 
+        quantity: 50, 
+        maxUsesPerUser: 1 
+      }); 
+      loadAllSyncData(); 
+    }
   };
 
   const handleDeleteCoupon = async (id: number) => { if (!confirm('Xóa mã giảm giá này khỏi hệ thống?')) return; const { error } = await supabase.from('coupons').delete().eq('id', id); if (!error) loadAllSyncData(); };
@@ -440,7 +471,7 @@ export default function AdminPage() {
         </div>
       </header>
 
-      {/* KHUNG NỘI DUNG CHÍNH RỘNG TOÀN DIỆN KHÔNG BỊ TRÀN CHỮ */}
+      {/* KHUNG NỘI DUNG CHÍNH RỘNG TOÀN DIỆN */}
       <div className="max-w-[1700px] w-full mx-auto px-4 sm:px-6 py-8 space-y-8 flex-1">
         
         {/* OVERVIEW STATS */}
@@ -490,11 +521,9 @@ export default function AdminPage() {
           <button onClick={() => setActiveTab('settings')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'settings' ? 'bg-amber-500 text-slate-950 font-black shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'text-amber-400 hover:text-amber-300 hover:bg-slate-800/50'}`}><Bell className="w-4 h-4" /> THÔNG BÁO CHUNG</button>
         </div>
 
-        {/* ================= TAB 1: QUẢN LÝ NGƯỜI DÙNG CAO CẤP ================= */}
+        {/* ================= TAB 1: QUẢN LÝ NGƯỜI DÙNG ================= */}
         {activeTab === 'users' && (
           <div className="space-y-6">
-            
-            {/* KHUNG TẠO TÀI KHOẢN MỚI */}
             <form onSubmit={handleCreateUser} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
               <h3 className="text-xs font-extrabold text-white flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase tracking-wider">
                 <Plus className="w-4 h-4 text-cyan-400" /> Tạo tài khoản người dùng mới
@@ -522,10 +551,7 @@ export default function AdminPage() {
               </button>
             </form>
 
-            {/* BẢNG DANH SÁCH KHÁCH HÀNG CAO CẤP */}
             <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-5 shadow-2xl">
-              
-              {/* THANH TÌM KIẾM NHANH TÀI KHOẢN */}
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
                 <div>
                   <h2 className="text-base font-black text-white flex items-center gap-2 tracking-wide uppercase">
@@ -544,17 +570,13 @@ export default function AdminPage() {
                     className="w-full bg-[#05080E] border border-slate-800 focus:border-cyan-400 rounded-2xl pl-10 pr-10 py-2.5 text-xs text-white focus:outline-none transition shadow-inner font-mono" 
                   />
                   {userSearch && (
-                    <button 
-                      onClick={() => setUserSearch('')} 
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-1 rounded-md"
-                    >
+                    <button onClick={() => setUserSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-1 rounded-md">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* BẢNG DỮ LIỆU TỐI ƯU CỘT VÀ KHÔNG BỊ TRÀN CHỮ */}
               <div className="overflow-x-auto border border-slate-800/60 rounded-2xl bg-[#05080E]/40">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead className="bg-[#05080E] border-b border-slate-800/80 text-slate-400 uppercase text-[10px] tracking-wider font-black">
@@ -574,149 +596,104 @@ export default function AdminPage() {
                     {users.filter(u => 
                       u.username?.toLowerCase().includes(userSearch.toLowerCase()) || 
                       (u.email && u.email.toLowerCase().includes(userSearch.toLowerCase()))
-                    ).length === 0 ? (
-                      <tr>
-                        <td colSpan={9} className="p-8 text-center text-slate-500 text-xs">
-                          Không tìm thấy tài khoản nào khớp với từ khóa tìm kiếm.
-                        </td>
-                      </tr>
-                    ) : (
-                      users.filter(u => 
-                        u.username?.toLowerCase().includes(userSearch.toLowerCase()) || 
-                        (u.email && u.email.toLowerCase().includes(userSearch.toLowerCase()))
-                      ).map((u, i) => {
-                        const lastSeenMs = u.last_seen ? new Date(u.last_seen).getTime() : 0;
-                        const isUserOnline = u.is_online === true && (nowTime - lastSeenMs < 20000);
-                        const isExempt = u.is_exempt === true;
-                        
-                        // Kiểm tra chính xác trạng thái email: phải có email và is_verified true
-                        const hasValidEmail = u.email && u.email.trim() !== '' && u.email.includes('@');
-                        const isVerified = isExempt || (hasValidEmail && u.is_verified === true);
+                    ).map((u, i) => {
+                      const lastSeenMs = u.last_seen ? new Date(u.last_seen).getTime() : 0;
+                      const isUserOnline = u.is_online === true && (nowTime - lastSeenMs < 20000);
+                      const isExempt = u.is_exempt === true;
+                      const hasValidEmail = u.email && u.email.trim() !== '' && u.email.includes('@');
+                      const isVerified = isExempt || (hasValidEmail && u.is_verified === true);
 
-                        return (
-                          <tr key={i} className="hover:bg-[#080D17]/80 transition">
-                            
-                            {/* Cột Tên tài khoản */}
-                            <td className="p-4 font-bold text-white whitespace-nowrap">
-                              <span className="font-mono text-cyan-300 font-black">{u.username}</span>
-                            </td>
-                            
-                            {/* Cột Gmail kèm nút Xóa Gmail */}
-                            <td className="p-4 font-mono whitespace-nowrap">
-                              {hasValidEmail ? (
-                                <div className="inline-flex items-center gap-2 bg-[#0B1019] border border-slate-800 px-2.5 py-1 rounded-xl">
-                                  <span className="text-slate-200 text-xs">{u.email}</span>
-                                  <button
-                                    disabled={deleteEmailLoadingId === u.id}
-                                    onClick={() => handleDeleteUserEmail(u)}
-                                    className="text-rose-400 hover:text-rose-300 p-1 hover:bg-rose-500/20 rounded-md transition cursor-pointer"
-                                    title="Xóa Gmail khỏi tài khoản này"
-                                  >
-                                    {deleteEmailLoadingId === u.id ? (
-                                      <Loader2 className="w-3 h-3 animate-spin" />
-                                    ) : (
-                                      <Trash2 className="w-3.5 h-3.5 text-rose-400/80 hover:text-rose-400" />
-                                    )}
-                                  </button>
-                                </div>
-                              ) : (
-                                <span className="text-slate-600 italic">Chưa có</span>
-                              )}
-                            </td>
-
-                            {/* Cột Mật khẩu */}
-                            <td className="p-4 font-mono whitespace-nowrap">
-                              <div className="flex items-center gap-2">
-                                <span className="text-slate-300 font-bold">
-                                  {showPasswords[u.username] ? u.password || '---' : '••••••••'}
-                                </span>
-                                <button onClick={() => handleToggleShowPass(u.username)} className="text-slate-500 hover:text-white transition cursor-pointer">
-                                  {showPasswords[u.username] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      return (
+                        <tr key={i} className="hover:bg-[#080D17]/80 transition">
+                          <td className="p-4 font-bold text-white whitespace-nowrap">
+                            <span className="font-mono text-cyan-300 font-black">{u.username}</span>
+                          </td>
+                          <td className="p-4 font-mono whitespace-nowrap">
+                            {hasValidEmail ? (
+                              <div className="inline-flex items-center gap-2 bg-[#0B1019] border border-slate-800 px-2.5 py-1 rounded-xl">
+                                <span className="text-slate-200 text-xs">{u.email}</span>
+                                <button
+                                  disabled={deleteEmailLoadingId === u.id}
+                                  onClick={() => handleDeleteUserEmail(u)}
+                                  className="text-rose-400 hover:text-rose-300 p-1 hover:bg-rose-500/20 rounded-md transition cursor-pointer"
+                                  title="Xóa Gmail khỏi tài khoản này"
+                                >
+                                  {deleteEmailLoadingId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3.5 h-3.5 text-rose-400/80 hover:text-rose-400" />}
                                 </button>
                               </div>
-                            </td>
-
-                            {/* Cột Số dư ví */}
-                            <td className="p-4 font-mono font-black text-emerald-400 whitespace-nowrap">
-                              {(u.balance || 0).toLocaleString('vi-VN')}đ
-                            </td>
-
-                            {/* Cột Trạng thái Gmail */}
-                            <td className="p-4 text-center whitespace-nowrap">
-                              {isExempt ? (
-                                <span className="text-cyan-300 font-black bg-cyan-500/20 px-3 py-1 rounded-xl border border-cyan-400 text-[10px] inline-flex items-center gap-1.5 shadow-[0_0_10px_rgba(6,182,212,0.25)]">
-                                  <Sparkles className="w-3 h-3 text-cyan-400" /> MIỄN XÁC THỰC
-                                </span>
-                              ) : isVerified ? (
-                                <span className="text-emerald-400 font-black bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/30 text-[10px] inline-flex items-center gap-1.5">
-                                  <CheckCircle className="w-3 h-3 text-emerald-400" /> ĐÃ XÁC THỰC
-                                </span>
-                              ) : (
-                                <span className="text-rose-400 font-black bg-rose-500/10 px-3 py-1 rounded-xl border border-rose-500/30 text-[10px] inline-flex items-center gap-1.5">
-                                  <XCircle className="w-3 h-3 text-rose-400" /> CHƯA XÁC THỰC
-                                </span>
-                              )}
-                            </td>
-
-                            {/* Cột Nút Bấm Miễn Xác Thực */}
-                            <td className="p-4 text-center whitespace-nowrap">
-                              <button
-                                disabled={exemptLoadingId === u.id}
-                                onClick={() => handleToggleExemptVerification(u)}
-                                className={`px-3.5 py-1.5 rounded-xl text-[11px] font-black transition cursor-pointer border inline-flex items-center gap-1.5 ${
-                                  isExempt 
-                                    ? 'bg-amber-500/10 border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-slate-950'
-                                    : 'bg-[#05080E] border-slate-700 hover:border-cyan-400 text-slate-300 hover:text-cyan-300'
-                                }`}
-                              >
-                                {exemptLoadingId === u.id ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : isExempt ? (
-                                  <>Bỏ miễn xác thực</>
-                                ) : (
-                                  <><Shield className="w-3.5 h-3.5 text-cyan-400" /> Miễn xác thực</>
-                                )}
+                            ) : (
+                              <span className="text-slate-600 italic">Chưa có</span>
+                            )}
+                          </td>
+                          <td className="p-4 font-mono whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <span className="text-slate-300 font-bold">{showPasswords[u.username] ? u.password || '---' : '••••••••'}</span>
+                              <button onClick={() => handleToggleShowPass(u.username)} className="text-slate-500 hover:text-white transition cursor-pointer">
+                                {showPasswords[u.username] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                               </button>
-                            </td>
-
-                            {/* Cột Trạng thái Online */}
-                            <td className="p-4 text-center whitespace-nowrap">
-                              {isUserOnline ? (
-                                <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 text-[10px] inline-flex items-center gap-1.5">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Online
-                                </span>
-                              ) : (
-                                <span className="text-slate-500 font-medium bg-slate-500/10 px-2.5 py-1 rounded-full border border-slate-500/20 text-[10px] inline-flex items-center gap-1.5">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Offline
-                                </span>
-                              )}
-                            </td>
-
-                            {/* Cột Khóa */}
-                            <td className="p-4 text-center whitespace-nowrap">
-                              {u.isBanned ? (
-                                <span className="text-rose-400 font-bold bg-rose-500/10 px-2.5 py-1 rounded border border-rose-500/20 text-[10px]">Bị BAN</span>
-                              ) : (
-                                <span className="text-cyan-400 font-bold bg-cyan-500/10 px-2.5 py-1 rounded border border-cyan-500/20 text-[10px]">Hoạt động</span>
-                              )}
-                            </td>
-
-                            {/* Cột Hành động */}
-                            <td className="p-4 text-right space-x-1.5 whitespace-nowrap">
-                              <button onClick={() => handleViewUserTransactions(u.username)} className="bg-cyan-500/10 text-cyan-400 p-2 rounded-xl border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer transition inline-flex" title="Xem lịch sử giao dịch">
-                                <History className="w-3.5 h-3.5" />
-                              </button>
-                              <button onClick={() => setAdjustBal({ username: u.username, amount: 0, isAdd: true })} className="bg-emerald-500/10 text-emerald-400 p-2 rounded-xl border border-emerald-500/20 hover:bg-emerald-500/20 cursor-pointer transition inline-flex" title="Cộng/Trừ tiền ví"><DollarSign className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => setEditUserPass({ username: u.username, newPass: '' })} className="bg-cyan-500/10 text-cyan-400 p-2 rounded-xl border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer transition inline-flex" title="Đổi mật khẩu"><Key className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => handleToggleBanUser(u)} className={`p-2 rounded-xl border cursor-pointer transition inline-flex ${u.isBanned ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
-                                {u.isBanned ? <CheckCircle className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
-                              </button>
-                              <button onClick={() => handleDeleteUser(u.id, u.username)} className="bg-rose-500/10 text-rose-400 p-2 rounded-xl border border-rose-500/20 hover:bg-rose-500/20 cursor-pointer transition inline-flex"><Trash2 className="w-3.5 h-3.5" /></button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
+                            </div>
+                          </td>
+                          <td className="p-4 font-mono font-black text-emerald-400 whitespace-nowrap">{(u.balance || 0).toLocaleString('vi-VN')}đ</td>
+                          <td className="p-4 text-center whitespace-nowrap">
+                            {isExempt ? (
+                              <span className="text-cyan-300 font-black bg-cyan-500/20 px-3 py-1 rounded-xl border border-cyan-400 text-[10px] inline-flex items-center gap-1.5 shadow-[0_0_10px_rgba(6,182,212,0.25)]">
+                                <Sparkles className="w-3 h-3 text-cyan-400" /> MIỄN XÁC THỰC
+                              </span>
+                            ) : isVerified ? (
+                              <span className="text-emerald-400 font-black bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/30 text-[10px] inline-flex items-center gap-1.5">
+                                <CheckCircle className="w-3 h-3 text-emerald-400" /> ĐÃ XÁC THỰC
+                              </span>
+                            ) : (
+                              <span className="text-rose-400 font-black bg-rose-500/10 px-3 py-1 rounded-xl border border-rose-500/30 text-[10px] inline-flex items-center gap-1.5">
+                                <XCircle className="w-3 h-3 text-rose-400" /> CHƯA XÁC THỰC
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-4 text-center whitespace-nowrap">
+                            <button
+                              disabled={exemptLoadingId === u.id}
+                              onClick={() => handleToggleExemptVerification(u)}
+                              className={`px-3.5 py-1.5 rounded-xl text-[11px] font-black transition cursor-pointer border inline-flex items-center gap-1.5 ${
+                                isExempt 
+                                  ? 'bg-amber-500/10 border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-slate-950'
+                                  : 'bg-[#05080E] border-slate-700 hover:border-cyan-400 text-slate-300 hover:text-cyan-300'
+                              }`}
+                            >
+                              {exemptLoadingId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : isExempt ? <>Bỏ miễn xác thực</> : <><Shield className="w-3.5 h-3.5 text-cyan-400" /> Miễn xác thực</>}
+                            </button>
+                          </td>
+                          <td className="p-4 text-center whitespace-nowrap">
+                            {isUserOnline ? (
+                              <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 text-[10px] inline-flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Online
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 font-medium bg-slate-500/10 px-2.5 py-1 rounded-full border border-slate-500/20 text-[10px] inline-flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Offline
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-4 text-center whitespace-nowrap">
+                            {u.isBanned ? (
+                              <span className="text-rose-400 font-bold bg-rose-500/10 px-2.5 py-1 rounded border border-rose-500/20 text-[10px]">Bị BAN</span>
+                            ) : (
+                              <span className="text-cyan-400 font-bold bg-cyan-500/10 px-2.5 py-1 rounded border border-cyan-500/20 text-[10px]">Hoạt động</span>
+                            )}
+                          </td>
+                          <td className="p-4 text-right space-x-1.5 whitespace-nowrap">
+                            <button onClick={() => handleViewUserTransactions(u.username)} className="bg-cyan-500/10 text-cyan-400 p-2 rounded-xl border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer transition inline-flex" title="Xem lịch sử giao dịch">
+                              <History className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => setAdjustBal({ username: u.username, amount: 0, isAdd: true })} className="bg-emerald-500/10 text-emerald-400 p-2 rounded-xl border border-emerald-500/20 hover:bg-emerald-500/20 cursor-pointer transition inline-flex" title="Cộng/Trừ tiền ví"><DollarSign className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => setEditUserPass({ username: u.username, newPass: '' })} className="bg-cyan-500/10 text-cyan-400 p-2 rounded-xl border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer transition inline-flex" title="Đổi mật khẩu"><Key className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => handleToggleBanUser(u)} className={`p-2 rounded-xl border cursor-pointer transition inline-flex ${u.isBanned ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
+                              {u.isBanned ? <CheckCircle className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
+                            </button>
+                            <button onClick={() => handleDeleteUser(u.id, u.username)} className="bg-rose-500/10 text-rose-400 p-2 rounded-xl border border-rose-500/20 hover:bg-rose-500/20 cursor-pointer transition inline-flex"><Trash2 className="w-3.5 h-3.5" /></button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -868,27 +845,162 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 4: MÃ GIẢM GIÁ */}
+        {/* ================= TAB 4: MÃ GIẢM GIÁ (NÂNG CẤP % HOẶC VNĐ & SỐ LẦN DÙNG/USER) ================= */}
         {activeTab === 'coupons' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleCreateCoupon} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
-              <h3 className="text-xs font-bold text-white flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase"><Plus className="w-4 h-4 text-cyan-400" /> Tạo Mã Giảm Giá Mới</h3>
-              <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Mã Code</label><input type="text" required value={couponForm.code} onChange={e => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono uppercase" placeholder="VD: GIAM5K" /></div>
-              <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Tool áp dụng</label><select value={couponForm.toolCode} onChange={e => setCouponForm({ ...couponForm, toolCode: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white"><option value="ALL">Tất cả sản phẩm (ALL)</option>{tools.map((t) => (<option key={t.id} value={t.toolCode || t.tool_code}>{t.name}</option>))}</select></div>
-              <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Số lượng lượt dùng</label><input type="number" min="1" required value={couponForm.quantity} onChange={e => setCouponForm({ ...couponForm, quantity: Number(e.target.value) })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white" /></div>
-              <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Số tiền giảm trực tiếp (VNĐ)</label><input type="number" min="1000" required value={couponForm.discountAmount} onChange={e => setCouponForm({ ...couponForm, discountAmount: Number(e.target.value) })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white" /></div>
-              <button type="submit" className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 py-3 rounded-xl text-xs font-black transition cursor-pointer shadow-sm">PHÁT HÀNH MÃ GIẢM GIÁ</button>
+              <h3 className="text-xs font-bold text-white flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase tracking-wider">
+                <Plus className="w-4 h-4 text-cyan-400" /> Tạo Mã Giảm Giá Mới
+              </h3>
+              
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1 font-bold">Mã Code</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={couponForm.code} 
+                  onChange={e => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })} 
+                  className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono uppercase focus:border-cyan-400" 
+                  placeholder="VD: GIAM20PT, SALE5K" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1 font-bold">Tool áp dụng</label>
+                <select 
+                  value={couponForm.toolCode} 
+                  onChange={e => setCouponForm({ ...couponForm, toolCode: e.target.value })} 
+                  className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white"
+                >
+                  <option value="ALL">Tất cả sản phẩm (ALL)</option>
+                  {tools.map((t) => (
+                    <option key={t.id} value={t.toolCode || t.tool_code}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* CHỌN LOẠI GIẢM GIÁ (THEO % HOẶC TIỀN CỐ ĐỊNH) */}
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1 font-bold">Hình thức giảm giá</label>
+                <div className="grid grid-cols-2 gap-2 bg-[#05080E] p-1 rounded-xl border border-slate-800 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setCouponForm({ ...couponForm, discountType: 'FIXED' })}
+                    className={`py-2 rounded-lg font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${couponForm.discountType === 'FIXED' ? 'bg-cyan-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    <DollarSign className="w-3.5 h-3.5" /> Giảm Số Tiền (VNĐ)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCouponForm({ ...couponForm, discountType: 'PERCENT' })}
+                    className={`py-2 rounded-lg font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${couponForm.discountType === 'PERCENT' ? 'bg-cyan-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    <Percent className="w-3.5 h-3.5" /> Giảm Phần Trăm (%)
+                  </button>
+                </div>
+              </div>
+
+              {/* Ô NHẬP TƯƠNG ỨNG VỚI LOẠI GIẢM GIÁ */}
+              {couponForm.discountType === 'FIXED' ? (
+                <div>
+                  <label className="block text-[11px] text-slate-400 mb-1 font-bold">Số tiền giảm trực tiếp (VNĐ)</label>
+                  <input 
+                    type="number" 
+                    min="1000" 
+                    required 
+                    value={couponForm.discountAmount} 
+                    onChange={e => setCouponForm({ ...couponForm, discountAmount: Number(e.target.value) })} 
+                    className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono" 
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-[11px] text-slate-400 mb-1 font-bold">Phần trăm giảm (1% - 100%)</label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    max="100" 
+                    required 
+                    value={couponForm.discountPercent} 
+                    onChange={e => setCouponForm({ ...couponForm, discountPercent: Number(e.target.value) })} 
+                    className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono" 
+                    placeholder="VD: 10, 20, 50"
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] text-slate-400 mb-1 font-bold">Tổng lượt dùng toàn shop</label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    required 
+                    value={couponForm.quantity} 
+                    onChange={e => setCouponForm({ ...couponForm, quantity: Number(e.target.value) })} 
+                    className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-slate-400 mb-1 font-bold">Giới hạn/tài khoản</label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    required 
+                    value={couponForm.maxUsesPerUser} 
+                    onChange={e => setCouponForm({ ...couponForm, maxUsesPerUser: Number(e.target.value) })} 
+                    className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono" 
+                    placeholder="VD: 1 lần"
+                  />
+                </div>
+              </div>
+
+              <button type="submit" className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 py-3 rounded-xl text-xs font-black transition cursor-pointer shadow-sm hover:bg-cyan-500 hover:text-slate-950">
+                PHÁT HÀNH MÃ GIẢM GIÁ
+              </button>
             </form>
 
+            {/* DANH SÁCH MÃ GIẢM GIÁ */}
             <div className="lg:col-span-2 bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
-              <h3 className="text-xs font-bold text-white border-b border-slate-800/80 pb-3 uppercase">DANH SÁCH MÃ GIẢM GIÁ</h3>
+              <h3 className="text-xs font-bold text-white border-b border-slate-800/80 pb-3 uppercase tracking-wider">
+                DANH SÁCH MÃ GIẢM GIÁ HIỆN HÀNH ({coupons.length})
+              </h3>
               <div className="space-y-3">
-                {coupons.length === 0 ? <p className="text-xs text-slate-500 py-4 text-center">Chưa có mã giảm giá nào.</p> : coupons.map((c) => (
-                  <div key={c.id} className="bg-[#05080E] border border-slate-800 p-4 rounded-xl flex items-center justify-between gap-4">
-                    <div className="space-y-1"><span className="font-mono font-black text-cyan-300 text-sm bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-cyan-500/30">{c.code}</span><div className="text-xs text-slate-300 mt-1">Giảm: <b className="text-emerald-400">{Number(c.discount_amount).toLocaleString('vi-VN')}đ</b> | Số lượng còn lại: <b className="text-amber-400">{c.quantity}</b></div></div>
-                    <button onClick={() => handleDeleteCoupon(c.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg cursor-pointer transition"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                ))}
+                {coupons.length === 0 ? (
+                  <p className="text-xs text-slate-500 py-8 text-center">Chưa có mã giảm giá nào được tạo.</p>
+                ) : (
+                  coupons.map((c) => {
+                    const isPercent = c.discount_type === 'PERCENT' || (c.discount_percent && Number(c.discount_percent) > 0);
+                    const discountLabel = isPercent ? `-${c.discount_percent}%` : `-${Number(c.discount_amount || 0).toLocaleString('vi-VN')}đ`;
+
+                    return (
+                      <div key={c.id} className="bg-[#05080E] border border-slate-800 p-4 rounded-2xl flex items-center justify-between gap-4 hover:border-cyan-500/40 transition">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-black text-cyan-300 text-sm bg-cyan-500/10 px-3 py-0.5 rounded-lg border border-cyan-500/30">
+                              {c.code}
+                            </span>
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${isPercent ? 'bg-purple-500/10 border-purple-500/30 text-purple-300' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>
+                              {isPercent ? 'GIẢM THEO %' : 'GIẢM SỐ TIỀN'}
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-300 flex items-center gap-3 flex-wrap">
+                            <span>Mức giảm: <b className="text-emerald-400 font-mono font-black">{discountLabel}</b></span>
+                            <span>|</span>
+                            <span>Số lượt còn: <b className="text-amber-400 font-mono font-bold">{c.quantity}</b></span>
+                            <span>|</span>
+                            <span>Giới hạn: <b className="text-cyan-300 font-mono font-bold">{c.max_uses_per_user || 1} lần/user</b></span>
+                            <span>|</span>
+                            <span>Tool: <b className="text-slate-400 font-mono uppercase">{c.tool_code || 'ALL'}</b></span>
+                          </div>
+                        </div>
+                        <button onClick={() => handleDeleteCoupon(c.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-xl cursor-pointer transition">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>
@@ -1027,7 +1139,7 @@ export default function AdminPage() {
 
       </div>
 
-      {/* ==================== POPUP 1: LỊCH SỬ GIAO DỊCH NỔI ==================== */}
+      {/* POPUP 1: LỊCH SỬ GIAO DỊCH NỔI */}
       {selectedUserHistory && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#0B1019] border-2 border-cyan-500/50 w-full max-w-2xl rounded-3xl p-6 space-y-4 relative shadow-[0_0_50px_rgba(6,182,212,0.25)] max-h-[85vh] flex flex-col">
@@ -1066,7 +1178,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* ==================== POPUP 2: ĐỔI MẬT KHẨU NỔI ==================== */}
+      {/* POPUP 2: ĐỔI MẬT KHẨU NỔI */}
       {editUserPass && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#0B1019] border-2 border-cyan-500/50 w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-[0_0_50px_rgba(6,182,212,0.25)]">
@@ -1099,7 +1211,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* ==================== POPUP 3: CỘNG/TRỪ TIỀN VÍ NỔI ==================== */}
+      {/* POPUP 3: CỘNG/TRỪ TIỀN VÍ NỔI */}
       {adjustBal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#0B1019] border-2 border-emerald-500/50 w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-[0_0_50px_rgba(16,185,129,0.25)]">
