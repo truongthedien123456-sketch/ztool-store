@@ -43,6 +43,7 @@ export default function AdminPage() {
   const [selectedUserHistory, setSelectedUserHistory] = useState<{ username: string; logs: any[] } | null>(null);
   const [loadingUserHistory, setLoadingUserHistory] = useState(false);
   const [exemptLoadingId, setExemptLoadingId] = useState<number | null>(null);
+  const [deleteEmailLoadingId, setDeleteEmailLoadingId] = useState<number | null>(null);
 
   const [toolForm, setToolForm] = useState({
     id: 0, name: '', toolCode: '', image: '', status: 'Đang hoạt động',
@@ -192,13 +193,19 @@ export default function AdminPage() {
     if (!error && data) setSelectedUserHistory({ username, logs: data });
   };
 
-  // BẬT / TẮT MIỄN XÁC THỰC EMAIL CHO USER
+  // BẬT / TẮT MIỄN XÁC THỰC EMAIL (CÓ KIỂM TRA CHÍNH XÁC EMAIL TRƯỚC KHI TRẢ VỀ TRẠNG THÁI)
   const handleToggleExemptVerification = async (u: any) => {
     setExemptLoadingId(u.id);
     const newExemptState = !u.is_exempt;
+    
+    // Nếu bật miễn xác thực -> true
+    // Nếu bỏ miễn xác thực -> Chỉ true khi có email hợp lệ và đã từng xác thực, ngược lại false hoàn toàn
+    const hasValidEmail = u.email && u.email.trim() !== '' && u.email.includes('@');
+    const newVerifiedState = newExemptState ? true : (hasValidEmail ? (u.is_verified === true) : false);
+
     const updatePayload: any = {
       is_exempt: newExemptState,
-      is_verified: newExemptState ? true : u.is_verified
+      is_verified: newVerifiedState
     };
 
     const { error } = await supabase
@@ -211,6 +218,31 @@ export default function AdminPage() {
       setUsers(prev => prev.map(user => user.id === u.id ? { ...user, ...updatePayload } : user));
     } else {
       alert(`Lỗi cập nhật miễn xác thực: ${error.message}`);
+    }
+  };
+
+  // CHỨC NĂNG XÓA EMAIL CỦA KHÁCH HÀNG
+  const handleDeleteUserEmail = async (u: any) => {
+    if (!confirm(`Xác nhận xóa địa chỉ Gmail của tài khoản "${u.username}"? Tài khoản sẽ chuyển về trạng thái Chưa xác thực.`)) return;
+
+    setDeleteEmailLoadingId(u.id);
+    const updatePayload = {
+      email: null,
+      is_verified: false,
+      is_exempt: false
+    };
+
+    const { error } = await supabase
+      .from('users')
+      .update(updatePayload)
+      .eq('id', u.id);
+
+    setDeleteEmailLoadingId(null);
+    if (!error) {
+      setUsers(prev => prev.map(user => user.id === u.id ? { ...user, ...updatePayload } : user));
+      alert(`Đã xóa Gmail cho tài khoản ${u.username} thành công!`);
+    } else {
+      alert(`Lỗi xóa Gmail: ${error.message}`);
     }
   };
 
@@ -236,7 +268,7 @@ export default function AdminPage() {
     e.preventDefault(); if (!newUserForm.username || !newUserForm.password) return alert('Nhập đủ username/password!');
     const { error } = await supabase.from('users').insert([{ 
       username: newUserForm.username.trim(), 
-      email: newUserForm.email.trim().toLowerCase(),
+      email: newUserForm.email ? newUserForm.email.trim().toLowerCase() : null,
       password: newUserForm.password, 
       balance: Number(newUserForm.balance) || 0, 
       is_verified: false,
@@ -466,7 +498,7 @@ export default function AdminPage() {
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <input type="text" placeholder="Tên tài khoản (username)..." value={newUserForm.username} onChange={e => setNewUserForm({ ...newUserForm, username: e.target.value })} className="bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition" />
-                <input type="email" placeholder="Địa chỉ Gmail..." value={newUserForm.email} onChange={e => setNewUserForm({ ...newUserForm, email: e.target.value })} className="bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition" />
+                <input type="email" placeholder="Địa chỉ Gmail (nếu có)..." value={newUserForm.email} onChange={e => setNewUserForm({ ...newUserForm, email: e.target.value })} className="bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition" />
                 <input type="text" placeholder="Mật khẩu..." value={newUserForm.password} onChange={e => setNewUserForm({ ...newUserForm, password: e.target.value })} className="bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition" />
                 <input type="number" placeholder="Số dư ban đầu (VNĐ)..." value={newUserForm.balance || ''} onChange={e => setNewUserForm({ ...newUserForm, balance: Number(e.target.value) })} className="bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition" />
               </div>
@@ -489,7 +521,7 @@ export default function AdminPage() {
                   <thead className="bg-[#05080E] border-b border-slate-800/80 text-slate-400 uppercase text-[10px] tracking-wider">
                     <tr>
                       <th className="p-3.5">Tài khoản</th>
-                      <th className="p-3.5">Email</th>
+                      <th className="p-3.5">Gmail liên kết</th>
                       <th className="p-3.5">Mật khẩu</th>
                       <th className="p-3.5">Số dư ví</th>
                       <th className="p-3.5 text-center">Trạng thái Gmail</th>
@@ -502,19 +534,43 @@ export default function AdminPage() {
                   <tbody className="divide-y divide-slate-800/60">
                     {users.filter(u => 
                       u.username?.toLowerCase().includes(userSearch.toLowerCase()) || 
-                      u.email?.toLowerCase().includes(userSearch.toLowerCase())
+                      (u.email && u.email.toLowerCase().includes(userSearch.toLowerCase()))
                     ).map((u, i) => {
                       const lastSeenMs = u.last_seen ? new Date(u.last_seen).getTime() : 0;
                       const isUserOnline = u.is_online === true && (nowTime - lastSeenMs < 20000);
                       const isExempt = u.is_exempt === true;
-                      const isVerified = u.is_verified === true || isExempt;
+                      
+                      // Kiểm tra xem có email thực tế và đã xác thực hay chưa
+                      const hasValidEmail = u.email && u.email.trim() !== '' && u.email.includes('@');
+                      const isVerified = isExempt || (hasValidEmail && u.is_verified === true);
 
                       return (
                         <tr key={i} className="hover:bg-[#05080E]/60 transition">
                           <td className="p-3.5 font-bold text-white">{u.username}</td>
-                          <td className="p-3.5 font-mono text-slate-300">
-                            {u.email || <span className="text-slate-600 italic">Chưa có</span>}
+                          
+                          {/* Cột Gmail kèm nút Xóa Gmail */}
+                          <td className="p-3.5 font-mono">
+                            {hasValidEmail ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-slate-200">{u.email}</span>
+                                <button
+                                  disabled={deleteEmailLoadingId === u.id}
+                                  onClick={() => handleDeleteUserEmail(u)}
+                                  className="text-rose-400 hover:text-rose-300 p-1 hover:bg-rose-500/10 rounded transition cursor-pointer"
+                                  title="Xóa Gmail khỏi tài khoản này"
+                                >
+                                  {deleteEmailLoadingId === u.id ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-3.5 h-3.5 text-rose-400/80 hover:text-rose-400" />
+                                  )}
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-slate-600 italic">Chưa có</span>
+                            )}
                           </td>
+
                           <td className="p-3.5 font-mono">
                             <div className="flex items-center gap-2">
                               <span className="text-cyan-300 font-bold">
@@ -525,9 +581,10 @@ export default function AdminPage() {
                               </button>
                             </div>
                           </td>
+
                           <td className="p-3.5 font-mono font-bold text-emerald-400">{(u.balance || 0).toLocaleString('vi-VN')} VNĐ</td>
 
-                          {/* Cột hiển thị Trạng thái Gmail */}
+                          {/* Cột Trạng thái Gmail chuẩn xác */}
                           <td className="p-3.5 text-center">
                             {isExempt ? (
                               <span className="text-cyan-300 font-bold bg-cyan-500/20 px-2.5 py-0.5 rounded-lg border border-cyan-400 text-[10px] inline-flex items-center gap-1">
@@ -544,7 +601,7 @@ export default function AdminPage() {
                             )}
                           </td>
 
-                          {/* Cột Toggle Nút Miễn xác thực */}
+                          {/* Cột Nút Bấm Miễn Xác Thực */}
                           <td className="p-3.5 text-center">
                             <button
                               disabled={exemptLoadingId === u.id}
@@ -576,6 +633,7 @@ export default function AdminPage() {
                               </span>
                             )}
                           </td>
+
                           <td className="p-3.5">
                             {u.isBanned ? (
                               <span className="text-rose-400 font-bold bg-rose-500/10 px-2.5 py-1 rounded border border-rose-500/20 text-[10px]">Bị BAN</span>
@@ -583,6 +641,7 @@ export default function AdminPage() {
                               <span className="text-cyan-400 font-bold bg-cyan-500/10 px-2.5 py-1 rounded border border-cyan-500/20 text-[10px]">Hoạt động</span>
                             )}
                           </td>
+
                           <td className="p-3.5 text-right space-x-2">
                             <button onClick={() => handleViewUserTransactions(u.username)} className="bg-cyan-500/10 text-cyan-400 p-2 rounded-xl border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer transition" title="Xem lịch sử giao dịch">
                               <History className="w-3.5 h-3.5" />
