@@ -163,6 +163,16 @@ export default function ToolsPage() {
       return;
     }
 
+    // ================= BẮT BUỘC XÁC THỰC GMAIL TRƯỚC KHI MUA =================
+    if (userData.is_verified === false) {
+      setLoadingBuy(false);
+      setPurchaseMsg({ 
+        type: 'error', 
+        text: 'Tài khoản chưa xác thực Gmail! Vui lòng xác thực mã OTP gửi về Email để mở khóa quyền mua bản quyền tool.' 
+      });
+      return;
+    }
+
     try {
       const gistId = '21f0a39cbc434e5033d89f06e2c7d26e';
       const gistCheckRes = await fetch(`https://api.github.com/gists/${gistId}?timestamp=${Date.now()}`, { cache: 'no-store' });

@@ -152,6 +152,11 @@ export default function HomePage() {
     setPurchaseMsg(null);
     if (!selectedToolForBuy) return;
 
+    if (selectedToolForBuy.status === 'Tạm ngưng') {
+      setPurchaseMsg({ type: 'error', text: 'Sản phẩm Tool này hiện đang TẠM NGƯNG cung cấp!' });
+      return;
+    }
+
     const currentUsername = localStorage.getItem('ztool_current_user');
     if (!currentUsername) {
       setPurchaseMsg({ type: 'error', text: 'Vui lòng đăng nhập tài khoản để thực hiện giao dịch!' });
@@ -165,6 +170,16 @@ export default function HomePage() {
     if (!userData) {
       setLoadingBuy(false);
       setPurchaseMsg({ type: 'error', text: 'Không tìm thấy thông tin tài khoản của bạn trên hệ thống!' });
+      return;
+    }
+
+    // ================= BẮT BUỘC XÁC THỰC GMAIL TRƯỚC KHI MUA =================
+    if (userData.is_verified === false) {
+      setLoadingBuy(false);
+      setPurchaseMsg({ 
+        type: 'error', 
+        text: 'Tài khoản chưa xác thực Gmail! Vui lòng xác thực mã OTP gửi về Email để mở khóa quyền mua bản quyền tool.' 
+      });
       return;
     }
 
