@@ -5,8 +5,8 @@ import { supabase } from '@/lib/supabase';
 import { 
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
-  Ban, CheckCircle, CreditCard, KeyRound, Search, DollarSign, Settings,
-  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent
+  Ban, CheckCircle, CheckCircle2, CreditCard, KeyRound, Search, DollarSign, Settings,
+  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent, Crown, Gem, Flame, Star, Award
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -18,6 +18,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'users' | 'tools' | 'projects' | 'gist_accounts' | 'sepay' | 'feedback' | 'coupons' | 'settings'>('users');
 
   const [users, setUsers] = useState<any[]>([]);
+  const [userVipMap, setUserVipMap] = useState<{ [key: string]: number }>({});
   const [tools, setTools] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
@@ -59,7 +60,7 @@ export default function AdminPage() {
   const [projectPreviewUrl, setProjectPreviewUrl] = useState<string>('');
   const [isUploadingProject, setIsUploadingProject] = useState(false);
 
-  // Form Mã giảm giá nâng cấp (% / VNĐ & Lượt dùng mỗi tài khoản)
+  // Form Mã giảm giá nâng cấp
   const [couponForm, setCouponForm] = useState({ 
     code: '', 
     toolCode: 'ALL', 
@@ -95,6 +96,50 @@ export default function AdminPage() {
       clearInterval(timer);
     };
   }, []);
+
+  // Hàm tính toán cấp bậc VIP theo số tiền nạp tích lũy
+  const getVipBadge = (amount: number) => {
+    if (amount >= 5000000) {
+      return (
+        <span className="text-[10px] font-black bg-gradient-to-r from-rose-600/30 via-pink-600/30 to-amber-500/30 border border-rose-400 text-rose-200 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-pulse">
+          <Flame className="w-3 h-3 text-rose-400" /> VIP 5
+        </span>
+      );
+    }
+    if (amount >= 3000000) {
+      return (
+        <span className="text-[10px] font-black bg-gradient-to-r from-purple-500/30 to-indigo-500/30 border border-purple-400 text-purple-200 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_10px_rgba(168,85,247,0.5)] animate-pulse">
+          <Gem className="w-3 h-3 text-purple-300" /> VIP 4
+        </span>
+      );
+    }
+    if (amount >= 2000000) {
+      return (
+        <span className="text-[10px] font-black bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/60 text-amber-300 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(251,191,36,0.3)]">
+          <Crown className="w-3 h-3 text-amber-400" /> VIP 3
+        </span>
+      );
+    }
+    if (amount >= 1000000) {
+      return (
+        <span className="text-[10px] font-black bg-gradient-to-r from-slate-400/20 to-cyan-500/20 border border-cyan-400/50 text-cyan-300 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(6,182,212,0.3)]">
+          <Star className="w-3 h-3 text-cyan-300" /> VIP 2
+        </span>
+      );
+    }
+    if (amount >= 500000) {
+      return (
+        <span className="text-[10px] font-black bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/50 text-orange-300 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(249,115,22,0.3)]">
+          <Award className="w-3 h-3 text-orange-400" /> VIP 1
+        </span>
+      );
+    }
+    return (
+      <span className="text-[10px] font-bold bg-slate-800/80 border border-slate-700 text-slate-400 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1">
+        <User className="w-3 h-3 text-slate-500" /> Thành viên
+      </span>
+    );
+  };
 
   const fetchGistAccountsData = async () => {
     setLoadingGist(true);
@@ -141,7 +186,32 @@ export default function AdminPage() {
   const loadAllSyncData = async () => {
     try {
       const { data: userData } = await supabase.from('users').select('*').order('id', { ascending: false });
-      if (userData) setUsers(userData);
+      if (userData) {
+        setUsers(userData);
+
+        const usernames = userData.map((u: any) => u.username).filter(Boolean);
+        if (usernames.length > 0) {
+          const { data: transData } = await supabase
+            .from('transactions')
+            .select('username, amount, type')
+            .in('username', usernames)
+            .in('type', ['RECHARGE', 'ADMIN_ADD', 'ADMIN_SUB']);
+
+          if (transData) {
+            const map: { [key: string]: number } = {};
+            transData.forEach((t: any) => {
+              const u = t.username;
+              if (!map[u]) map[u] = 0;
+              if (t.type === 'ADMIN_SUB') {
+                map[u] -= Math.abs(Number(t.amount) || 0);
+              } else {
+                map[u] += (Number(t.amount) || 0);
+              }
+            });
+            setUserVipMap(map);
+          }
+        }
+      }
 
       const { data: toolData } = await supabase.from('tools').select('*').order('id', { ascending: false });
       if (toolData) {
@@ -193,7 +263,6 @@ export default function AdminPage() {
   const handleAdminLogout = () => { localStorage.removeItem('ztool_admin_authenticated'); setIsAuthenticated(false); };
   const handleToggleShowPass = (username: string) => { setShowPasswords(prev => ({ ...prev, [username]: !prev[username] })); };
 
-  // XEM LỊCH SỬ GIAO DỊCH CỦA TÀI KHOẢN
   const handleViewUserTransactions = async (username: string) => {
     setLoadingUserHistory(true); 
     setSelectedUserHistory({ username, logs: [] });
@@ -202,7 +271,6 @@ export default function AdminPage() {
     if (!error && data) setSelectedUserHistory({ username, logs: data });
   };
 
-  // BẬT / TẮT MIỄN XÁC THỰC EMAIL CHO USER
   const handleToggleExemptVerification = async (u: any) => {
     setExemptLoadingId(u.id);
     const newExemptState = !u.is_exempt;
@@ -227,7 +295,6 @@ export default function AdminPage() {
     }
   };
 
-  // CHỨC NĂNG XÓA EMAIL CỦA KHÁCH HÀNG
   const handleDeleteUserEmail = async (u: any) => {
     if (!confirm(`Xác nhận xóa địa chỉ Gmail của tài khoản "${u.username}"? Tài khoản sẽ chuyển về trạng thái Chưa xác thực.`)) return;
 
@@ -292,7 +359,6 @@ export default function AdminPage() {
   const handleToggleBanUser = async (u: any) => { const { error } = await supabase.from('users').update({ isBanned: !u.isBanned }).eq('id', u.id); if (!error) loadAllSyncData(); };
   const handleDeleteUser = async (id: number, username: string) => { if (!confirm(`Xóa tài khoản ${username}?`)) return; const { error } = await supabase.from('users').delete().eq('id', id); if (!error) loadAllSyncData(); };
   
-  // ĐỔI MẬT KHẨU TÀI KHOẢN
   const handleSaveUserPassword = async () => { 
     if (!editUserPass || !editUserPass.newPass.trim()) return alert('Vui lòng nhập mật khẩu mới!'); 
     const { error } = await supabase.from('users').update({ password: editUserPass.newPass.trim() }).eq('username', editUserPass.username); 
@@ -304,7 +370,6 @@ export default function AdminPage() {
     } 
   };
   
-  // CỘNG/TRỪ TIỀN VÍ
   const handleExecAdjustBalance = async (isAddMode: boolean) => {
     if (!adjustBal || !adjustBal.amount || adjustBal.amount <= 0) return alert('Vui lòng nhập số tiền hợp lệ!');
     const targetUser = users.find(u => u.username === adjustBal.username);
@@ -363,7 +428,6 @@ export default function AdminPage() {
   const handleDeleteProject = async (id: number) => { if (!confirm('Xóa dự án này?')) return; const { error } = await supabase.from('projects').delete().eq('id', id); if (!error) loadAllSyncData(); };
   const handleDeleteFeedback = async (id: number) => { const { error } = await supabase.from('feedbacks').delete().eq('id', id); if (!error) loadAllSyncData(); };
 
-  // TẠO MÃ GIẢM GIÁ (CÓ LỰA CHỌN % HOẶC VNĐ VÀ SỐ LẦN DÙNG/USER)
   const handleCreateCoupon = async (e: React.FormEvent) => {
     e.preventDefault(); 
     if (!couponForm.code.trim()) return alert('Vui lòng nhập mã giảm giá!');
@@ -521,7 +585,7 @@ export default function AdminPage() {
           <button onClick={() => setActiveTab('settings')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'settings' ? 'bg-amber-500 text-slate-950 font-black shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'text-amber-400 hover:text-amber-300 hover:bg-slate-800/50'}`}><Bell className="w-4 h-4" /> THÔNG BÁO CHUNG</button>
         </div>
 
-        {/* ================= TAB 1: QUẢN LÝ NGƯỜI DÙNG ================= */}
+        {/* ================= TAB 1: QUẢN LÝ NGƯỜI DÙNG CÓ CỘT VIP ================= */}
         {activeTab === 'users' && (
           <div className="space-y-6">
             <form onSubmit={handleCreateUser} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
@@ -557,7 +621,7 @@ export default function AdminPage() {
                   <h2 className="text-base font-black text-white flex items-center gap-2 tracking-wide uppercase">
                     <Users className="w-5 h-5 text-cyan-400" /> DANH SÁCH KHÁCH HÀNG ({users.length})
                   </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">Quản lý tài khoản, Gmail xác thực, quyền miễn xác thực và điều chỉnh số dư ví</p>
+                  <p className="text-xs text-slate-400 mt-0.5">Quản lý tài khoản, Cấp bậc VIP, Gmail xác thực, quyền miễn xác thực và điều chỉnh số dư ví</p>
                 </div>
 
                 <div className="relative w-full md:w-80">
@@ -582,6 +646,7 @@ export default function AdminPage() {
                   <thead className="bg-[#05080E] border-b border-slate-800/80 text-slate-400 uppercase text-[10px] tracking-wider font-black">
                     <tr>
                       <th className="p-4 whitespace-nowrap min-w-[130px]">Tài khoản</th>
+                      <th className="p-4 whitespace-nowrap text-center min-w-[120px]">Cấp bậc VIP</th>
                       <th className="p-4 whitespace-nowrap min-w-[200px]">Gmail liên kết</th>
                       <th className="p-4 whitespace-nowrap min-w-[120px]">Mật khẩu</th>
                       <th className="p-4 whitespace-nowrap min-w-[120px]">Số dư ví</th>
@@ -602,11 +667,19 @@ export default function AdminPage() {
                       const isExempt = u.is_exempt === true;
                       const hasValidEmail = u.email && u.email.trim() !== '' && u.email.includes('@');
                       const isVerified = isExempt || (hasValidEmail && u.is_verified === true);
+                      
+                      const depositedAmount = userVipMap[u.username] || 0;
 
                       return (
                         <tr key={i} className="hover:bg-[#080D17]/80 transition">
                           <td className="p-4 font-bold text-white whitespace-nowrap">
                             <span className="font-mono text-cyan-300 font-black">{u.username}</span>
+                          </td>
+                          {/* Cột Cấp bậc VIP */}
+                          <td className="p-4 text-center whitespace-nowrap">
+                            <div className="flex items-center justify-center">
+                              {getVipBadge(depositedAmount)}
+                            </div>
                           </td>
                           <td className="p-4 font-mono whitespace-nowrap">
                             {hasValidEmail ? (
@@ -641,7 +714,7 @@ export default function AdminPage() {
                               </span>
                             ) : isVerified ? (
                               <span className="text-emerald-400 font-black bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/30 text-[10px] inline-flex items-center gap-1.5">
-                                <CheckCircle className="w-3 h-3 text-emerald-400" /> ĐÃ XÁC THỰC
+                                <CheckCircle2 className="w-3 h-3 text-emerald-400" /> ĐÃ XÁC THỰC
                               </span>
                             ) : (
                               <span className="text-rose-400 font-black bg-rose-500/10 px-3 py-1 rounded-xl border border-rose-500/30 text-[10px] inline-flex items-center gap-1.5">
@@ -845,7 +918,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 4: MÃ GIẢM GIÁ (NÂNG CẤP % HOẶC VNĐ & SỐ LẦN DÙNG/USER) ================= */}
+        {/* TAB 4: MÃ GIẢM GIÁ */}
         {activeTab === 'coupons' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleCreateCoupon} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
@@ -879,7 +952,6 @@ export default function AdminPage() {
                 </select>
               </div>
 
-              {/* CHỌN LOẠI GIẢM GIÁ (THEO % HOẶC TIỀN CỐ ĐỊNH) */}
               <div>
                 <label className="block text-[11px] text-slate-400 mb-1 font-bold">Hình thức giảm giá</label>
                 <div className="grid grid-cols-2 gap-2 bg-[#05080E] p-1 rounded-xl border border-slate-800 text-xs">
@@ -900,7 +972,6 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Ô NHẬP TƯƠNG ỨNG VỚI LOẠI GIẢM GIÁ */}
               {couponForm.discountType === 'FIXED' ? (
                 <div>
                   <label className="block text-[11px] text-slate-400 mb-1 font-bold">Số tiền giảm trực tiếp (VNĐ)</label>
@@ -960,7 +1031,6 @@ export default function AdminPage() {
               </button>
             </form>
 
-            {/* DANH SÁCH MÃ GIẢM GIÁ */}
             <div className="lg:col-span-2 bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
               <h3 className="text-xs font-bold text-white border-b border-slate-800/80 pb-3 uppercase tracking-wider">
                 DANH SÁCH MÃ GIẢM GIÁ HIỆN HÀNH ({coupons.length})
@@ -1096,7 +1166,7 @@ export default function AdminPage() {
                     onClick={() => setNoticeForm({ ...noticeForm, active: !noticeForm.active })}
                     className={`px-4 py-2 rounded-xl text-xs font-black border transition cursor-pointer flex items-center gap-2 ${noticeForm.active ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
                   >
-                    {noticeForm.active ? <><CheckCircle className="w-4 h-4"/> ĐANG BẬT</> : <><Ban className="w-4 h-4"/> ĐANG TẮT</>}
+                    {noticeForm.active ? <><CheckCircle2 className="w-4 h-4"/> ĐANG BẬT</> : <><Ban className="w-4 h-4"/> ĐANG TẮT</>}
                   </button>
                 </div>
                 <button 
@@ -1110,7 +1180,7 @@ export default function AdminPage() {
 
             <div className="bg-[#0B1019] border border-amber-500/40 rounded-2xl p-6 space-y-4 h-fit shadow-xl shadow-amber-500/5">
               <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase">
-                <CheckCircle className="w-4 h-4 text-amber-400" /> Thông báo đang hiển thị thực tế
+                <CheckCircle2 className="w-4 h-4 text-amber-400" /> Thông báo đang hiển thị thực tế
               </h3>
               <div className="bg-[#05080E] border border-slate-800 p-5 rounded-xl space-y-4">
                 <div className="flex items-center justify-between">
