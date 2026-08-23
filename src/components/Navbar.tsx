@@ -236,17 +236,17 @@ export default function Navbar() {
     }
   };
 
-  // Cấu hình bậc VIP kèm hiệu ứng nhịp đập & họa tiết góc cho VIP 5 độc quyền
+  // Cấu hình bậc VIP: Khung viền ngoài tĩnh, nhịp đập & họa tiết nằm trên Badge VIP bên trong
   const getVipInfo = (amount: number) => {
     if (amount >= 5000000) {
       return {
         level: 5,
-        title: 'VIP 5 - HUYỀN THOẠI',
+        title: 'VIP 5',
         sub: 'Kim Cương Đỏ Tối Thượng',
         color: 'text-rose-400',
-        badgeBg: 'bg-gradient-to-r from-rose-500/30 via-pink-500/30 to-amber-500/30 border-rose-400/80 text-rose-200 animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.6)]',
-        border: 'border-2 border-rose-500 shadow-[0_0_35px_rgba(244,63,94,0.9)] ring-2 ring-rose-400/50 animate-pulse',
-        avatarBg: 'bg-gradient-to-tr from-rose-600 via-pink-500 to-amber-400 text-white shadow-[0_0_25px_rgba(244,63,94,0.8)] animate-pulse',
+        badgeBg: 'bg-gradient-to-r from-rose-600/30 via-pink-600/30 to-amber-500/30 border-rose-400 text-rose-100 shadow-[0_0_15px_rgba(244,63,94,0.8)] animate-pulse',
+        border: 'border-2 border-rose-500/80 shadow-[0_0_20px_rgba(244,63,94,0.35)]',
+        avatarBg: 'bg-gradient-to-tr from-rose-600 via-pink-500 to-amber-400 text-white shadow-[0_0_15px_rgba(244,63,94,0.6)]',
         icon: Flame,
         nextGoal: 5000000,
         progress: 100,
@@ -255,12 +255,12 @@ export default function Navbar() {
     if (amount >= 3000000) {
       return {
         level: 4,
-        title: 'VIP 4 - BẠCH KIM',
+        title: 'VIP 4',
         sub: 'Hoàng Gia Tối Cao',
         color: 'text-purple-300',
-        badgeBg: 'bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border-purple-500/50 text-purple-300',
-        border: 'border-2 border-purple-400 shadow-[0_0_30px_rgba(168,85,247,0.75)] ring-2 ring-purple-400/40 animate-pulse',
-        avatarBg: 'bg-gradient-to-tr from-purple-600 via-indigo-500 to-cyan-400 text-white shadow-[0_0_20px_rgba(168,85,247,0.6)] animate-pulse',
+        badgeBg: 'bg-gradient-to-r from-purple-500/30 to-indigo-500/30 border-purple-400 text-purple-200 shadow-[0_0_12px_rgba(168,85,247,0.7)] animate-pulse',
+        border: 'border-2 border-purple-500/80 shadow-[0_0_18px_rgba(168,85,247,0.25)]',
+        avatarBg: 'bg-gradient-to-tr from-purple-600 via-indigo-500 to-cyan-400 text-white shadow-[0_0_10px_rgba(168,85,247,0.4)]',
         icon: Gem,
         nextGoal: 5000000,
         progress: Math.min(100, Math.round(((amount - 3000000) / (5000000 - 3000000)) * 100)),
@@ -269,11 +269,11 @@ export default function Navbar() {
     if (amount >= 2000000) {
       return {
         level: 3,
-        title: 'VIP 3 - HOÀNG KIM',
+        title: 'VIP 3',
         sub: 'Thương Gia Cao Cấp',
         color: 'text-amber-300',
-        badgeBg: 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/50 text-amber-300',
-        border: 'border-2 border-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.5)] ring-2 ring-amber-400/20',
+        badgeBg: 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/60 text-amber-300',
+        border: 'border-2 border-amber-400/80 shadow-[0_0_15px_rgba(251,191,36,0.2)]',
         avatarBg: 'bg-gradient-to-tr from-amber-500 via-yellow-400 to-orange-500 text-slate-950',
         icon: Crown,
         nextGoal: 3000000,
@@ -283,11 +283,11 @@ export default function Navbar() {
     if (amount >= 1000000) {
       return {
         level: 2,
-        title: 'VIP 2 - TINH ANH',
+        title: 'VIP 2',
         sub: 'Hiệp Sĩ Bạc Ánh Thép',
         color: 'text-cyan-300',
         badgeBg: 'bg-gradient-to-r from-slate-400/20 to-cyan-500/20 border-cyan-400/50 text-cyan-300',
-        border: 'border-2 border-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.4)]',
+        border: 'border-2 border-cyan-400/70 shadow-[0_0_15px_rgba(6,182,212,0.2)]',
         avatarBg: 'bg-gradient-to-tr from-slate-400 via-cyan-400 to-blue-500 text-slate-950',
         icon: Star,
         nextGoal: 2000000,
@@ -297,11 +297,11 @@ export default function Navbar() {
     if (amount >= 500000) {
       return {
         level: 1,
-        title: 'VIP 1 - ĐỒNG NEON',
+        title: 'VIP 1',
         sub: 'Chiến Binh Mới Nổi',
         color: 'text-orange-400',
         badgeBg: 'bg-gradient-to-r from-orange-500/20 to-amber-500/20 border-orange-500/50 text-orange-300',
-        border: 'border-2 border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.3)]',
+        border: 'border-2 border-orange-400/70 shadow-[0_0_12px_rgba(249,115,22,0.2)]',
         avatarBg: 'bg-gradient-to-tr from-orange-600 to-amber-500 text-white',
         icon: Award,
         nextGoal: 1000000,
@@ -857,36 +857,38 @@ export default function Navbar() {
                   <PlusCircle className="w-4 h-4 text-slate-950 stroke-[2.5]" /> Nạp tiền
                 </button>
 
-                {/* Ô THÔNG TIN KHÁCH HÀNG (VIỀN VIP DYNAMIC & HỌA TIẾT VIP 5) */}
+                {/* Ô THÔNG TIN KHÁCH HÀNG */}
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setShowUserDropdown(!showUserDropdown)}
                     className={`flex items-center gap-3 bg-[#0D131F]/95 p-1.5 pr-3.5 rounded-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer group backdrop-blur-md relative ${vipInfo.border}`}
                   >
-                    {/* Họa tiết góc Cyberpunk đặc biệt cho VIP 5 */}
-                    {vipInfo.level === 5 && (
-                      <>
-                        <div className="absolute -top-1 -left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-amber-300 rounded-tl-sm pointer-events-none shadow-[0_0_5px_#fde047]"></div>
-                        <div className="absolute -top-1 -right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-amber-300 rounded-tr-sm pointer-events-none shadow-[0_0_5px_#fde047]"></div>
-                        <div className="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-b-2 border-l-2 border-amber-300 rounded-bl-sm pointer-events-none shadow-[0_0_5px_#fde047]"></div>
-                        <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-b-2 border-r-2 border-amber-300 rounded-br-sm pointer-events-none shadow-[0_0_5px_#fde047]"></div>
-                      </>
-                    )}
-
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs uppercase shadow-inner relative ${vipInfo.avatarBg}`}>
                       {currentUser.username.substring(0, 1).toUpperCase()}
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#0D131F] absolute -bottom-0.5 -right-0.5 animate-pulse"></span>
                     </div>
                     
                     <div className="text-left text-xs leading-tight flex flex-col justify-center">
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         <span className="font-extrabold text-white group-hover:text-cyan-300 transition truncate max-w-[85px]">
                           {currentUser.username}
                         </span>
+                        
+                        {/* Khung VIP bên trong có nhịp đập & góc mạ vàng cho VIP 5 */}
                         {vipInfo.level > 0 && (
-                          <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${vipInfo.badgeBg}`}>
-                            V{vipInfo.level}
-                          </span>
+                          <div className="relative inline-flex items-center">
+                            {vipInfo.level === 5 && (
+                              <>
+                                <span className="absolute -top-0.5 -left-0.5 w-1.5 h-1.5 border-t border-l border-amber-300 rounded-tl-sm pointer-events-none z-10 shadow-[0_0_4px_#fde047]"></span>
+                                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 border-t border-r border-amber-300 rounded-tr-sm pointer-events-none z-10 shadow-[0_0_4px_#fde047]"></span>
+                                <span className="absolute -bottom-0.5 -left-0.5 w-1.5 h-1.5 border-b border-l border-amber-300 rounded-bl-sm pointer-events-none z-10 shadow-[0_0_4px_#fde047]"></span>
+                                <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 border-b border-r border-amber-300 rounded-br-sm pointer-events-none z-10 shadow-[0_0_4px_#fde047]"></span>
+                              </>
+                            )}
+                            <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${vipInfo.badgeBg}`}>
+                              V{vipInfo.level}
+                            </span>
+                          </div>
                         )}
                       </div>
                       <span className="text-[10px] text-emerald-400 font-black block mt-0.5 font-mono">
@@ -1066,16 +1068,6 @@ export default function Navbar() {
         <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
           <div className={`bg-[#0A0F18] ${vipInfo.border} w-full max-w-lg rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_60px_rgba(6,182,212,0.3)] text-slate-200 max-h-[92vh] overflow-y-auto`}>
             
-            {/* Họa tiết 4 góc vương miện Cyberpunk cao cấp cho riêng biệt VIP 5 */}
-            {vipInfo.level === 5 && (
-              <>
-                <div className="absolute -top-1.5 -left-1.5 w-4 h-4 border-t-2 border-l-2 border-amber-300 rounded-tl-md pointer-events-none shadow-[0_0_10px_#fde047]"></div>
-                <div className="absolute -top-1.5 -right-1.5 w-4 h-4 border-t-2 border-r-2 border-amber-300 rounded-tr-md pointer-events-none shadow-[0_0_10px_#fde047]"></div>
-                <div className="absolute -bottom-1.5 -left-1.5 w-4 h-4 border-b-2 border-l-2 border-amber-300 rounded-bl-md pointer-events-none shadow-[0_0_10px_#fde047]"></div>
-                <div className="absolute -bottom-1.5 -right-1.5 w-4 h-4 border-b-2 border-r-2 border-amber-300 rounded-br-md pointer-events-none shadow-[0_0_10px_#fde047]"></div>
-              </>
-            )}
-
             <button onClick={() => { setShowAccountInfoModal(false); setEmailActionMsg(null); setIsOtpSent(false); setPassMsg(null); }} className="absolute top-5 right-5 text-slate-400 hover:text-white p-2 rounded-2xl bg-[#05080E] border border-slate-800 cursor-pointer hover:border-cyan-400 transition"><X className="w-5 h-5" /></button>
             
             {/* Header Avatar Theo Khung VIP */}
@@ -1084,9 +1076,23 @@ export default function Navbar() {
                 <div className={`w-24 h-24 rounded-3xl p-1 flex items-center justify-center mx-auto text-4xl font-black ${vipInfo.avatarBg}`}>
                   {currentUser.username.substring(0, 1).toUpperCase()}
                 </div>
-                <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-[#05080E] border border-slate-800 px-3 py-0.5 rounded-full flex items-center gap-1 shadow-lg whitespace-nowrap">
-                  <VipIcon className={`w-3.5 h-3.5 ${vipInfo.color}`} />
-                  <span className={`text-[10px] font-black ${vipInfo.color}`}>{vipInfo.title}</span>
+                
+                {/* Badge VIP trong Profile có họa tiết góc cho VIP 5 */}
+                <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2">
+                  <div className="relative inline-flex items-center">
+                    {vipInfo.level === 5 && (
+                      <>
+                        <span className="absolute -top-0.5 -left-0.5 w-2 h-2 border-t-2 border-l-2 border-amber-300 rounded-tl-sm pointer-events-none z-10 shadow-[0_0_6px_#fde047]"></span>
+                        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 border-t-2 border-r-2 border-amber-300 rounded-tr-sm pointer-events-none z-10 shadow-[0_0_6px_#fde047]"></span>
+                        <span className="absolute -bottom-0.5 -left-0.5 w-2 h-2 border-b-2 border-l-2 border-amber-300 rounded-bl-sm pointer-events-none z-10 shadow-[0_0_6px_#fde047]"></span>
+                        <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 border-b-2 border-r-2 border-amber-300 rounded-br-sm pointer-events-none z-10 shadow-[0_0_6px_#fde047]"></span>
+                      </>
+                    )}
+                    <span className={`text-[10px] font-black px-3 py-0.5 rounded-full border flex items-center gap-1 shadow-lg whitespace-nowrap ${vipInfo.badgeBg}`}>
+                      <VipIcon className={`w-3.5 h-3.5 ${vipInfo.color}`} />
+                      <span className={vipInfo.color}>{vipInfo.title}</span>
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -1324,209 +1330,7 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* MODAL LỊCH SỬ GIAO DỊCH */}
-      {showHistoryModal && currentUser && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
-            <button onClick={() => setShowHistoryModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
-            
-            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-400/50 flex items-center justify-center text-emerald-300 shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                <History className="w-6 h-6 animate-pulse" />
-              </div>
-              <div>
-                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block">NHẬT KÝ TÀI CHÍNH</span>
-                <h3 className="text-lg font-black text-white tracking-wide">LỊCH SỬ GIAO DỊCH</h3>
-              </div>
-            </div>
-
-            {loadingHistory ? (
-              <div className="flex items-center justify-center gap-2 py-12 text-xs text-slate-400">
-                <Loader2 className="w-5 h-5 animate-spin text-cyan-400" /> Đang tải lịch sử giao dịch...
-              </div>
-            ) : (
-              <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
-                {userTransactions.length === 0 ? (
-                  <div className="bg-[#05080E] border border-slate-800/80 p-8 rounded-2xl text-center text-xs text-slate-500">
-                    Chưa có lịch sử biến động số dư.
-                  </div>
-                ) : (
-                  userTransactions.map((log: any, idx: number) => {
-                    const isPositive = log.amount > 0;
-                    const isCheckin = log.type === 'CHECKIN';
-                    const isBuy = log.type === 'BUY' || log.amount < 0;
-
-                    return (
-                      <div 
-                        key={idx} 
-                        className={`bg-[#05080E] border p-4 rounded-2xl flex items-center justify-between gap-3 text-xs transition duration-300 hover:-translate-y-0.5 ${
-                          isBuy 
-                            ? 'border-slate-800/90 hover:border-rose-500/40 hover:shadow-[0_0_15px_rgba(244,63,94,0.12)]' 
-                            : isCheckin 
-                            ? 'border-slate-800/90 hover:border-cyan-500/40 hover:shadow-[0_0_15px_rgba(6,182,212,0.12)]'
-                            : 'border-slate-800/90 hover:border-emerald-500/40 hover:shadow-[0_0_15px_rgba(16,185,129,0.12)]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
-                            isBuy 
-                              ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' 
-                              : isCheckin 
-                              ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
-                              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                          }`}>
-                            {isBuy ? <ShoppingBag className="w-5 h-5" /> : isCheckin ? <Gift className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
-                          </div>
-
-                          <div className="space-y-0.5 min-w-0">
-                            <span className="font-extrabold text-slate-100 block truncate text-xs sm:text-sm">
-                              {log.title}
-                            </span>
-                            <span className="text-[10px] font-mono font-bold text-slate-500 block">
-                              {log.created_at ? new Date(log.created_at).toLocaleString('vi-VN') : ''}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="text-right shrink-0">
-                          <span className={`text-sm font-mono font-black block ${
-                            isPositive ? 'text-emerald-400' : 'text-rose-400'
-                          }`}>
-                            {isPositive ? '+' : ''}{(log.amount || 0).toLocaleString('vi-VN')}đ
-                          </span>
-                          <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider block mt-0.5">
-                            {log.status || 'Thành công'}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* MODAL TOOL ĐÃ MUA */}
-      {showPurchasedToolsModal && currentUser && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
-            <button onClick={() => setShowPurchasedToolsModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
-            
-            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
-                <Wrench className="w-6 h-6 animate-pulse" />
-              </div>
-              <div>
-                <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">QUẢN LÝ BẢN QUYỀN</span>
-                <h3 className="text-lg font-black text-white tracking-wide">DANH SÁCH TOOL ĐÃ MUA</h3>
-              </div>
-            </div>
-
-            {loadingPurchasedTools ? (
-              <div className="flex items-center justify-center gap-2 py-12 text-xs text-slate-400">
-                <Loader2 className="w-5 h-5 animate-spin text-cyan-400" /> Đang kiểm tra dữ liệu bản quyền...
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {!userGistData || userGistData.length === 0 ? (
-                  <div className="bg-[#05080E] border border-slate-800/80 p-8 rounded-2xl text-center text-xs text-slate-400 space-y-2">
-                    <p className="font-bold text-slate-300 text-sm">Bạn chưa sở hữu bản quyền Tool nào.</p>
-                    <p className="text-slate-500">Hãy truy cập mục "TOOL AUTO" để chọn mua và kích hoạt ứng dụng.</p>
-                  </div>
-                ) : (
-                  userGistData.map((toolAcc: any, idx: number) => {
-                    const isLifetime = !toolAcc.expire_timestamp || toolAcc.expire_timestamp === 0;
-                    const isShowPass = showToolPasswords[toolAcc.accountKey] || false;
-
-                    return (
-                      <div key={idx} className="bg-[#05080E] border border-slate-800/90 p-5 rounded-2xl space-y-4 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.12)] hover:-translate-y-0.5 transition duration-300">
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3.5">
-                          <div>
-                            <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">BẢN QUYỀN HOẠT ĐỘNG</span>
-                            <h4 className="font-black text-white text-base mt-0.5">{toolAcc.toolName}</h4>
-                          </div>
-                          <div>
-                            {renderRemainingTime(toolAcc.expire_timestamp)}
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#0B1019] border border-slate-800/80 p-3.5 rounded-xl text-xs">
-                          <div className="space-y-1">
-                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Tài khoản tool</span>
-                            <div className="flex items-center justify-between bg-[#05080E] border border-slate-800/90 focus-within:border-cyan-400/60 px-3 py-2 rounded-lg font-mono font-bold text-cyan-300 transition">
-                              <span className="truncate pr-2">{toolAcc.appUsername}</span>
-                              <button 
-                                onClick={() => copyTextToClipboard(toolAcc.appUsername, `user_${idx}`)} 
-                                className="text-slate-400 hover:text-cyan-400 transition cursor-pointer flex items-center gap-1" 
-                                title="Sao chép tài khoản"
-                              >
-                                {copiedKey === `user_${idx}` ? <span className="text-[10px] text-emerald-400 font-sans">Đã chép!</span> : <Copy className="w-3.5 h-3.5" />}
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Mật khẩu tool</span>
-                            <div className="flex items-center justify-between bg-[#05080E] border border-slate-800/90 focus-within:border-cyan-400/60 px-3 py-2 rounded-lg font-mono font-bold text-slate-200 transition">
-                              <span>{isShowPass ? toolAcc.appPassword : '••••••••'}</span>
-                              <div className="flex items-center gap-2">
-                                <button 
-                                  onClick={() => setShowToolPasswords(prev => ({ ...prev, [toolAcc.accountKey]: !prev[toolAcc.accountKey] }))} 
-                                  className="text-slate-400 hover:text-white transition cursor-pointer" 
-                                  title={isShowPass ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                                >
-                                  {isShowPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                                </button>
-                                <button 
-                                  onClick={() => copyTextToClipboard(toolAcc.appPassword, `pass_${idx}`)} 
-                                  className="text-slate-400 hover:text-cyan-400 transition cursor-pointer flex items-center gap-1" 
-                                  title="Sao chép mật khẩu"
-                                >
-                                  {copiedKey === `pass_${idx}` ? <span className="text-[10px] text-emerald-400 font-sans">Đã chép!</span> : <Copy className="w-3.5 h-3.5" />}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between gap-3 pt-1">
-                          {!isLifetime ? (
-                            <button
-                              onClick={() => handleOpenRenewModal(toolAcc.toolCode)}
-                              className="bg-amber-500/10 border border-amber-500/40 text-amber-400 font-black px-4 py-2.5 rounded-xl text-xs transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-sm hover:scale-[1.03] hover:bg-amber-500/25 hover:border-amber-400 hover:text-amber-300 hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]"
-                            >
-                              <RefreshCw className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '10s' }} /> GIA HẠN THỜI HẠN
-                            </button>
-                          ) : (
-                            <div className="text-[11px] text-slate-500 font-bold italic flex items-center gap-1">
-                              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" /> Sở hữu vĩnh viễn (Không cần gia hạn)
-                            </div>
-                          )}
-
-                          {toolAcc.downloadLink && (
-                            <a 
-                              href={toolAcc.downloadLink} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-black px-4 py-2.5 rounded-xl text-xs transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-sm hover:scale-[1.03] hover:bg-cyan-500/35 hover:border-cyan-300 hover:text-white hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]"
-                            >
-                              <Download className="w-3.5 h-3.5 text-cyan-400" /> Tải Tool về máy
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ================= MODAL ĐĂNG NHẬP / ĐĂNG KÝ ================= */}
+      {/* MODAL ĐĂNG NHẬP / ĐĂNG KÝ */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
           <div className="bg-[#0D121D] border border-cyan-400/80 w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_30px_rgba(6,182,212,0.25)]">

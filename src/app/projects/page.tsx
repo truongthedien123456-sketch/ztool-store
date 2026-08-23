@@ -33,16 +33,16 @@ export default function ProjectsPage() {
     };
   }, []);
 
-  // Cấu hình bậc VIP & Hiệu ứng Nhịp đập + Họa tiết VIP 5
+  // Cấu hình bậc VIP: Khung viền ngoài tĩnh, Nhịp đập & Họa tiết tập trung ở Badge VIP
   const getVipInfo = (amount: number) => {
     if (amount >= 5000000) {
       return {
         level: 5,
         title: 'VIP 5',
         sub: 'Huyền Thoại',
-        badgeBg: 'bg-gradient-to-r from-rose-500/30 via-pink-500/30 to-amber-500/30 border-rose-400/80 text-rose-200 animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.6)]',
-        border: 'border-2 border-rose-500 shadow-[0_0_35px_rgba(244,63,94,0.9)] ring-2 ring-rose-400/50 animate-pulse',
-        avatarBg: 'bg-gradient-to-tr from-rose-600 via-pink-500 to-amber-400 text-white shadow-[0_0_25px_rgba(244,63,94,0.8)] animate-pulse',
+        badgeBg: 'bg-gradient-to-r from-rose-600/30 via-pink-600/30 to-amber-500/30 border-rose-400 text-rose-100 shadow-[0_0_18px_rgba(244,63,94,0.8)] animate-pulse',
+        border: 'border-2 border-rose-500/80 shadow-[0_0_20px_rgba(244,63,94,0.3)]',
+        avatarBg: 'bg-gradient-to-tr from-rose-600 via-pink-500 to-amber-400 text-white shadow-[0_0_15px_rgba(244,63,94,0.6)]',
         icon: Flame,
       };
     }
@@ -51,9 +51,9 @@ export default function ProjectsPage() {
         level: 4,
         title: 'VIP 4',
         sub: 'Bạch Kim',
-        badgeBg: 'bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border-purple-500/50 text-purple-300',
-        border: 'border-2 border-purple-400 shadow-[0_0_25px_rgba(168,85,247,0.75)] ring-2 ring-purple-400/40 animate-pulse',
-        avatarBg: 'bg-gradient-to-tr from-purple-600 via-indigo-500 to-cyan-400 text-white shadow-[0_0_15px_rgba(168,85,247,0.6)] animate-pulse',
+        badgeBg: 'bg-gradient-to-r from-purple-500/30 to-indigo-500/30 border-purple-400 text-purple-200 shadow-[0_0_15px_rgba(168,85,247,0.7)] animate-pulse',
+        border: 'border-2 border-purple-500/80 shadow-[0_0_18px_rgba(168,85,247,0.25)]',
+        avatarBg: 'bg-gradient-to-tr from-purple-600 via-indigo-500 to-cyan-400 text-white shadow-[0_0_12px_rgba(168,85,247,0.5)]',
         icon: Gem,
       };
     }
@@ -62,8 +62,8 @@ export default function ProjectsPage() {
         level: 3,
         title: 'VIP 3',
         sub: 'Hoàng Kim',
-        badgeBg: 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/50 text-amber-300',
-        border: 'border-2 border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.5)] ring-2 ring-amber-400/20',
+        badgeBg: 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/60 text-amber-300',
+        border: 'border-2 border-amber-400/80 shadow-[0_0_15px_rgba(251,191,36,0.2)]',
         avatarBg: 'bg-gradient-to-tr from-amber-500 via-yellow-400 to-orange-500 text-slate-950',
         icon: Crown,
       };
@@ -74,7 +74,7 @@ export default function ProjectsPage() {
         title: 'VIP 2',
         sub: 'Tinh Anh',
         badgeBg: 'bg-gradient-to-r from-slate-400/20 to-cyan-500/20 border-cyan-400/50 text-cyan-300',
-        border: 'border-2 border-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.4)]',
+        border: 'border-2 border-cyan-400/70 shadow-[0_0_15px_rgba(6,182,212,0.2)]',
         avatarBg: 'bg-gradient-to-tr from-slate-400 via-cyan-400 to-blue-500 text-slate-950',
         icon: Star,
       };
@@ -85,7 +85,7 @@ export default function ProjectsPage() {
         title: 'VIP 1',
         sub: 'Đồng Neon',
         badgeBg: 'bg-gradient-to-r from-orange-500/20 to-amber-500/20 border-orange-500/50 text-orange-300',
-        border: 'border-2 border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.3)]',
+        border: 'border-2 border-orange-400/70 shadow-[0_0_12px_rgba(249,115,22,0.2)]',
         avatarBg: 'bg-gradient-to-tr from-orange-600 to-amber-500 text-white',
         icon: Award,
       };
@@ -118,7 +118,6 @@ export default function ProjectsPage() {
       if (feedbackData) {
         setFeedbacks(feedbackData);
 
-        // Tính tổng nạp thực tế của từng tài khoản để xếp bậc VIP (+RECHARGE +ADMIN_ADD -ADMIN_SUB)
         const uniqueUsers = Array.from(new Set(feedbackData.map((f: any) => f.username).filter(Boolean)));
         
         if (uniqueUsers.length > 0) {
@@ -231,7 +230,7 @@ export default function ProjectsPage() {
             </div>
           )}
 
-          {/* FORM GỬI YÊU CẦU & DANH SÁCH YÊU CẦU */}
+          {/* FORM GỬI YÊU CẦU */}
           <div className="bg-[#0F141C] border border-[#1A2332] rounded-3xl p-6 sm:p-8 space-y-8 max-w-4xl mx-auto shadow-2xl">
             <div className="flex items-center gap-3 border-b border-[#1A2332] pb-4">
               <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
@@ -302,7 +301,7 @@ export default function ProjectsPage() {
               </button>
             </form>
 
-            {/* ================= KHU VỰC YÊU CẦU GẦN ĐÂY CÓ AVATAR, KHUNG VIP VÀ HỌA TIẾT VIP 5 ================= */}
+            {/* ================= KHU VỰC YÊU CẦU GẦN ĐÂY ================= */}
             <div className="space-y-4 pt-4 border-t border-[#1A2332]">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
@@ -326,16 +325,6 @@ export default function ProjectsPage() {
                         key={f.id} 
                         className={`bg-[#080B10] ${authorVip.border} p-4.5 rounded-2xl space-y-3 transition-all duration-300 relative overflow-hidden`}
                       >
-                        {/* Họa tiết 4 góc cao cấp mạ vàng tôn vinh riêng bài đăng VIP 5 */}
-                        {authorVip.level === 5 && (
-                          <>
-                            <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-amber-300 pointer-events-none shadow-[0_0_8px_#fde047]"></div>
-                            <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-amber-300 pointer-events-none shadow-[0_0_8px_#fde047]"></div>
-                            <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-amber-300 pointer-events-none shadow-[0_0_8px_#fde047]"></div>
-                            <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-amber-300 pointer-events-none shadow-[0_0_8px_#fde047]"></div>
-                          </>
-                        )}
-
                         {/* Header của thẻ: Avatar VIP, Username, Badge VIP & Thời gian */}
                         <div className="flex items-center justify-between gap-3 border-b border-slate-800/80 pb-2.5">
                           <div className="flex items-center gap-3">
@@ -352,11 +341,23 @@ export default function ProjectsPage() {
                                   {author}
                                 </span>
                                 
-                                {/* Badge cấp bậc VIP */}
-                                <span className={`text-[9px] font-black px-2 py-0.5 rounded-md border flex items-center gap-1 ${authorVip.badgeBg}`}>
-                                  <AuthorVipIcon className="w-2.5 h-2.5" />
-                                  {authorVip.level > 0 ? authorVip.title : 'THÀNH VIÊN'}
-                                </span>
+                                {/* Badge VIP có nhịp đập bên trong & họa tiết ôm trực tiếp trên viền Badge VIP 5 */}
+                                <div className="relative inline-flex items-center">
+                                  {authorVip.level === 5 && (
+                                    <>
+                                      <span className="absolute -top-1 -left-1 w-2 h-2 border-t-2 border-l-2 border-amber-300 rounded-tl-sm pointer-events-none z-10 shadow-[0_0_6px_#fde047]"></span>
+                                      <span className="absolute -top-1 -right-1 w-2 h-2 border-t-2 border-r-2 border-amber-300 rounded-tr-sm pointer-events-none z-10 shadow-[0_0_6px_#fde047]"></span>
+                                      <span className="absolute -bottom-1 -left-1 w-2 h-2 border-b-2 border-l-2 border-amber-300 rounded-bl-sm pointer-events-none z-10 shadow-[0_0_6px_#fde047]"></span>
+                                      <span className="absolute -bottom-1 -right-1 w-2 h-2 border-b-2 border-r-2 border-amber-300 rounded-br-sm pointer-events-none z-10 shadow-[0_0_6px_#fde047]"></span>
+                                    </>
+                                  )}
+                                  
+                                  <span className={`text-[9px] font-black px-2.5 py-0.5 rounded-md border flex items-center gap-1 relative ${authorVip.badgeBg}`}>
+                                    <AuthorVipIcon className="w-2.5 h-2.5" />
+                                    {authorVip.level > 0 ? authorVip.title : 'THÀNH VIÊN'}
+                                  </span>
+                                </div>
+
                               </div>
                               <span className="text-[10px] text-slate-500 font-medium">Người đóng góp ý kiến</span>
                             </div>
