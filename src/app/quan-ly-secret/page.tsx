@@ -193,13 +193,13 @@ export default function AdminPage() {
     if (!error && data) setSelectedUserHistory({ username, logs: data });
   };
 
-  // BẬT / TẮT MIỄN XÁC THỰC EMAIL (CÓ KIỂM TRA CHÍNH XÁC EMAIL TRƯỚC KHI TRẢ VỀ TRẠNG THÁI)
+  // BẬT / TẮT MIỄN XÁC THỰC EMAIL CHO USER
   const handleToggleExemptVerification = async (u: any) => {
     setExemptLoadingId(u.id);
     const newExemptState = !u.is_exempt;
     
     // Nếu bật miễn xác thực -> true
-    // Nếu bỏ miễn xác thực -> Chỉ true khi có email hợp lệ và đã từng xác thực, ngược lại false hoàn toàn
+    // Nếu bỏ miễn xác thực -> Chỉ true khi đã có email hợp lệ và đã từng xác thực OTP trước đó
     const hasValidEmail = u.email && u.email.trim() !== '' && u.email.includes('@');
     const newVerifiedState = newExemptState ? true : (hasValidEmail ? (u.is_verified === true) : false);
 
@@ -440,7 +440,8 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <div className="max-w-7xl w-full mx-auto px-4 py-8 space-y-8 flex-1">
+      {/* KHUNG NỘI DUNG CHÍNH RỘNG TOÀN DIỆN KHÔNG BỊ TRÀN CHỮ */}
+      <div className="max-w-[1700px] w-full mx-auto px-4 sm:px-6 py-8 space-y-8 flex-1">
         
         {/* OVERVIEW STATS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -489,173 +490,233 @@ export default function AdminPage() {
           <button onClick={() => setActiveTab('settings')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'settings' ? 'bg-amber-500 text-slate-950 font-black shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'text-amber-400 hover:text-amber-300 hover:bg-slate-800/50'}`}><Bell className="w-4 h-4" /> THÔNG BÁO CHUNG</button>
         </div>
 
-        {/* TAB 1: NGƯỜI DÙNG */}
+        {/* ================= TAB 1: QUẢN LÝ NGƯỜI DÙNG CAO CẤP ================= */}
         {activeTab === 'users' && (
           <div className="space-y-6">
-            <form onSubmit={handleCreateUser} className="bg-[#0B1019] border border-slate-800/80 rounded-2xl p-6 space-y-4">
+            
+            {/* KHUNG TẠO TÀI KHOẢN MỚI */}
+            <form onSubmit={handleCreateUser} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
               <h3 className="text-xs font-extrabold text-white flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase tracking-wider">
                 <Plus className="w-4 h-4 text-cyan-400" /> Tạo tài khoản người dùng mới
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <input type="text" placeholder="Tên tài khoản (username)..." value={newUserForm.username} onChange={e => setNewUserForm({ ...newUserForm, username: e.target.value })} className="bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition" />
-                <input type="email" placeholder="Địa chỉ Gmail (nếu có)..." value={newUserForm.email} onChange={e => setNewUserForm({ ...newUserForm, email: e.target.value })} className="bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition" />
-                <input type="text" placeholder="Mật khẩu..." value={newUserForm.password} onChange={e => setNewUserForm({ ...newUserForm, password: e.target.value })} className="bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition" />
-                <input type="number" placeholder="Số dư ban đầu (VNĐ)..." value={newUserForm.balance || ''} onChange={e => setNewUserForm({ ...newUserForm, balance: Number(e.target.value) })} className="bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1">Tên tài khoản (Username):</label>
+                  <input type="text" placeholder="Nhập username..." value={newUserForm.username} onChange={e => setNewUserForm({ ...newUserForm, username: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition font-mono" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1">Địa chỉ Gmail:</label>
+                  <input type="email" placeholder="example@gmail.com..." value={newUserForm.email} onChange={e => setNewUserForm({ ...newUserForm, email: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition font-mono" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1">Mật khẩu:</label>
+                  <input type="text" placeholder="Nhập mật khẩu..." value={newUserForm.password} onChange={e => setNewUserForm({ ...newUserForm, password: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition font-mono" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1">Số dư ban đầu (VNĐ):</label>
+                  <input type="number" placeholder="0" value={newUserForm.balance || ''} onChange={e => setNewUserForm({ ...newUserForm, balance: Number(e.target.value) })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition font-mono" />
+                </div>
               </div>
-              <button type="submit" className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer shadow-sm">Thêm người dùng mới</button>
+              <button type="submit" className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 px-6 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer shadow-sm flex items-center gap-1.5">
+                <Plus className="w-3.5 h-3.5" /> Tạo người dùng mới
+              </button>
             </form>
 
-            <div className="bg-[#0B1019] border border-slate-800/80 rounded-2xl p-6 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Users className="w-4 h-4 text-cyan-400" /> DANH SÁCH KHÁCH HÀNG (SUPABASE CLOUD)
-                </h2>
-                <div className="relative w-64">
-                  <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3.5 top-3" />
-                  <input type="text" placeholder="Tìm theo username, email..." value={userSearch} onChange={e => setUserSearch(e.target.value)} className="w-full bg-[#05080E] border border-slate-800 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 transition" />
+            {/* BẢNG DANH SÁCH KHÁCH HÀNG CAO CẤP */}
+            <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-5 shadow-2xl">
+              
+              {/* THANH TÌM KIẾM NHANH TÀI KHOẢN */}
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+                <div>
+                  <h2 className="text-base font-black text-white flex items-center gap-2 tracking-wide uppercase">
+                    <Users className="w-5 h-5 text-cyan-400" /> DANH SÁCH KHÁCH HÀNG ({users.length})
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Quản lý tài khoản, Gmail xác thực, quyền miễn xác thực và điều chỉnh số dư ví</p>
+                </div>
+
+                <div className="relative w-full md:w-80">
+                  <Search className="w-4 h-4 text-cyan-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input 
+                    type="text" 
+                    placeholder="Tìm nhanh tên tài khoản, Gmail..." 
+                    value={userSearch} 
+                    onChange={e => setUserSearch(e.target.value)} 
+                    className="w-full bg-[#05080E] border border-slate-800 focus:border-cyan-400 rounded-2xl pl-10 pr-10 py-2.5 text-xs text-white focus:outline-none transition shadow-inner font-mono" 
+                  />
+                  {userSearch && (
+                    <button 
+                      onClick={() => setUserSearch('')} 
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-1 rounded-md"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-slate-300">
-                  <thead className="bg-[#05080E] border-b border-slate-800/80 text-slate-400 uppercase text-[10px] tracking-wider">
+              {/* BẢNG DỮ LIỆU TỐI ƯU CỘT VÀ KHÔNG BỊ TRÀN CHỮ */}
+              <div className="overflow-x-auto border border-slate-800/60 rounded-2xl bg-[#05080E]/40">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-[#05080E] border-b border-slate-800/80 text-slate-400 uppercase text-[10px] tracking-wider font-black">
                     <tr>
-                      <th className="p-3.5">Tài khoản</th>
-                      <th className="p-3.5">Gmail liên kết</th>
-                      <th className="p-3.5">Mật khẩu</th>
-                      <th className="p-3.5">Số dư ví</th>
-                      <th className="p-3.5 text-center">Trạng thái Gmail</th>
-                      <th className="p-3.5 text-center">Miễn xác thực</th>
-                      <th className="p-3.5">Online</th>
-                      <th className="p-3.5">Trạng thái Khóa</th>
-                      <th className="p-3.5 text-right">Hành động</th>
+                      <th className="p-4 whitespace-nowrap min-w-[130px]">Tài khoản</th>
+                      <th className="p-4 whitespace-nowrap min-w-[200px]">Gmail liên kết</th>
+                      <th className="p-4 whitespace-nowrap min-w-[120px]">Mật khẩu</th>
+                      <th className="p-4 whitespace-nowrap min-w-[120px]">Số dư ví</th>
+                      <th className="p-4 whitespace-nowrap text-center min-w-[140px]">Trạng thái Gmail</th>
+                      <th className="p-4 whitespace-nowrap text-center min-w-[140px]">Miễn xác thực</th>
+                      <th className="p-4 whitespace-nowrap text-center min-w-[90px]">Online</th>
+                      <th className="p-4 whitespace-nowrap text-center min-w-[90px]">Khóa</th>
+                      <th className="p-4 whitespace-nowrap text-right min-w-[180px]">Hành động</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60">
+                  <tbody className="divide-y divide-slate-800/60 font-medium">
                     {users.filter(u => 
                       u.username?.toLowerCase().includes(userSearch.toLowerCase()) || 
                       (u.email && u.email.toLowerCase().includes(userSearch.toLowerCase()))
-                    ).map((u, i) => {
-                      const lastSeenMs = u.last_seen ? new Date(u.last_seen).getTime() : 0;
-                      const isUserOnline = u.is_online === true && (nowTime - lastSeenMs < 20000);
-                      const isExempt = u.is_exempt === true;
-                      
-                      // Kiểm tra xem có email thực tế và đã xác thực hay chưa
-                      const hasValidEmail = u.email && u.email.trim() !== '' && u.email.includes('@');
-                      const isVerified = isExempt || (hasValidEmail && u.is_verified === true);
+                    ).length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="p-8 text-center text-slate-500 text-xs">
+                          Không tìm thấy tài khoản nào khớp với từ khóa tìm kiếm.
+                        </td>
+                      </tr>
+                    ) : (
+                      users.filter(u => 
+                        u.username?.toLowerCase().includes(userSearch.toLowerCase()) || 
+                        (u.email && u.email.toLowerCase().includes(userSearch.toLowerCase()))
+                      ).map((u, i) => {
+                        const lastSeenMs = u.last_seen ? new Date(u.last_seen).getTime() : 0;
+                        const isUserOnline = u.is_online === true && (nowTime - lastSeenMs < 20000);
+                        const isExempt = u.is_exempt === true;
+                        
+                        // Kiểm tra chính xác trạng thái email: phải có email và is_verified true
+                        const hasValidEmail = u.email && u.email.trim() !== '' && u.email.includes('@');
+                        const isVerified = isExempt || (hasValidEmail && u.is_verified === true);
 
-                      return (
-                        <tr key={i} className="hover:bg-[#05080E]/60 transition">
-                          <td className="p-3.5 font-bold text-white">{u.username}</td>
-                          
-                          {/* Cột Gmail kèm nút Xóa Gmail */}
-                          <td className="p-3.5 font-mono">
-                            {hasValidEmail ? (
+                        return (
+                          <tr key={i} className="hover:bg-[#080D17]/80 transition">
+                            
+                            {/* Cột Tên tài khoản */}
+                            <td className="p-4 font-bold text-white whitespace-nowrap">
+                              <span className="font-mono text-cyan-300 font-black">{u.username}</span>
+                            </td>
+                            
+                            {/* Cột Gmail kèm nút Xóa Gmail */}
+                            <td className="p-4 font-mono whitespace-nowrap">
+                              {hasValidEmail ? (
+                                <div className="inline-flex items-center gap-2 bg-[#0B1019] border border-slate-800 px-2.5 py-1 rounded-xl">
+                                  <span className="text-slate-200 text-xs">{u.email}</span>
+                                  <button
+                                    disabled={deleteEmailLoadingId === u.id}
+                                    onClick={() => handleDeleteUserEmail(u)}
+                                    className="text-rose-400 hover:text-rose-300 p-1 hover:bg-rose-500/20 rounded-md transition cursor-pointer"
+                                    title="Xóa Gmail khỏi tài khoản này"
+                                  >
+                                    {deleteEmailLoadingId === u.id ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="w-3.5 h-3.5 text-rose-400/80 hover:text-rose-400" />
+                                    )}
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-slate-600 italic">Chưa có</span>
+                              )}
+                            </td>
+
+                            {/* Cột Mật khẩu */}
+                            <td className="p-4 font-mono whitespace-nowrap">
                               <div className="flex items-center gap-2">
-                                <span className="text-slate-200">{u.email}</span>
-                                <button
-                                  disabled={deleteEmailLoadingId === u.id}
-                                  onClick={() => handleDeleteUserEmail(u)}
-                                  className="text-rose-400 hover:text-rose-300 p-1 hover:bg-rose-500/10 rounded transition cursor-pointer"
-                                  title="Xóa Gmail khỏi tài khoản này"
-                                >
-                                  {deleteEmailLoadingId === u.id ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="w-3.5 h-3.5 text-rose-400/80 hover:text-rose-400" />
-                                  )}
+                                <span className="text-slate-300 font-bold">
+                                  {showPasswords[u.username] ? u.password || '---' : '••••••••'}
+                                </span>
+                                <button onClick={() => handleToggleShowPass(u.username)} className="text-slate-500 hover:text-white transition cursor-pointer">
+                                  {showPasswords[u.username] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                                 </button>
                               </div>
-                            ) : (
-                              <span className="text-slate-600 italic">Chưa có</span>
-                            )}
-                          </td>
+                            </td>
 
-                          <td className="p-3.5 font-mono">
-                            <div className="flex items-center gap-2">
-                              <span className="text-cyan-300 font-bold">
-                                {showPasswords[u.username] ? u.password || '---' : '••••••••'}
-                              </span>
-                              <button onClick={() => handleToggleShowPass(u.username)} className="text-slate-500 hover:text-white transition cursor-pointer">
-                                {showPasswords[u.username] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                              </button>
-                            </div>
-                          </td>
+                            {/* Cột Số dư ví */}
+                            <td className="p-4 font-mono font-black text-emerald-400 whitespace-nowrap">
+                              {(u.balance || 0).toLocaleString('vi-VN')}đ
+                            </td>
 
-                          <td className="p-3.5 font-mono font-bold text-emerald-400">{(u.balance || 0).toLocaleString('vi-VN')} VNĐ</td>
-
-                          {/* Cột Trạng thái Gmail chuẩn xác */}
-                          <td className="p-3.5 text-center">
-                            {isExempt ? (
-                              <span className="text-cyan-300 font-bold bg-cyan-500/20 px-2.5 py-0.5 rounded-lg border border-cyan-400 text-[10px] inline-flex items-center gap-1">
-                                <Sparkles className="w-3 h-3 text-cyan-400" /> MIỄN XÁC THỰC
-                              </span>
-                            ) : isVerified ? (
-                              <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-0.5 rounded-lg border border-emerald-500/30 text-[10px] inline-flex items-center gap-1">
-                                <CheckCircle className="w-3 h-3" /> ĐÃ XÁC THỰC
-                              </span>
-                            ) : (
-                              <span className="text-rose-400 font-bold bg-rose-500/10 px-2.5 py-0.5 rounded-lg border border-rose-500/30 text-[10px] inline-flex items-center gap-1">
-                                <XCircle className="w-3 h-3" /> CHƯA XÁC THỰC
-                              </span>
-                            )}
-                          </td>
-
-                          {/* Cột Nút Bấm Miễn Xác Thực */}
-                          <td className="p-3.5 text-center">
-                            <button
-                              disabled={exemptLoadingId === u.id}
-                              onClick={() => handleToggleExemptVerification(u)}
-                              className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer border flex items-center gap-1 mx-auto ${
-                                isExempt 
-                                  ? 'bg-amber-500/10 border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-slate-950'
-                                  : 'bg-[#05080E] border-slate-700 hover:border-cyan-400 text-slate-300 hover:text-cyan-300'
-                              }`}
-                            >
-                              {exemptLoadingId === u.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : isExempt ? (
-                                <>Bỏ miễn xác thực</>
+                            {/* Cột Trạng thái Gmail */}
+                            <td className="p-4 text-center whitespace-nowrap">
+                              {isExempt ? (
+                                <span className="text-cyan-300 font-black bg-cyan-500/20 px-3 py-1 rounded-xl border border-cyan-400 text-[10px] inline-flex items-center gap-1.5 shadow-[0_0_10px_rgba(6,182,212,0.25)]">
+                                  <Sparkles className="w-3 h-3 text-cyan-400" /> MIỄN XÁC THỰC
+                                </span>
+                              ) : isVerified ? (
+                                <span className="text-emerald-400 font-black bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/30 text-[10px] inline-flex items-center gap-1.5">
+                                  <CheckCircle className="w-3 h-3 text-emerald-400" /> ĐÃ XÁC THỰC
+                                </span>
                               ) : (
-                                <><Shield className="w-3 h-3 text-cyan-400" /> Miễn xác thực</>
+                                <span className="text-rose-400 font-black bg-rose-500/10 px-3 py-1 rounded-xl border border-rose-500/30 text-[10px] inline-flex items-center gap-1.5">
+                                  <XCircle className="w-3 h-3 text-rose-400" /> CHƯA XÁC THỰC
+                                </span>
                               )}
-                            </button>
-                          </td>
+                            </td>
 
-                          <td className="p-3.5">
-                            {isUserOnline ? (
-                              <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 text-[10px] inline-flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Online
-                              </span>
-                            ) : (
-                              <span className="text-slate-500 font-medium bg-slate-500/10 px-2.5 py-1 rounded-full border border-slate-500/20 text-[10px] inline-flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Offline
-                              </span>
-                            )}
-                          </td>
+                            {/* Cột Nút Bấm Miễn Xác Thực */}
+                            <td className="p-4 text-center whitespace-nowrap">
+                              <button
+                                disabled={exemptLoadingId === u.id}
+                                onClick={() => handleToggleExemptVerification(u)}
+                                className={`px-3.5 py-1.5 rounded-xl text-[11px] font-black transition cursor-pointer border inline-flex items-center gap-1.5 ${
+                                  isExempt 
+                                    ? 'bg-amber-500/10 border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-slate-950'
+                                    : 'bg-[#05080E] border-slate-700 hover:border-cyan-400 text-slate-300 hover:text-cyan-300'
+                                }`}
+                              >
+                                {exemptLoadingId === u.id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : isExempt ? (
+                                  <>Bỏ miễn xác thực</>
+                                ) : (
+                                  <><Shield className="w-3.5 h-3.5 text-cyan-400" /> Miễn xác thực</>
+                                )}
+                              </button>
+                            </td>
 
-                          <td className="p-3.5">
-                            {u.isBanned ? (
-                              <span className="text-rose-400 font-bold bg-rose-500/10 px-2.5 py-1 rounded border border-rose-500/20 text-[10px]">Bị BAN</span>
-                            ) : (
-                              <span className="text-cyan-400 font-bold bg-cyan-500/10 px-2.5 py-1 rounded border border-cyan-500/20 text-[10px]">Hoạt động</span>
-                            )}
-                          </td>
+                            {/* Cột Trạng thái Online */}
+                            <td className="p-4 text-center whitespace-nowrap">
+                              {isUserOnline ? (
+                                <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 text-[10px] inline-flex items-center gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Online
+                                </span>
+                              ) : (
+                                <span className="text-slate-500 font-medium bg-slate-500/10 px-2.5 py-1 rounded-full border border-slate-500/20 text-[10px] inline-flex items-center gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Offline
+                                </span>
+                              )}
+                            </td>
 
-                          <td className="p-3.5 text-right space-x-2">
-                            <button onClick={() => handleViewUserTransactions(u.username)} className="bg-cyan-500/10 text-cyan-400 p-2 rounded-xl border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer transition" title="Xem lịch sử giao dịch">
-                              <History className="w-3.5 h-3.5" />
-                            </button>
-                            <button onClick={() => setAdjustBal({ username: u.username, amount: 0, isAdd: true })} className="bg-emerald-500/10 text-emerald-400 p-2 rounded-xl border border-emerald-500/20 hover:bg-emerald-500/20 cursor-pointer transition" title="Cộng/Trừ tiền ví"><DollarSign className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => setEditUserPass({ username: u.username, newPass: '' })} className="bg-cyan-500/10 text-cyan-400 p-2 rounded-xl border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer transition" title="Đổi mật khẩu"><Key className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => handleToggleBanUser(u)} className={`p-2 rounded-xl border cursor-pointer transition ${u.isBanned ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
-                              {u.isBanned ? <CheckCircle className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
-                            </button>
-                            <button onClick={() => handleDeleteUser(u.id, u.username)} className="bg-rose-500/10 text-rose-400 p-2 rounded-xl border border-rose-500/20 hover:bg-rose-500/20 cursor-pointer transition"><Trash2 className="w-3.5 h-3.5" /></button>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                            {/* Cột Khóa */}
+                            <td className="p-4 text-center whitespace-nowrap">
+                              {u.isBanned ? (
+                                <span className="text-rose-400 font-bold bg-rose-500/10 px-2.5 py-1 rounded border border-rose-500/20 text-[10px]">Bị BAN</span>
+                              ) : (
+                                <span className="text-cyan-400 font-bold bg-cyan-500/10 px-2.5 py-1 rounded border border-cyan-500/20 text-[10px]">Hoạt động</span>
+                              )}
+                            </td>
+
+                            {/* Cột Hành động */}
+                            <td className="p-4 text-right space-x-1.5 whitespace-nowrap">
+                              <button onClick={() => handleViewUserTransactions(u.username)} className="bg-cyan-500/10 text-cyan-400 p-2 rounded-xl border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer transition inline-flex" title="Xem lịch sử giao dịch">
+                                <History className="w-3.5 h-3.5" />
+                              </button>
+                              <button onClick={() => setAdjustBal({ username: u.username, amount: 0, isAdd: true })} className="bg-emerald-500/10 text-emerald-400 p-2 rounded-xl border border-emerald-500/20 hover:bg-emerald-500/20 cursor-pointer transition inline-flex" title="Cộng/Trừ tiền ví"><DollarSign className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => setEditUserPass({ username: u.username, newPass: '' })} className="bg-cyan-500/10 text-cyan-400 p-2 rounded-xl border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer transition inline-flex" title="Đổi mật khẩu"><Key className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => handleToggleBanUser(u)} className={`p-2 rounded-xl border cursor-pointer transition inline-flex ${u.isBanned ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
+                                {u.isBanned ? <CheckCircle className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
+                              </button>
+                              <button onClick={() => handleDeleteUser(u.id, u.username)} className="bg-rose-500/10 text-rose-400 p-2 rounded-xl border border-rose-500/20 hover:bg-rose-500/20 cursor-pointer transition inline-flex"><Trash2 className="w-3.5 h-3.5" /></button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -665,7 +726,7 @@ export default function AdminPage() {
 
         {/* TAB 2: KHO ACC TOOL TRÊN GITHUB GIST */}
         {activeTab === 'gist_accounts' && (
-          <div className="bg-[#0B1019] border border-slate-800/80 rounded-2xl p-6 space-y-4 shadow-xl">
+          <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
               <div>
                 <h2 className="text-sm font-bold text-white uppercase flex items-center gap-2">
@@ -683,7 +744,7 @@ export default function AdminPage() {
                 <Loader2 className="w-5 h-5 animate-spin text-cyan-400" /> Đang đồng bộ tài khoản từ GitHub Gist...
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto border border-slate-800/60 rounded-2xl bg-[#05080E]/40">
                 <table className="w-full text-left text-xs text-slate-300">
                   <thead className="bg-[#05080E] text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
                     <tr>
@@ -747,7 +808,7 @@ export default function AdminPage() {
         {/* TAB 3: SẢN PHẨM TOOL */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <form onSubmit={handleSaveTool} className="bg-[#0B1019] border border-slate-800/80 rounded-2xl p-6 space-y-4 h-fit">
+            <form onSubmit={handleSaveTool} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
               <h3 className="text-xs font-bold text-white flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase"><Plus className="w-4 h-4 text-cyan-400" /> {isEditingTool ? 'Cập nhật Tool' : 'Thêm Tool mới'}</h3>
               <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Tên Tool</label><input type="text" required value={toolForm.name} onChange={e => setToolForm({ ...toolForm, name: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" placeholder="vd: AUTO FARM F17" /></div>
               <div><label className="block text-[11px] text-cyan-400 mb-1 font-bold">Mã Tool (Dùng xác thực đăng nhập Gist)</label><input type="text" required value={toolForm.toolCode} onChange={e => setToolForm({ ...toolForm, toolCode: e.target.value })} className="w-full bg-[#05080E] border border-cyan-500/50 rounded-xl p-2.5 text-xs text-white focus:outline-none font-mono" placeholder="vd: congtruongf17" /></div>
@@ -759,11 +820,11 @@ export default function AdminPage() {
               <button type="submit" disabled={isUploading} className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 py-3 rounded-xl text-xs font-black transition cursor-pointer">{isUploading ? 'ĐANG UPLOAD...' : 'LƯU SẢN PHẨM'}</button>
             </form>
             
-            <div className="lg:col-span-2 bg-[#0B1019] border border-slate-800/80 rounded-2xl p-6 space-y-4">
+            <div className="lg:col-span-2 bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
               <h3 className="text-xs font-bold text-white border-b border-slate-800/80 pb-3 uppercase">DANH SÁCH TOOL ĐANG BÁN</h3>
               <div className="space-y-3">
                 {tools.length === 0 ? <p className="text-xs text-slate-500">Chưa có sản phẩm Tool nào.</p> : tools.map((t) => (
-                  <div key={t.id} className="bg-[#05080E] border border-slate-800 p-4 rounded-xl space-y-3">
+                  <div key={t.id} className="bg-[#05080E] border border-slate-800 p-4 rounded-2xl space-y-3">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-4 flex-1">
                         {t.image && (<div className="w-16 h-16 bg-[#0B1019] border border-slate-800 rounded-xl overflow-hidden shrink-0"><img src={t.image} alt={t.name} className="w-full h-full object-cover" /></div>)}
@@ -810,7 +871,7 @@ export default function AdminPage() {
         {/* TAB 4: MÃ GIẢM GIÁ */}
         {activeTab === 'coupons' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <form onSubmit={handleCreateCoupon} className="bg-[#0B1019] border border-slate-800/80 rounded-2xl p-6 space-y-4 h-fit">
+            <form onSubmit={handleCreateCoupon} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
               <h3 className="text-xs font-bold text-white flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase"><Plus className="w-4 h-4 text-cyan-400" /> Tạo Mã Giảm Giá Mới</h3>
               <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Mã Code</label><input type="text" required value={couponForm.code} onChange={e => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono uppercase" placeholder="VD: GIAM5K" /></div>
               <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Tool áp dụng</label><select value={couponForm.toolCode} onChange={e => setCouponForm({ ...couponForm, toolCode: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white"><option value="ALL">Tất cả sản phẩm (ALL)</option>{tools.map((t) => (<option key={t.id} value={t.toolCode || t.tool_code}>{t.name}</option>))}</select></div>
@@ -819,7 +880,7 @@ export default function AdminPage() {
               <button type="submit" className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 py-3 rounded-xl text-xs font-black transition cursor-pointer shadow-sm">PHÁT HÀNH MÃ GIẢM GIÁ</button>
             </form>
 
-            <div className="lg:col-span-2 bg-[#0B1019] border border-slate-800/80 rounded-2xl p-6 space-y-4">
+            <div className="lg:col-span-2 bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
               <h3 className="text-xs font-bold text-white border-b border-slate-800/80 pb-3 uppercase">DANH SÁCH MÃ GIẢM GIÁ</h3>
               <div className="space-y-3">
                 {coupons.length === 0 ? <p className="text-xs text-slate-500 py-4 text-center">Chưa có mã giảm giá nào.</p> : coupons.map((c) => (
@@ -836,7 +897,7 @@ export default function AdminPage() {
         {/* TAB 5: DỰ ÁN SHOP */}
         {activeTab === 'projects' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <form onSubmit={handleSaveProject} className="bg-[#0B1019] border border-slate-800/80 rounded-2xl p-6 space-y-4 h-fit">
+            <form onSubmit={handleSaveProject} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
               <h3 className="text-xs font-bold text-white flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase"><Plus className="w-4 h-4 text-cyan-400" /> Thêm dự án mới</h3>
               <div><label className="block text-xs text-slate-400 mb-1 font-bold">Tên Dự Án</label><input type="text" required value={projectForm.title} onChange={e => setProjectForm({ ...projectForm, title: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white" /></div>
               <div className="space-y-2"><label className="block text-[11px] text-slate-400 font-bold">Ảnh Minh Họa</label><label className="flex items-center justify-center gap-2 bg-[#05080E] border border-dashed border-slate-800 text-slate-300 p-3 rounded-xl text-xs cursor-pointer hover:border-cyan-400"><Upload className="w-4 h-4 text-cyan-400" /><span className="truncate">{projectImageFile ? projectImageFile.name : 'Chọn file ảnh...'}</span><input type="file" accept="image/*" onChange={handleProjectFileChange} className="hidden" /></label>{(projectPreviewUrl || projectForm.image) && (<div className="w-full aspect-square bg-[#05080E] border border-slate-800 rounded-xl overflow-hidden relative"><img src={projectPreviewUrl || projectForm.image} alt="Preview" className="w-full h-full object-cover" /></div>)}</div>
@@ -845,7 +906,7 @@ export default function AdminPage() {
               <button type="submit" disabled={isUploadingProject} className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 py-3 rounded-xl text-xs font-black transition cursor-pointer">{isUploadingProject ? 'ĐANG UPLOAD...' : 'LƯU DỰ ÁN'}</button>
             </form>
 
-            <div className="lg:col-span-2 bg-[#0B1019] border border-slate-800/80 rounded-2xl p-6 space-y-4">
+            <div className="lg:col-span-2 bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
               <h3 className="text-xs font-bold text-white border-b border-slate-800/80 pb-3 uppercase">DANH SÁCH DỰ ÁN</h3>
               <div className="space-y-3">
                 {projects.map((p) => (
@@ -864,9 +925,9 @@ export default function AdminPage() {
 
         {/* TAB 6: LỊCH SỬ SEPAY */}
         {activeTab === 'sepay' && (
-          <div className="bg-[#0B1019] border border-slate-800/80 rounded-2xl p-6 space-y-4 shadow-xl">
+          <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
             <h2 className="text-sm font-bold text-white border-b border-slate-800/80 pb-3 uppercase flex items-center gap-2"><CreditCard className="w-4 h-4 text-cyan-400" /> LỊCH SỬ BIẾN ĐỘNG SEPAY AUTO</h2>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto border border-slate-800/60 rounded-2xl bg-[#05080E]/40">
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-[#05080E] text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800"><tr><th className="p-3.5">Tài khoản</th><th className="p-3.5">Nội dung</th><th className="p-3.5">Số tiền</th><th className="p-3.5">Thời gian</th></tr></thead>
                 <tbody className="divide-y divide-slate-800/60">
@@ -886,7 +947,7 @@ export default function AdminPage() {
 
         {/* TAB 7: ĐÓNG GÓP Ý KIẾN */}
         {activeTab === 'feedback' && (
-          <div className="bg-[#0B1019] border border-slate-800/80 rounded-2xl p-6 space-y-4 shadow-xl">
+          <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
             <h2 className="text-sm font-bold text-white border-b border-slate-800/80 pb-3 uppercase flex items-center gap-2"><MessageSquare className="w-4 h-4 text-cyan-400" /> Ý KIẾN ĐÓNG GÓP TỪ KHÁCH HÀNG</h2>
             <div className="space-y-3">
               {feedbacks.length === 0 ? <p className="text-xs text-slate-500 text-center py-6">Chưa có ý kiến đóng góp nào.</p> : feedbacks.map((f) => (
@@ -902,7 +963,7 @@ export default function AdminPage() {
         {/* TAB 8: THÔNG BÁO CHUNG */}
         {activeTab === 'settings' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-[#0B1019] border border-slate-800/80 rounded-2xl p-6 space-y-4 h-fit">
+            <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
               <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase">
                 <Bell className="w-4 h-4 text-amber-400" /> Soạn thảo / Cập nhật thông báo
               </h3>
