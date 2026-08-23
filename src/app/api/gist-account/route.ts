@@ -1,23 +1,19 @@
 import { NextResponse } from 'next/server';
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || process.env.GITHUB_GIST_TOKEN;
 const GIST_ID = process.env.GIST_ID || '21f0a39cbc434e5033d89f06e2c7d26e';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { username, password, durationDays, tool_code } = body;
-
-    if (!username || !password) {
-      return NextResponse.json({ success: false, message: 'Thiếu username hoặc password' }, { status: 400 });
-    }
+    const { action, accountKey, username, password, durationDays, tool_code } = body;
 
     if (!GITHUB_TOKEN) {
       return NextResponse.json({ success: false, message: 'Chưa cấu hình GITHUB_TOKEN trên server' }, { status: 500 });
     }
 
     // 1. Lấy dữ liệu accounts.json hiện tại trên Gist
-    const getGistRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+    const getGistRes = await fetch(`https://api.github.com/gists/${GIST_ID}?timestamp=${Date.now()}`, {
       headers: {
         'Authorization': `Bearer ${GITHUB_TOKEN}`,
         'Accept': 'application/vnd.github+json',
@@ -32,6 +28,55 @@ export async function POST(request: Request) {
     const gistData = await getGistRes.json();
     const currentContentRaw = gistData.files['accounts.json']?.content || '{}';
     const accountsJson = JSON.parse(currentContentRaw);
+
+    // =========================================================================
+    // LUỒNG 1: XỬ LÝ RESET HWID (XÓA MÃ THIẾT BỊ ĐĂNG NHẬP MÁY MỚI)
+    // =========================================================================
+    if (action === 'RESET_DEVICE') {
+      const targetKey = accountKey || username;
+      if (!targetKey || !accountsJson[targetKey]) {
+        return NextResponse.json({ 
+          success: false, 
+          message: `Không tìm thấy tài khoản "${targetKey}" trên Gist!` 
+        }, { status: 404 });
+      }
+
+      // Xóa sạch mã thiết bị
+      accountsJson[targetKey].device_id = '';
+
+      // Đẩy JSON cập nhật lên GitHub Gist
+      const patchGistRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          files: {
+            'accounts.json': {
+              content: JSON.stringify(accountsJson, null, 2)
+            }
+          }
+        })
+      });
+
+      if (!patchGistRes.ok) {
+        throw new Error(`Lỗi lưu dữ liệu lên Gist: ${patchGistRes.statusText}`);
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Đã reset HWID thành công cho tài khoản ${targetKey}!`
+      });
+    }
+
+    // =========================================================================
+    // LUỒNG 2: XỬ LÝ MUA TOOL / GIA HẠN THỜI HẠN
+    // =========================================================================
+    if (!username || !password) {
+      return NextResponse.json({ success: false, message: 'Thiếu username hoặc password' }, { status: 400 });
+    }
 
     // Chuẩn hóa mã tool mới mua
     const targetToolCode = tool_code ? tool_code.trim() : '';
