@@ -35,9 +35,11 @@ export default function Navbar() {
     return null;
   });
 
+  // States Menu & Dropdown
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Modal Auth States
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   
@@ -48,31 +50,38 @@ export default function Navbar() {
   const [authMsg, setAuthMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Modals Tính Năng
   const [showRechargeModal, setShowRechargeModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showAccountInfoModal, setShowAccountInfoModal] = useState(false);
   const [showPurchasedToolsModal, setShowPurchasedToolsModal] = useState(false);
   
+  // Profile Tabs (info | email | password)
   const [profileTab, setProfileTab] = useState<'info' | 'email' | 'password'>('info');
 
+  // Đổi mật khẩu
   const [oldPass, setOldPass] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirmPass, setConfirmPass] = useState('');
   const [passMsg, setPassMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [passLoading, setPassLoading] = useState(false);
 
+  // Tổng tiền nạp tích lũy tính VIP (RECHARGE + ADMIN_ADD - ADMIN_SUB)
   const [totalDeposited, setTotalDeposited] = useState(0);
 
+  // Trạng thái Xác thực Email trong Modal Account Info
   const [accountEmailInput, setAccountEmailInput] = useState('');
   const [otpInput, setOtpInput] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [emailActionMsg, setEmailActionMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [emailActionLoading, setEmailActionLoading] = useState(false);
 
+  // Trạng thái ẩn/hiện password tool & copied
   const [showToolPasswords, setShowToolPasswords] = useState<{ [key: string]: boolean }>({});
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
+  // Trạng thái điểm danh từ localStorage
   const [hasCheckedInToday, setHasCheckedInToday] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
@@ -88,6 +97,7 @@ export default function Navbar() {
 
   const [rechargeAmount, setRechargeAmount] = useState('50000');
 
+  // Dữ liệu Gist và Lịch sử
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [userGistData, setUserGistData] = useState<any[] | null>(null);
@@ -143,6 +153,7 @@ export default function Navbar() {
     return () => clearInterval(interval);
   }, [currentUser?.username]);
 
+  // Tính tổng nạp để xếp hạng VIP (+ Nạp SePay + Admin cộng tiền - Admin trừ tiền)
   const fetchUserTotalDeposited = async (username: string) => {
     try {
       const { data } = await supabase
@@ -221,16 +232,16 @@ export default function Navbar() {
     }
   };
 
-  // Cấu hình Bậc VIP & Viền Ôm Chuẩn
+  // Cấu hình bậc VIP: Khung viền ngoài vững chãi, nhịp đập & phát quang nằm trên Badge VIP bên trong
   const getVipInfo = (amount: number) => {
     if (amount >= 5000000) {
       return {
         level: 5,
-        title: 'VIP 5 - HUYỀN THOẠI',
+        title: 'VIP 5',
         sub: 'Kim Cương Đỏ Tối Thượng',
         color: 'text-rose-400',
         badgeBg: 'bg-gradient-to-r from-rose-600/30 via-pink-600/30 to-amber-500/30 border-rose-400 text-rose-100 shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-pulse',
-        border: 'border-2 border-rose-500 shadow-[0_0_25px_rgba(244,63,94,0.45),_0_0_10px_rgba(251,191,36,0.3)]',
+        border: 'border-2 border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.35)]',
         avatarBg: 'bg-gradient-to-tr from-rose-600 via-pink-500 to-amber-400 text-white shadow-[0_0_12px_rgba(244,63,94,0.5)]',
         icon: Flame,
         nextGoal: 5000000,
@@ -240,7 +251,7 @@ export default function Navbar() {
     if (amount >= 3000000) {
       return {
         level: 4,
-        title: 'VIP 4 - BẠCH KIM',
+        title: 'VIP 4',
         sub: 'Hoàng Gia Tối Cao',
         color: 'text-purple-300',
         badgeBg: 'bg-gradient-to-r from-purple-500/30 to-indigo-500/30 border-purple-400 text-purple-200 shadow-[0_0_12px_rgba(168,85,247,0.7)] animate-pulse',
@@ -254,7 +265,7 @@ export default function Navbar() {
     if (amount >= 2000000) {
       return {
         level: 3,
-        title: 'VIP 3 - HOÀNG KIM',
+        title: 'VIP 3',
         sub: 'Thương Gia Cao Cấp',
         color: 'text-amber-300',
         badgeBg: 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/60 text-amber-300',
@@ -268,7 +279,7 @@ export default function Navbar() {
     if (amount >= 1000000) {
       return {
         level: 2,
-        title: 'VIP 2 - TINH ANH',
+        title: 'VIP 2',
         sub: 'Hiệp Sĩ Bạc Ánh Thép',
         color: 'text-cyan-300',
         badgeBg: 'bg-gradient-to-r from-slate-400/20 to-cyan-500/20 border-cyan-400/50 text-cyan-300',
@@ -282,7 +293,7 @@ export default function Navbar() {
     if (amount >= 500000) {
       return {
         level: 1,
-        title: 'VIP 1 - ĐỒNG NEON',
+        title: 'VIP 1',
         sub: 'Chiến Binh Mới Nổi',
         color: 'text-orange-400',
         badgeBg: 'bg-gradient-to-r from-orange-500/20 to-amber-500/20 border-orange-500/50 text-orange-300',
@@ -842,22 +853,12 @@ export default function Navbar() {
                   <PlusCircle className="w-4 h-4 text-slate-950 stroke-[2.5]" /> Nạp tiền
                 </button>
 
-                {/* Ô THÔNG TIN KHÁCH HÀNG (HỌA TIẾT BAO TRANH KHUNG NGOÀI VIP 5) */}
+                {/* Ô THÔNG TIN KHÁCH HÀNG */}
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setShowUserDropdown(!showUserDropdown)}
-                    className={`flex items-center gap-3 bg-[#0D131F]/95 p-1.5 pr-3.5 rounded-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer group backdrop-blur-md relative overflow-visible ${vipInfo.border}`}
+                    className={`flex items-center gap-3 bg-[#0D131F]/95 p-1.5 pr-3.5 rounded-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer group backdrop-blur-md relative ${vipInfo.border}`}
                   >
-                    {/* Họa tiết 4 góc mạ vàng bao trùm sát mép ngoài VIP 5 */}
-                    {vipInfo.level === 5 && (
-                      <>
-                        <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-amber-300 rounded-tl-md pointer-events-none shadow-[0_0_6px_#fde047] z-20"></div>
-                        <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-amber-300 rounded-tr-md pointer-events-none shadow-[0_0_6px_#fde047] z-20"></div>
-                        <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-amber-300 rounded-bl-md pointer-events-none shadow-[0_0_6px_#fde047] z-20"></div>
-                        <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-amber-300 rounded-br-md pointer-events-none shadow-[0_0_6px_#fde047] z-20"></div>
-                      </>
-                    )}
-
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs uppercase shadow-inner relative ${vipInfo.avatarBg}`}>
                       {currentUser.username.substring(0, 1).toUpperCase()}
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#0D131F] absolute -bottom-0.5 -right-0.5 animate-pulse"></span>
@@ -869,7 +870,7 @@ export default function Navbar() {
                           {currentUser.username}
                         </span>
                         
-                        {/* Badge VIP */}
+                        {/* Khung VIP bên trong */}
                         {vipInfo.level > 0 && (
                           <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${vipInfo.badgeBg}`}>
                             V{vipInfo.level}
@@ -888,10 +889,11 @@ export default function Navbar() {
                   {showUserDropdown && (
                     <div className="absolute right-0 mt-2.5 w-64 bg-[#0D121D] border border-slate-800 rounded-3xl p-2.5 shadow-2xl space-y-1 z-50 backdrop-blur-2xl">
                       <button 
-                        onClick={() => { 
-                          setShowAccountInfoModal(true); 
-                          setShowUserDropdown(false); 
-                          setProfileTab('info'); 
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setShowUserDropdown(false);
+                          setProfileTab('info');
+                          setShowAccountInfoModal(true);
                         }} 
                         className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer"
                       >
@@ -899,10 +901,11 @@ export default function Navbar() {
                       </button>
 
                       <button 
-                        onClick={() => { 
-                          if (currentUser) loadUserGistData(currentUser.username); 
-                          setShowPurchasedToolsModal(true); 
-                          setShowUserDropdown(false); 
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setShowUserDropdown(false);
+                          if (currentUser) loadUserGistData(currentUser.username);
+                          setShowPurchasedToolsModal(true);
                         }} 
                         className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer"
                       >
@@ -910,10 +913,11 @@ export default function Navbar() {
                       </button>
 
                       <button 
-                        onClick={() => { 
-                          if (currentUser) loadUserTransactionsFromCloud(currentUser.username); 
-                          setShowHistoryModal(true); 
-                          setShowUserDropdown(false); 
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setShowUserDropdown(false);
+                          if (currentUser) loadUserTransactionsFromCloud(currentUser.username);
+                          setShowHistoryModal(true);
                         }} 
                         className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer"
                       >
@@ -921,7 +925,13 @@ export default function Navbar() {
                       </button>
 
                       <div className="border-t border-slate-800/80 my-1" />
-                      <button onClick={handleLogout} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-rose-400 hover:bg-rose-500/10 transition cursor-pointer">
+                      <button 
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleLogout();
+                        }} 
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+                      >
                         <LogOut className="w-4 h-4" /> Đăng xuất
                       </button>
                     </div>
@@ -942,7 +952,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* ================= MODAL NẠP TIỀN SIÊU BẮT MẮT ================= */}
+      {/* ================= MODAL NẠP TIỀN ================= */}
       {showRechargeModal && currentUser && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
           <div className="bg-[#0A0F18] border-2 border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_60px_rgba(6,182,212,0.35)] max-h-[92vh] overflow-y-auto">
@@ -963,7 +973,6 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Chọn số tiền nạp nhanh */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Chọn nhanh số tiền muốn nạp:
@@ -985,10 +994,7 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Khung Mã QR và Thông Tin Ngân Hàng */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center bg-[#05080E] border border-slate-800/90 p-5 rounded-3xl shadow-inner">
-              
-              {/* QR Code */}
               <div className="md:col-span-5 flex flex-col items-center justify-center p-3 rounded-2xl bg-[#0A0F18] border-2 border-emerald-500/40 shadow-[0_0_25px_rgba(16,185,129,0.2)]">
                 <img 
                   src={`https://qr.sepay.vn/img?bank=BIDV&acc=96247JFG2G&template=compact&amount=${rechargeAmount}&des=${encodeURIComponent(`NAP ${currentUser.username}`)}`} 
@@ -1000,7 +1006,6 @@ export default function Navbar() {
                 </span>
               </div>
 
-              {/* Thông tin chuyển khoản */}
               <div className="md:col-span-7 space-y-3 text-xs">
                 <div className="space-y-1">
                   <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Ngân hàng thụ hưởng</span>
@@ -1041,39 +1046,32 @@ export default function Navbar() {
                   * Lưu ý: Hãy ghi chính xác cú pháp chuyển khoản để hệ thống tự động cộng tiền ngay sau khi giao dịch thành công.
                 </p>
               </div>
-
             </div>
 
           </div>
         </div>
       )}
 
-      {/* ================= MODAL THÔNG TIN CÁ NHÂN, VIP & ĐỔI MẬT KHẨU ================= */}
+      {/* ================= MODAL THÔNG TIN CÁ NHÂN ================= */}
       {showAccountInfoModal && currentUser && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
           <div className={`bg-[#0A0F18] ${vipInfo.border} w-full max-w-lg rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_60px_rgba(6,182,212,0.3)] text-slate-200 max-h-[92vh] overflow-y-auto`}>
             
-            {/* Họa tiết 4 góc vương miện Cyberpunk cao cấp cho riêng biệt VIP 5 */}
-            {vipInfo.level === 5 && (
-              <>
-                <div className="absolute -top-1.5 -left-1.5 w-4 h-4 border-t-2 border-l-2 border-amber-300 rounded-tl-md pointer-events-none shadow-[0_0_10px_#fde047]"></div>
-                <div className="absolute -top-1.5 -right-1.5 w-4 h-4 border-t-2 border-r-2 border-amber-300 rounded-tr-md pointer-events-none shadow-[0_0_10px_#fde047]"></div>
-                <div className="absolute -bottom-1.5 -left-1.5 w-4 h-4 border-b-2 border-l-2 border-amber-300 rounded-bl-md pointer-events-none shadow-[0_0_10px_#fde047]"></div>
-                <div className="absolute -bottom-1.5 -right-1.5 w-4 h-4 border-b-2 border-r-2 border-amber-300 rounded-br-md pointer-events-none shadow-[0_0_10px_#fde047]"></div>
-              </>
-            )}
-
             <button onClick={() => { setShowAccountInfoModal(false); setEmailActionMsg(null); setIsOtpSent(false); setPassMsg(null); }} className="absolute top-5 right-5 text-slate-400 hover:text-white p-2 rounded-2xl bg-[#05080E] border border-slate-800 cursor-pointer hover:border-cyan-400 transition"><X className="w-5 h-5" /></button>
             
-            {/* Header Avatar Theo Khung VIP */}
             <div className="text-center space-y-3 pt-2">
               <div className="relative inline-block">
                 <div className={`w-24 h-24 rounded-3xl p-1 flex items-center justify-center mx-auto text-4xl font-black ${vipInfo.avatarBg}`}>
                   {currentUser.username.substring(0, 1).toUpperCase()}
                 </div>
-                <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-[#05080E] border border-slate-800 px-3 py-0.5 rounded-full flex items-center gap-1 shadow-lg whitespace-nowrap">
-                  <VipIcon className={`w-3.5 h-3.5 ${vipInfo.color}`} />
-                  <span className={`text-[10px] font-black ${vipInfo.color}`}>{vipInfo.title}</span>
+                
+                <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2">
+                  <div className="relative inline-flex items-center">
+                    <span className={`text-[10px] font-black px-3 py-0.5 rounded-full border flex items-center gap-1 shadow-lg whitespace-nowrap ${vipInfo.badgeBg}`}>
+                      <VipIcon className={`w-3.5 h-3.5 ${vipInfo.color}`} />
+                      <span className={vipInfo.color}>{vipInfo.title}</span>
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -1083,7 +1081,6 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* TAB CHUYỂN ĐỔI CHỨC NĂNG */}
             <div className="grid grid-cols-3 gap-1.5 bg-[#05080E] p-1.5 rounded-2xl border border-slate-800 text-xs font-bold">
               <button
                 onClick={() => setProfileTab('info')}
@@ -1113,11 +1110,8 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* TAB 1: TỔNG QUAN VÍ & TIẾN TRÌNH VIP */}
             {profileTab === 'info' && (
               <div className="space-y-4">
-                
-                {/* Số dư ví */}
                 <div className="bg-[#05080E] border border-slate-800/90 p-4.5 rounded-2xl flex items-center justify-between shadow-inner">
                   <div>
                     <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Số dư hiện tại</span>
@@ -1131,7 +1125,6 @@ export default function Navbar() {
                   </button>
                 </div>
 
-                {/* Khung Tiến Trình VIP */}
                 <div className="bg-[#05080E] border border-slate-800/90 p-4.5 rounded-2xl space-y-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-400 font-bold flex items-center gap-1.5">
@@ -1140,7 +1133,6 @@ export default function Navbar() {
                     <b className="text-cyan-300 font-mono font-black">{totalDeposited.toLocaleString('vi-VN')} VNĐ</b>
                   </div>
 
-                  {/* Thanh Progress */}
                   <div className="space-y-1.5">
                     <div className="w-full bg-[#0A0F18] border border-slate-800 h-3 rounded-full overflow-hidden p-0.5">
                       <div 
@@ -1165,7 +1157,6 @@ export default function Navbar() {
                   )}
                 </div>
 
-                {/* Trạng thái xác thực */}
                 <div className="bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl space-y-2 text-xs">
                   <div className="flex justify-between items-center border-b border-slate-800/80 pb-2.5">
                     <span className="text-slate-400">Gmail liên kết:</span>
@@ -1192,7 +1183,6 @@ export default function Navbar() {
               </div>
             )}
 
-            {/* TAB 2: ĐỔI MẬT KHẨU */}
             {profileTab === 'password' && (
               <div className="space-y-4">
                 <div className="space-y-1">
@@ -1246,7 +1236,6 @@ export default function Navbar() {
               </div>
             )}
 
-            {/* TAB 3: XÁC THỰC EMAIL */}
             {profileTab === 'email' && (
               <div className="space-y-4">
                 <div className="space-y-1.5">
@@ -1311,7 +1300,209 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* MODAL ĐĂNG NHẬP / ĐĂNG KÝ */}
+      {/* ================= MODAL LỊCH SỬ GIAO DỊCH ================= */}
+      {showHistoryModal && currentUser && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
+            <button onClick={() => setShowHistoryModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
+            
+            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-400/50 flex items-center justify-center text-emerald-300 shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                <History className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block">NHẬT KÝ TÀI CHÍNH</span>
+                <h3 className="text-lg font-black text-white tracking-wide">LỊCH SỬ GIAO DỊCH</h3>
+              </div>
+            </div>
+
+            {loadingHistory ? (
+              <div className="flex items-center justify-center gap-2 py-12 text-xs text-slate-400">
+                <Loader2 className="w-5 h-5 animate-spin text-cyan-400" /> Đang tải lịch sử giao dịch...
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                {userTransactions.length === 0 ? (
+                  <div className="bg-[#05080E] border border-slate-800/80 p-8 rounded-2xl text-center text-xs text-slate-500">
+                    Chưa có lịch sử biến động số dư.
+                  </div>
+                ) : (
+                  userTransactions.map((log: any, idx: number) => {
+                    const isPositive = log.amount > 0;
+                    const isCheckin = log.type === 'CHECKIN';
+                    const isBuy = log.type === 'BUY' || log.amount < 0;
+
+                    return (
+                      <div 
+                        key={idx} 
+                        className={`bg-[#05080E] border p-4 rounded-2xl flex items-center justify-between gap-3 text-xs transition duration-300 hover:-translate-y-0.5 ${
+                          isBuy 
+                            ? 'border-slate-800/90 hover:border-rose-500/40 hover:shadow-[0_0_15px_rgba(244,63,94,0.12)]' 
+                            : isCheckin 
+                            ? 'border-slate-800/90 hover:border-cyan-500/40 hover:shadow-[0_0_15px_rgba(6,182,212,0.12)]'
+                            : 'border-slate-800/90 hover:border-emerald-500/40 hover:shadow-[0_0_15px_rgba(16,185,129,0.12)]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                            isBuy 
+                              ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' 
+                              : isCheckin 
+                              ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
+                              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                          }`}>
+                            {isBuy ? <ShoppingBag className="w-5 h-5" /> : isCheckin ? <Gift className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
+                          </div>
+
+                          <div className="space-y-0.5 min-w-0">
+                            <span className="font-extrabold text-slate-100 block truncate text-xs sm:text-sm">
+                              {log.title}
+                            </span>
+                            <span className="text-[10px] font-mono font-bold text-slate-500 block">
+                              {log.created_at ? new Date(log.created_at).toLocaleString('vi-VN') : ''}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <span className={`text-sm font-mono font-black block ${
+                            isPositive ? 'text-emerald-400' : 'text-rose-400'
+                          }`}>
+                            {isPositive ? '+' : ''}{(log.amount || 0).toLocaleString('vi-VN')}đ
+                          </span>
+                          <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider block mt-0.5">
+                            {log.status || 'Thành công'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL TOOL ĐÃ MUA ================= */}
+      {showPurchasedToolsModal && currentUser && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center px-4">
+          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
+            <button onClick={() => setShowPurchasedToolsModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
+            
+            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+                <Wrench className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">QUẢN LÝ BẢN QUYỀN</span>
+                <h3 className="text-lg font-black text-white tracking-wide">DANH SÁCH TOOL ĐÃ MUA</h3>
+              </div>
+            </div>
+
+            {loadingPurchasedTools ? (
+              <div className="flex items-center justify-center gap-2 py-12 text-xs text-slate-400">
+                <Loader2 className="w-5 h-5 animate-spin text-cyan-400" /> Đang kiểm tra dữ liệu bản quyền...
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {!userGistData || userGistData.length === 0 ? (
+                  <div className="bg-[#05080E] border border-slate-800/80 p-8 rounded-2xl text-center text-xs text-slate-400 space-y-2">
+                    <p className="font-bold text-slate-300 text-sm">Bạn chưa sở hữu bản quyền Tool nào.</p>
+                    <p className="text-slate-500">Hãy truy cập mục "TOOL AUTO" để chọn mua và kích hoạt ứng dụng.</p>
+                  </div>
+                ) : (
+                  userGistData.map((toolAcc: any, idx: number) => {
+                    const isLifetime = !toolAcc.expire_timestamp || toolAcc.expire_timestamp === 0;
+                    const isShowPass = showToolPasswords[toolAcc.accountKey] || false;
+
+                    return (
+                      <div key={idx} className="bg-[#05080E] border border-slate-800/90 p-5 rounded-2xl space-y-4 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.12)] hover:-translate-y-0.5 transition duration-300">
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3.5">
+                          <div>
+                            <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">BẢN QUYỀN HOẠT ĐỘNG</span>
+                            <h4 className="font-black text-white text-base mt-0.5">{toolAcc.toolName}</h4>
+                          </div>
+                          <div>
+                            {renderRemainingTime(toolAcc.expire_timestamp)}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#0B1019] border border-slate-800/80 p-3.5 rounded-xl text-xs">
+                          <div className="space-y-1">
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Tài khoản tool</span>
+                            <div className="flex items-center justify-between bg-[#05080E] border border-slate-800/90 focus-within:border-cyan-400/60 px-3 py-2 rounded-lg font-mono font-bold text-cyan-300 transition">
+                              <span className="truncate pr-2">{toolAcc.appUsername}</span>
+                              <button 
+                                onClick={() => copyTextToClipboard(toolAcc.appUsername, `user_${idx}`)} 
+                                className="text-slate-400 hover:text-cyan-400 transition cursor-pointer flex items-center gap-1" 
+                                title="Sao chép tài khoản"
+                              >
+                                {copiedKey === `user_${idx}` ? <span className="text-[10px] text-emerald-400 font-sans">Đã chép!</span> : <Copy className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Mật khẩu tool</span>
+                            <div className="flex items-center justify-between bg-[#05080E] border border-slate-800/90 focus-within:border-cyan-400/60 px-3 py-2 rounded-lg font-mono font-bold text-slate-200 transition">
+                              <span>{isShowPass ? toolAcc.appPassword : '••••••••'}</span>
+                              <div className="flex items-center gap-2">
+                                <button 
+                                  onClick={() => setShowToolPasswords(prev => ({ ...prev, [toolAcc.accountKey]: !prev[toolAcc.accountKey] }))} 
+                                  className="text-slate-400 hover:text-white transition cursor-pointer" 
+                                  title={isShowPass ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                                >
+                                  {isShowPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                </button>
+                                <button 
+                                  onClick={() => copyTextToClipboard(toolAcc.appPassword, `pass_${idx}`)} 
+                                  className="text-slate-400 hover:text-cyan-400 transition cursor-pointer flex items-center gap-1" 
+                                  title="Sao chép mật khẩu"
+                                >
+                                  {copiedKey === `pass_${idx}` ? <span className="text-[10px] text-emerald-400 font-sans">Đã chép!</span> : <Copy className="w-3.5 h-3.5" />}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3 pt-1">
+                          {!isLifetime ? (
+                            <button
+                              onClick={() => handleOpenRenewModal(toolAcc.toolCode)}
+                              className="bg-amber-500/10 border border-amber-500/40 text-amber-400 font-black px-4 py-2.5 rounded-xl text-xs transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-sm hover:scale-[1.03] hover:bg-amber-500/25 hover:border-amber-400 hover:text-amber-300 hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '10s' }} /> GIA HẠN THỜI HẠN
+                            </button>
+                          ) : (
+                            <div className="text-[11px] text-slate-500 font-bold italic flex items-center gap-1">
+                              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" /> Sở hữu vĩnh viễn (Không cần gia hạn)
+                            </div>
+                          )}
+
+                          {toolAcc.downloadLink && (
+                            <a 
+                              href={toolAcc.downloadLink} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-black px-4 py-2.5 rounded-xl text-xs transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-sm hover:scale-[1.03] hover:bg-cyan-500/35 hover:border-cyan-300 hover:text-white hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]"
+                            >
+                              <Download className="w-3.5 h-3.5 text-cyan-400" /> Tải Tool về máy
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL ĐĂNG NHẬP / ĐĂNG KÝ ================= */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
           <div className="bg-[#0D121D] border border-cyan-400/80 w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_30px_rgba(6,182,212,0.25)]">
@@ -1339,7 +1530,7 @@ export default function Navbar() {
 
               <div><label className="block text-xs font-bold text-slate-300 mb-1">Mật khẩu</label><input type="password" required placeholder="Nhập mật khẩu..." value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full bg-[#06090E] border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-cyan-400 transition" /></div>
               {authMode === 'register' && <div><label className="block text-xs font-bold text-slate-300 mb-1">Nhập lại mật khẩu</label><input type="password" required placeholder="Xác nhận mật khẩu..." value={rePasswordInput} onChange={(e) => setRePasswordInput(e.target.value)} className="w-full bg-[#06090E] border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-cyan-400 transition" /></div>}
-              <button type="submit" disabled={loading} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition cursor-pointer mt-2 shadow-[0_0_15px_rgba(6,182,212,0.3)]">{loading ? 'ĐANG XỬ LÝ...' : authMode === 'login' ? 'ĐANG ĐĂNG NHẬP...' : 'TẠO TÀI KHOẢN NGAY'}</button>
+              <button type="submit" disabled={loading} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition cursor-pointer mt-2 shadow-[0_0_15px_rgba(6,182,212,0.3)]">{loading ? 'ĐANG XỬ LÝ...' : authMode === 'login' ? 'ĐĂNG NHẬP NGAY' : 'TẠO TÀI KHOẢN NGAY'}</button>
             </form>
             <div className="text-center pt-2 border-t border-slate-800">
               {authMode === 'login' ? <p className="text-xs text-slate-400">Chưa có tài khoản? <button onClick={() => { setAuthModalMode('register'); resetForm(); }} className="text-cyan-400 font-bold hover:underline cursor-pointer">Đăng ký ngay</button></p> : <p className="text-xs text-slate-400">Đã có tài khoản? <button onClick={() => { setAuthModalMode('login'); resetForm(); }} className="text-cyan-400 font-bold hover:underline cursor-pointer">Đăng nhập</button></p>}
