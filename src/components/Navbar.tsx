@@ -232,7 +232,7 @@ export default function Navbar() {
     }
   };
 
-  // Cấu hình bậc VIP
+  // Cấu hình Bậc VIP
   const getVipInfo = (amount: number) => {
     if (amount >= 5000000) {
       return {
@@ -241,7 +241,7 @@ export default function Navbar() {
         sub: 'Kim Cương Đỏ Tối Thượng',
         color: 'text-rose-400',
         badgeBg: 'bg-gradient-to-r from-rose-600/30 via-pink-600/30 to-amber-500/30 border-rose-400 text-rose-100 shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-pulse',
-        border: 'border-2 border-rose-500/80 shadow-[0_0_20px_rgba(244,63,94,0.35)]',
+        border: 'border-2 border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.35)]',
         avatarBg: 'bg-gradient-to-tr from-rose-600 via-pink-500 to-amber-400 text-white shadow-[0_0_12px_rgba(244,63,94,0.5)]',
         icon: Flame,
         nextGoal: 5000000,
@@ -852,7 +852,7 @@ export default function Navbar() {
                   <PlusCircle className="w-4 h-4 text-slate-950 stroke-[2.5]" /> Nạp tiền
                 </button>
 
-                {/* Ô THÔNG TIN KHÁCH HÀNG (VIỀN NEON ÔM BO GÓC TỰ NHIÊN) */}
+                {/* Ô THÔNG TIN KHÁCH HÀNG */}
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setShowUserDropdown(!showUserDropdown)}
@@ -889,9 +889,9 @@ export default function Navbar() {
                     <div className="absolute right-0 mt-2.5 w-64 bg-[#0D121D] border border-slate-800 rounded-3xl p-2.5 shadow-2xl space-y-1 z-50 backdrop-blur-2xl">
                       <button 
                         onClick={() => { 
-                          setShowAccountInfoModal(true); 
                           setShowUserDropdown(false); 
                           setProfileTab('info'); 
+                          setShowAccountInfoModal(true); 
                         }} 
                         className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer"
                       >
@@ -900,9 +900,9 @@ export default function Navbar() {
 
                       <button 
                         onClick={() => { 
+                          setShowUserDropdown(false); 
                           if (currentUser) loadUserGistData(currentUser.username); 
                           setShowPurchasedToolsModal(true); 
-                          setShowUserDropdown(false); 
                         }} 
                         className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer"
                       >
@@ -911,9 +911,9 @@ export default function Navbar() {
 
                       <button 
                         onClick={() => { 
+                          setShowUserDropdown(false); 
                           if (currentUser) loadUserTransactionsFromCloud(currentUser.username); 
                           setShowHistoryModal(true); 
-                          setShowUserDropdown(false); 
                         }} 
                         className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer"
                       >
@@ -921,7 +921,13 @@ export default function Navbar() {
                       </button>
 
                       <div className="border-t border-slate-800/80 my-1" />
-                      <button onClick={handleLogout} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-rose-400 hover:bg-rose-500/10 transition cursor-pointer">
+                      <button 
+                        onClick={() => {
+                          setShowUserDropdown(false);
+                          handleLogout();
+                        }} 
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+                      >
                         <LogOut className="w-4 h-4" /> Đăng xuất
                       </button>
                     </div>
@@ -1048,32 +1054,28 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* ================= MODAL THÔNG TIN CÁ NHÂN & VIP (LOẠI BỎ SẠCH SẼ HỌA TIẾT THỪA BÊN NGOÀI) ================= */}
+      {/* ================= MODAL THÔNG TIN CÁ NHÂN & VIP (ĐÃ FIX KHÔNG BỊ CHE BADGE) ================= */}
       {showAccountInfoModal && currentUser && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
           <div className={`bg-[#0A0F18] ${vipInfo.border} w-full max-w-lg rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_60px_rgba(6,182,212,0.3)] text-slate-200 max-h-[92vh] overflow-y-auto`}>
             
             <button onClick={() => { setShowAccountInfoModal(false); setEmailActionMsg(null); setIsOtpSent(false); setPassMsg(null); }} className="absolute top-5 right-5 text-slate-400 hover:text-white p-2 rounded-2xl bg-[#05080E] border border-slate-800 cursor-pointer hover:border-cyan-400 transition"><X className="w-5 h-5" /></button>
             
-            {/* Header Avatar Theo Khung VIP */}
-            <div className="text-center space-y-3 pt-2">
-              <div className="relative inline-block">
-                <div className={`w-24 h-24 rounded-3xl p-1 flex items-center justify-center mx-auto text-4xl font-black ${vipInfo.avatarBg}`}>
-                  {currentUser.username.substring(0, 1).toUpperCase()}
-                </div>
-                
-                {/* Badge VIP trong Profile */}
-                <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2">
-                  <div className="relative inline-flex items-center">
-                    <span className={`text-[10px] font-black px-3 py-0.5 rounded-full border flex items-center gap-1 shadow-lg whitespace-nowrap ${vipInfo.badgeBg}`}>
-                      <VipIcon className={`w-3.5 h-3.5 ${vipInfo.color}`} />
-                      <span className={vipInfo.color}>{vipInfo.title}</span>
-                    </span>
-                  </div>
-                </div>
+            {/* Header Avatar & Badge VIP Tách Rời Chuẩn Flexbox */}
+            <div className="text-center flex flex-col items-center gap-3 pt-2">
+              <div className={`w-20 h-20 rounded-3xl p-1 flex items-center justify-center text-3xl font-black ${vipInfo.avatarBg}`}>
+                {currentUser.username.substring(0, 1).toUpperCase()}
+              </div>
+              
+              {/* Badge VIP Nằm Ngay Ngắn Bên Dưới Avatar */}
+              <div className="pt-0.5">
+                <span className={`text-[11px] font-black px-3.5 py-1 rounded-full border flex items-center gap-1.5 shadow-lg whitespace-nowrap ${vipInfo.badgeBg}`}>
+                  <VipIcon className={`w-3.5 h-3.5 ${vipInfo.color}`} />
+                  <span className={vipInfo.color}>{vipInfo.title}</span>
+                </span>
               </div>
 
-              <div className="pt-2">
+              <div className="space-y-0.5">
                 <h3 className="text-2xl font-black text-white tracking-wide">{currentUser.username}</h3>
                 <p className="text-xs text-slate-400 font-medium">{vipInfo.sub}</p>
               </div>
@@ -1393,7 +1395,7 @@ export default function Navbar() {
 
       {/* ================= MODAL TOOL ĐÃ MUA ================= */}
       {showPurchasedToolsModal && currentUser && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center px-4">
           <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
             <button onClick={() => setShowPurchasedToolsModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
             
@@ -1509,7 +1511,7 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* MODAL ĐIỂM DANH */}
+      {/* ================= MODAL ĐIỂM DANH (ĐÃ FIX KHÔNG BỊ KHÓA NÚT MỞ) ================= */}
       {checkInModalShow && currentUser && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
           <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-md rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)]">
@@ -1591,7 +1593,7 @@ export default function Navbar() {
 
               <div><label className="block text-xs font-bold text-slate-300 mb-1">Mật khẩu</label><input type="password" required placeholder="Nhập mật khẩu..." value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full bg-[#06090E] border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-cyan-400 transition" /></div>
               {authMode === 'register' && <div><label className="block text-xs font-bold text-slate-300 mb-1">Nhập lại mật khẩu</label><input type="password" required placeholder="Xác nhận mật khẩu..." value={rePasswordInput} onChange={(e) => setRePasswordInput(e.target.value)} className="w-full bg-[#06090E] border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-cyan-400 transition" /></div>}
-              <button type="submit" disabled={loading} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition cursor-pointer mt-2 shadow-[0_0_15px_rgba(6,182,212,0.3)]">{loading ? 'ĐANG XỬ LÝ...' : authMode === 'login' ? 'ĐANG ĐĂNG NHẬP...' : 'TẠO TÀI KHOẢN NGAY'}</button>
+              <button type="submit" disabled={loading} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition cursor-pointer mt-2 shadow-[0_0_15px_rgba(6,182,212,0.3)]">{loading ? 'ĐANG XỬ LÝ...' : authMode === 'login' ? 'ĐĂNG NHẬP NGAY' : 'TẠO TÀI KHOẢN NGAY'}</button>
             </form>
             <div className="text-center pt-2 border-t border-slate-800">
               {authMode === 'login' ? <p className="text-xs text-slate-400">Chưa có tài khoản? <button onClick={() => { setAuthModalMode('register'); resetForm(); }} className="text-cyan-400 font-bold hover:underline cursor-pointer">Đăng ký ngay</button></p> : <p className="text-xs text-slate-400">Đã có tài khoản? <button onClick={() => { setAuthModalMode('login'); resetForm(); }} className="text-cyan-400 font-bold hover:underline cursor-pointer">Đăng nhập</button></p>}
