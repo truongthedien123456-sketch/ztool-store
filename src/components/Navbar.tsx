@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { 
   User, Lock, LogIn, UserPlus, LogOut, Wallet, X, AlertCircle, CheckCircle2,
-  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift, Bell, Home, FolderKanban, Sparkles, Eye, EyeOff, ShieldCheck, Zap, ShoppingBag, Mail, Send, ShieldAlert, Shield
+  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift, Bell, Home, FolderKanban, Sparkles, Eye, EyeOff, ShieldCheck, Zap, ShoppingBag, Mail, Send, ShieldAlert, Shield, Award, ChevronRight, Gem, Flame, Star
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -56,6 +56,19 @@ export default function Navbar() {
   const [showAccountInfoModal, setShowAccountInfoModal] = useState(false);
   const [showPurchasedToolsModal, setShowPurchasedToolsModal] = useState(false);
   
+  // Profile Tabs (info | email | password)
+  const [profileTab, setProfileTab] = useState<'info' | 'email' | 'password'>('info');
+
+  // Đổi mật khẩu
+  const [oldPass, setOldPass] = useState('');
+  const [newPass, setNewPass] = useState('');
+  const [confirmPass, setConfirmPass] = useState('');
+  const [passMsg, setPassMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [passLoading, setPassLoading] = useState(false);
+
+  // Tổng tiền nạp tích lũy tính VIP
+  const [totalDeposited, setTotalDeposited] = useState(0);
+
   // Trạng thái Xác thực Email trong Modal Account Info
   const [accountEmailInput, setAccountEmailInput] = useState('');
   const [otpInput, setOtpInput] = useState('');
@@ -66,6 +79,7 @@ export default function Navbar() {
   // Trạng thái ẩn/hiện password tool & copied
   const [showToolPasswords, setShowToolPasswords] = useState<{ [key: string]: boolean }>({});
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // Trạng thái điểm danh từ localStorage
   const [hasCheckedInToday, setHasCheckedInToday] = useState<boolean>(() => {
@@ -82,7 +96,6 @@ export default function Navbar() {
   const [checkInMsg, setCheckInMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [rechargeAmount, setRechargeAmount] = useState('50000');
-  const [copied, setCopied] = useState(false);
 
   // Dữ liệu Gist và Lịch sử
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
@@ -144,6 +157,26 @@ export default function Navbar() {
     return () => clearInterval(interval);
   }, [currentUser?.username]);
 
+  // Tính tổng nạp để xếp hạng VIP (Gồm nạp SePay và Admin cộng)
+  const fetchUserTotalDeposited = async (username: string) => {
+    try {
+      const { data } = await supabase
+        .from('transactions')
+        .select('amount, type')
+        .eq('username', username)
+        .in('type', ['RECHARGE', 'ADMIN_ADD']);
+
+      if (data && data.length > 0) {
+        const total = data.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+        setTotalDeposited(total);
+      } else {
+        setTotalDeposited(0);
+      }
+    } catch (e) {
+      console.error('Lỗi tính tổng nạp:', e);
+    }
+  };
+
   const checkTodayCheckInStatus = async (username: string) => {
     try {
       const { data: lastCheckIn } = await supabase
@@ -187,6 +220,7 @@ export default function Navbar() {
         setAccountEmailInput(data.email || '');
         localStorage.setItem('ztool_user_data', JSON.stringify(data));
         checkTodayCheckInStatus(data.username);
+        fetchUserTotalDeposited(data.username);
       } else {
         localStorage.removeItem('ztool_current_user');
         localStorage.removeItem('ztool_user_data');
@@ -196,6 +230,95 @@ export default function Navbar() {
       setCurrentUser(null);
     }
   };
+
+  // Hệ thống cấu hình bậc VIP và khung viền riêng biệt
+  const getVipInfo = (amount: number) => {
+    if (amount >= 5000000) {
+      return {
+        level: 5,
+        title: 'VIP 5 - HUYỀN THOẠI',
+        sub: 'Kim Cương Đỏ Tối Thượng',
+        color: 'text-rose-400',
+        badgeBg: 'bg-gradient-to-r from-rose-500/20 to-pink-500/20 border-rose-500/50 text-rose-300',
+        border: 'border-rose-500 shadow-[0_0_35px_rgba(244,63,94,0.6)] ring-4 ring-rose-500/30',
+        avatarBg: 'bg-gradient-to-tr from-rose-600 via-pink-500 to-amber-400 text-white',
+        icon: Flame,
+        nextGoal: 5000000,
+        progress: 100,
+      };
+    }
+    if (amount >= 3000000) {
+      return {
+        level: 4,
+        title: 'VIP 4 - BẠCH KIM',
+        sub: 'Hoàng Gia Tối Cao',
+        color: 'text-purple-300',
+        badgeBg: 'bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border-purple-500/50 text-purple-300',
+        border: 'border-purple-400 shadow-[0_0_30px_rgba(168,85,247,0.5)] ring-4 ring-purple-500/30',
+        avatarBg: 'bg-gradient-to-tr from-purple-600 via-indigo-500 to-cyan-400 text-white',
+        icon: Gem,
+        nextGoal: 5000000,
+        progress: Math.min(100, Math.round(((amount - 3000000) / (5000000 - 3000000)) * 100)),
+      };
+    }
+    if (amount >= 2000000) {
+      return {
+        level: 3,
+        title: 'VIP 3 - HOÀNG KIM',
+        sub: 'Thương Gia Cao Cấp',
+        color: 'text-amber-300',
+        badgeBg: 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/50 text-amber-300',
+        border: 'border-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.5)] ring-4 ring-amber-400/30',
+        avatarBg: 'bg-gradient-to-tr from-amber-500 via-yellow-400 to-orange-500 text-slate-950',
+        icon: Crown,
+        nextGoal: 3000000,
+        progress: Math.min(100, Math.round(((amount - 2000000) / (3000000 - 2000000)) * 100)),
+      };
+    }
+    if (amount >= 1000000) {
+      return {
+        level: 2,
+        title: 'VIP 2 - TINH ANH',
+        sub: 'Hiệp Sĩ Bạc Ánh Thép',
+        color: 'text-cyan-300',
+        badgeBg: 'bg-gradient-to-r from-slate-400/20 to-cyan-500/20 border-cyan-400/50 text-cyan-300',
+        border: 'border-cyan-300 shadow-[0_0_25px_rgba(6,182,212,0.4)] ring-4 ring-cyan-400/20',
+        avatarBg: 'bg-gradient-to-tr from-slate-400 via-cyan-400 to-blue-500 text-slate-950',
+        icon: Star,
+        nextGoal: 2000000,
+        progress: Math.min(100, Math.round(((amount - 1000000) / (2000000 - 1000000)) * 100)),
+      };
+    }
+    if (amount >= 500000) {
+      return {
+        level: 1,
+        title: 'VIP 1 - ĐỒNG NEON',
+        sub: 'Chiến Binh Mới Nổi',
+        color: 'text-orange-400',
+        badgeBg: 'bg-gradient-to-r from-orange-500/20 to-amber-500/20 border-orange-500/50 text-orange-300',
+        border: 'border-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.35)] ring-2 ring-orange-500/20',
+        avatarBg: 'bg-gradient-to-tr from-orange-600 to-amber-500 text-white',
+        icon: Award,
+        nextGoal: 1000000,
+        progress: Math.min(100, Math.round(((amount - 500000) / (1000000 - 500000)) * 100)),
+      };
+    }
+    return {
+      level: 0,
+      title: 'THÀNH VIÊN',
+      sub: 'Tài Khoản Chuẩn',
+      color: 'text-cyan-400',
+      badgeBg: 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400',
+      border: 'border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.2)]',
+      avatarBg: 'bg-gradient-to-tr from-cyan-500 to-teal-400 text-slate-950',
+      icon: User,
+      nextGoal: 500000,
+      progress: Math.min(100, Math.round((amount / 500000) * 100)),
+    };
+  };
+
+  const vipInfo = getVipInfo(totalDeposited);
+  const VipIcon = vipInfo.icon;
 
   const loadUserGistData = async (username: string) => {
     setLoadingPurchasedTools(true);
@@ -317,6 +440,12 @@ export default function Navbar() {
     setTimeout(() => setCopiedKey(null), 1800);
   };
 
+  const handleCopyField = (text: string, fieldName: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(fieldName);
+    setTimeout(() => setCopiedField(null), 1800);
+  };
+
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthMsg(null);
@@ -341,7 +470,6 @@ export default function Navbar() {
         return;
       }
 
-      // 1. Kiểm tra xem username đã tồn tại chưa
       const { data: existingUser } = await supabase
         .from('users')
         .select('username')
@@ -354,7 +482,6 @@ export default function Navbar() {
         return;
       }
 
-      // 2. Kiểm tra xem Email đã được tài khoản nào đăng ký chưa
       const { data: existingEmailUser } = await supabase
         .from('users')
         .select('username')
@@ -400,6 +527,7 @@ export default function Navbar() {
           setShowAuthModal(false); 
           resetForm(); 
           checkTodayCheckInStatus(newUser.username);
+          fetchUserTotalDeposited(newUser.username);
           setShowAccountInfoModal(true);
         }, 500);
       }
@@ -429,7 +557,56 @@ export default function Navbar() {
       setAccountEmailInput(user.email || '');
 
       setAuthMsg({ type: 'success', text: 'Đăng nhập thành công!' });
-      setTimeout(() => { setShowAuthModal(false); resetForm(); checkTodayCheckInStatus(user.username); }, 500);
+      setTimeout(() => { 
+        setShowAuthModal(false); 
+        resetForm(); 
+        checkTodayCheckInStatus(user.username); 
+        fetchUserTotalDeposited(user.username);
+      }, 500);
+    }
+  };
+
+  // Đổi Mật Khẩu Cá Nhân
+  const handleChangePassword = async () => {
+    setPassMsg(null);
+    if (!oldPass || !newPass || !confirmPass) {
+      setPassMsg({ type: 'error', text: 'Vui lòng điền đầy đủ các thông tin mật khẩu!' });
+      return;
+    }
+
+    if (currentUser?.password !== oldPass) {
+      setPassMsg({ type: 'error', text: 'Mật khẩu hiện tại không chính xác!' });
+      return;
+    }
+
+    if (newPass.length < 6) {
+      setPassMsg({ type: 'error', text: 'Mật khẩu mới phải có tối thiểu 6 ký tự!' });
+      return;
+    }
+
+    if (newPass !== confirmPass) {
+      setPassMsg({ type: 'error', text: 'Mật khẩu xác nhận không trùng khớp!' });
+      return;
+    }
+
+    setPassLoading(true);
+    const { error } = await supabase
+      .from('users')
+      .update({ password: newPass })
+      .eq('username', currentUser.username);
+
+    setPassLoading(false);
+
+    if (error) {
+      setPassMsg({ type: 'error', text: `Lỗi cập nhật mật khẩu: ${error.message}` });
+    } else {
+      const updatedUser = { ...currentUser, password: newPass };
+      setCurrentUser(updatedUser);
+      localStorage.setItem('ztool_user_data', JSON.stringify(updatedUser));
+      setPassMsg({ type: 'success', text: 'Đổi mật khẩu thành công!' });
+      setOldPass('');
+      setNewPass('');
+      setConfirmPass('');
     }
   };
 
@@ -592,19 +769,12 @@ export default function Navbar() {
     setAuthMsg(null);
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  // Xác định trạng thái miễn xác thực hoặc đã xác thực
   const isExempt = currentUser?.is_exempt === true;
   const isVerified = currentUser?.is_verified === true || isExempt;
 
   return (
     <>
-      {/* NAVBAR CHÍNH GLASSMORPHISM CYBERPUNK PRO */}
+      {/* NAVBAR CHÍNH GLASSMORPHISM CYBERPUNK */}
       <nav className="bg-[#080D15]/90 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-40 px-4 lg:px-8 py-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.6)] transition-all">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           
@@ -647,7 +817,7 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* CỤM ĐIỂM DANH, NẠP TIỀN & USER CARD */}
+          {/* CỤM ĐIỂM DANH, NẠP TIỀN & USER CARD KÈM KHUNG VIP */}
           <div className="flex items-center gap-3">
             {currentUser ? (
               <div className="flex items-center gap-3">
@@ -682,21 +852,28 @@ export default function Navbar() {
                   <PlusCircle className="w-4 h-4 text-slate-950 stroke-[2.5]" /> Nạp tiền
                 </button>
 
-                {/* Ô THÔNG TIN KHÁCH HÀNG */}
+                {/* Ô THÔNG TIN KHÁCH HÀNG (VIỀN VIP DYNAMIC) */}
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setShowUserDropdown(!showUserDropdown)}
-                    className="flex items-center gap-3 bg-[#0D131F]/90 border border-slate-700/80 hover:border-cyan-400/80 p-1.5 pr-3.5 rounded-2xl transition-all duration-300 shadow-[0_4px_15px_rgba(0,0,0,0.4)] hover:shadow-[0_0_20px_rgba(6,182,212,0.25)] hover:scale-[1.02] cursor-pointer group backdrop-blur-md"
+                    className={`flex items-center gap-3 bg-[#0D131F]/95 border p-1.5 pr-3.5 rounded-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer group backdrop-blur-md ${vipInfo.border}`}
                   >
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-xs uppercase shadow-inner relative border border-cyan-400/40">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs uppercase shadow-inner relative ${vipInfo.avatarBg}`}>
                       {currentUser.username.substring(0, 1).toUpperCase()}
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#0D131F] absolute -bottom-0.5 -right-0.5 animate-pulse"></span>
                     </div>
                     
                     <div className="text-left text-xs leading-tight flex flex-col justify-center">
-                      <span className="font-extrabold text-white group-hover:text-cyan-300 transition truncate max-w-[90px]">
-                        {currentUser.username}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className="font-extrabold text-white group-hover:text-cyan-300 transition truncate max-w-[85px]">
+                          {currentUser.username}
+                        </span>
+                        {vipInfo.level > 0 && (
+                          <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${vipInfo.badgeBg}`}>
+                            V{vipInfo.level}
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[10px] text-emerald-400 font-black block mt-0.5 font-mono">
                         {(currentUser.balance || 0).toLocaleString('vi-VN')} VNĐ
                       </span>
@@ -707,18 +884,21 @@ export default function Navbar() {
 
                   {/* USER DROPDOWN MENU */}
                   {showUserDropdown && (
-                    <div className="absolute right-0 mt-2.5 w-60 bg-[#0D121D] border border-slate-800 rounded-2xl p-2 shadow-2xl space-y-1 z-50 backdrop-blur-xl">
-                      <button onClick={() => { setShowAccountInfoModal(true); setShowUserDropdown(false); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/60 transition cursor-pointer">
-                        <User className="w-4 h-4 text-cyan-400" /> Thông tin tài khoản
+                    <div className="absolute right-0 mt-2.5 w-64 bg-[#0D121D] border border-slate-800 rounded-3xl p-2.5 shadow-2xl space-y-1 z-50 backdrop-blur-2xl">
+                      <button onClick={() => { setShowAccountInfoModal(true); setShowUserDropdown(false); setProfileTab('info'); }} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer">
+                        <User className="w-4 h-4 text-cyan-400" /> Thông tin & Cấp bậc VIP
                       </button>
-                      <button onClick={() => { if (currentUser) loadUserGistData(currentUser.username); setShowPurchasedToolsModal(true); setShowUserDropdown(false); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/60 transition cursor-pointer">
+                      <button onClick={() => { setShowAccountInfoModal(true); setShowUserDropdown(false); setProfileTab('password'); }} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer">
+                        <Key className="w-4 h-4 text-amber-400" /> Đổi mật khẩu
+                      </button>
+                      <button onClick={() => { if (currentUser) loadUserGistData(currentUser.username); setShowPurchasedToolsModal(true); setShowUserDropdown(false); }} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer">
                         <Wrench className="w-4 h-4 text-cyan-300" /> Tool đã mua
                       </button>
-                      <button onClick={() => { if (currentUser) loadUserTransactionsFromCloud(currentUser.username); setShowHistoryModal(true); setShowUserDropdown(false); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/60 transition cursor-pointer">
+                      <button onClick={() => { if (currentUser) loadUserTransactionsFromCloud(currentUser.username); setShowHistoryModal(true); setShowUserDropdown(false); }} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer">
                         <History className="w-4 h-4 text-emerald-400" /> Lịch sử giao dịch
                       </button>
-                      <div className="border-t border-slate-800 my-1" />
-                      <button onClick={handleLogout} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-500/10 transition cursor-pointer">
+                      <div className="border-t border-slate-800/80 my-1" />
+                      <button onClick={handleLogout} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-rose-400 hover:bg-rose-500/10 transition cursor-pointer">
                         <LogOut className="w-4 h-4" /> Đăng xuất
                       </button>
                     </div>
@@ -739,323 +919,302 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* MODAL ĐIỂM DANH HÀNG NGÀY */}
-      {checkInModalShow && currentUser && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-md rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)]">
-            <button onClick={() => setCheckInModalShow(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
-            
-            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
-                <CalendarCheck className="w-6 h-6 animate-pulse" />
-              </div>
-              <div>
-                <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">ƯU ĐÃI THÀNH VIÊN</span>
-                <h3 className="text-lg font-black text-white tracking-wide">ĐIỂM DANH MỖI NGÀY</h3>
-              </div>
-            </div>
-
-            <div className="bg-[#05080E] border border-slate-800/90 p-6 rounded-2xl flex flex-col items-center space-y-4 text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-2 border-cyan-400 rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(6,182,212,0.4)] animate-pulse">
-                <Gift className="w-10 h-10 text-cyan-300" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Phần thưởng điểm danh hôm nay</h4>
-                <p className="text-3xl font-black text-emerald-400 font-mono tracking-tight">+1.000 VNĐ</p>
-              </div>
-            </div>
-
-            {checkInMsg && (
-              <div className={`p-4 rounded-xl text-xs font-bold flex items-start gap-2.5 ${checkInMsg.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'}`}>
-                {checkInMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />}
-                <span className="leading-relaxed">{checkInMsg.text}</span>
-              </div>
-            )}
-
-            <button 
-              disabled={checkInLoading || checkInMsg?.type === 'success' || hasCheckedInToday}
-              onClick={handleDailyCheckIn} 
-              className={`w-full font-black py-4 rounded-2xl text-xs shadow-lg transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${
-                (checkInMsg?.type === 'success' || hasCheckedInToday) 
-                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' 
-                  : 'bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 shadow-[0_0_25px_rgba(6,182,212,0.35)] hover:scale-[1.02]'
-              }`}
-            >
-              {checkInLoading ? (
-                <><Loader2 className="w-4 h-4 animate-spin text-slate-950" /> ĐANG XỬ LÝ HỆ THỐNG...</>
-              ) : (checkInMsg?.type === 'success' || hasCheckedInToday) ? (
-                <><CheckCircle2 className="w-4 h-4" /> ĐÃ ĐIỂM DANH HÔM NAY</>
-              ) : (
-                <><Gift className="w-4 h-4" /> BẤM ĐỂ ĐIỂM DANH NHẬN 1.000đ</>
-              )}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DANH SÁCH TOOL ĐÃ MUA */}
-      {showPurchasedToolsModal && currentUser && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
-            <button onClick={() => setShowPurchasedToolsModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
-            
-            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
-                <Wrench className="w-6 h-6 animate-pulse" />
-              </div>
-              <div>
-                <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">QUẢN LÝ BẢN QUYỀN</span>
-                <h3 className="text-lg font-black text-white tracking-wide">DANH SÁCH TOOL ĐÃ MUA</h3>
-              </div>
-            </div>
-
-            {loadingPurchasedTools ? (
-              <div className="flex items-center justify-center gap-2 py-12 text-xs text-slate-400">
-                <Loader2 className="w-5 h-5 animate-spin text-cyan-400" /> Đang kiểm tra dữ liệu bản quyền...
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {!userGistData || userGistData.length === 0 ? (
-                  <div className="bg-[#05080E] border border-slate-800/80 p-8 rounded-2xl text-center text-xs text-slate-400 space-y-2">
-                    <p className="font-bold text-slate-300 text-sm">Bạn chưa sở hữu bản quyền Tool nào.</p>
-                    <p className="text-slate-500">Hãy truy cập mục "TOOL AUTO" để chọn mua và kích hoạt ứng dụng.</p>
-                  </div>
-                ) : (
-                  userGistData.map((toolAcc: any, idx: number) => {
-                    const isLifetime = !toolAcc.expire_timestamp || toolAcc.expire_timestamp === 0;
-                    const isShowPass = showToolPasswords[toolAcc.accountKey] || false;
-
-                    return (
-                      <div key={idx} className="bg-[#05080E] border border-slate-800/90 p-5 rounded-2xl space-y-4 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.12)] hover:-translate-y-0.5 transition duration-300">
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3.5">
-                          <div>
-                            <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">BẢN QUYỀN HOẠT ĐỘNG</span>
-                            <h4 className="font-black text-white text-base mt-0.5">{toolAcc.toolName}</h4>
-                          </div>
-                          <div>
-                            {renderRemainingTime(toolAcc.expire_timestamp)}
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#0B1019] border border-slate-800/80 p-3.5 rounded-xl text-xs">
-                          <div className="space-y-1">
-                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Tài khoản tool</span>
-                            <div className="flex items-center justify-between bg-[#05080E] border border-slate-800/90 focus-within:border-cyan-400/60 px-3 py-2 rounded-lg font-mono font-bold text-cyan-300 transition">
-                              <span className="truncate pr-2">{toolAcc.appUsername}</span>
-                              <button 
-                                onClick={() => copyTextToClipboard(toolAcc.appUsername, `user_${idx}`)} 
-                                className="text-slate-400 hover:text-cyan-400 transition cursor-pointer flex items-center gap-1" 
-                                title="Sao chép tài khoản"
-                              >
-                                {copiedKey === `user_${idx}` ? <span className="text-[10px] text-emerald-400 font-sans">Đã chép!</span> : <Copy className="w-3.5 h-3.5" />}
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Mật khẩu tool</span>
-                            <div className="flex items-center justify-between bg-[#05080E] border border-slate-800/90 focus-within:border-cyan-400/60 px-3 py-2 rounded-lg font-mono font-bold text-slate-200 transition">
-                              <span>{isShowPass ? toolAcc.appPassword : '••••••••'}</span>
-                              <div className="flex items-center gap-2">
-                                <button 
-                                  onClick={() => setShowToolPasswords(prev => ({ ...prev, [toolAcc.accountKey]: !prev[toolAcc.accountKey] }))} 
-                                  className="text-slate-400 hover:text-white transition cursor-pointer" 
-                                  title={isShowPass ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                                >
-                                  {isShowPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                                </button>
-                                <button 
-                                  onClick={() => copyTextToClipboard(toolAcc.appPassword, `pass_${idx}`)} 
-                                  className="text-slate-400 hover:text-cyan-400 transition cursor-pointer flex items-center gap-1" 
-                                  title="Sao chép mật khẩu"
-                                >
-                                  {copiedKey === `pass_${idx}` ? <span className="text-[10px] text-emerald-400 font-sans">Đã chép!</span> : <Copy className="w-3.5 h-3.5" />}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between gap-3 pt-1">
-                          {!isLifetime ? (
-                            <button
-                              onClick={() => handleOpenRenewModal(toolAcc.toolCode)}
-                              className="bg-amber-500/10 border border-amber-500/40 text-amber-400 font-black px-4 py-2.5 rounded-xl text-xs transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-sm hover:scale-[1.03] hover:bg-amber-500/25 hover:border-amber-400 hover:text-amber-300 hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]"
-                            >
-                              <RefreshCw className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '10s' }} /> GIA HẠN THỜI HẠN
-                            </button>
-                          ) : (
-                            <div className="text-[11px] text-slate-500 font-bold italic flex items-center gap-1">
-                              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" /> Sở hữu vĩnh viễn (Không cần gia hạn)
-                            </div>
-                          )}
-
-                          {toolAcc.downloadLink && (
-                            <a 
-                              href={toolAcc.downloadLink} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-black px-4 py-2.5 rounded-xl text-xs transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-sm hover:scale-[1.03] hover:bg-cyan-500/35 hover:border-cyan-300 hover:text-white hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]"
-                            >
-                              <Download className="w-3.5 h-3.5 text-cyan-400" /> Tải Tool về máy
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* MODAL NẠP TIỀN VÍ */}
+      {/* ================= MODAL NẠP TIỀN SIÊU BẮT MẮT ================= */}
       {showRechargeModal && currentUser && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0D121D] border border-cyan-400/80 w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-[0_0_30px_rgba(6,182,212,0.25)]">
-            <button onClick={() => setShowRechargeModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-slate-800 cursor-pointer"><X className="w-5 h-5" /></button>
-            <div className="flex items-center gap-3 border-b border-slate-800 pb-4"><div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400"><CreditCard className="w-5 h-5" /></div><div><h3 className="text-base font-black text-white">NẠP TIỀN VÀO VÍ TỰ ĐỘNG</h3></div></div>
-            <div className="grid grid-cols-3 gap-2">{['20000', '50000', '100000', '200000', '500000', '1000000'].map((amt) => (<button key={amt} onClick={() => setRechargeAmount(amt)} className={`py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer ${rechargeAmount === amt ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-[#06090E] border-slate-800 text-slate-400'}`}>{Number(amt).toLocaleString('vi-VN')}đ</button>))}</div>
-            <div className="bg-[#06090E] border border-slate-800 p-4 rounded-2xl flex flex-col items-center space-y-3 text-center"><img src={`https://qr.sepay.vn/img?bank=BIDV&acc=96247JFG2G&template=compact&amount=${rechargeAmount}&des=${encodeURIComponent(`NAP ${currentUser.username}`)}`} alt="QR SePay" className="w-48 h-48 rounded-xl bg-white p-2 shadow-lg" /><button onClick={() => copyToClipboard(`NAP ${currentUser.username}`)} className="font-black text-cyan-400 text-xs flex items-center gap-1 hover:underline cursor-pointer">Nội dung CK: NAP {currentUser.username} {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}</button></div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL LỊCH SỬ GIAO DỊCH */}
-      {showHistoryModal && currentUser && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
-            <button onClick={() => setShowHistoryModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0A0F18] border-2 border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_60px_rgba(6,182,212,0.35)] max-h-[92vh] overflow-y-auto">
+            <button onClick={() => setShowRechargeModal(false)} className="absolute top-5 right-5 text-slate-400 hover:text-white p-2 rounded-2xl bg-[#05080E] border border-slate-800 cursor-pointer hover:border-cyan-400 transition"><X className="w-5 h-5" /></button>
             
-            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-400/50 flex items-center justify-center text-emerald-300 shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                <History className="w-6 h-6 animate-pulse" />
+            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-5">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-400/50 flex items-center justify-center text-emerald-400 shrink-0 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                <CreditCard className="w-6 h-6 animate-pulse" />
               </div>
               <div>
-                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block">NHẬT KÝ TÀI CHÍNH</span>
-                <h3 className="text-lg font-black text-white tracking-wide">LỊCH SỬ GIAO DỊCH</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-black text-white tracking-wide">NẠP TIỀN TỰ ĐỘNG 24/7</h3>
+                  <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[10px] font-black px-2 py-0.5 rounded-lg flex items-center gap-1">
+                    <Zap className="w-3 h-3" /> DUYỆT 5-30 GIÂY
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">Quét mã QR qua ứng dụng ngân hàng để được cộng tiền tự động</p>
               </div>
             </div>
 
-            {loadingHistory ? (
-              <div className="flex items-center justify-center gap-2 py-12 text-xs text-slate-400">
-                <Loader2 className="w-5 h-5 animate-spin text-cyan-400" /> Đang tải lịch sử giao dịch...
+            {/* Chọn số tiền nạp nhanh */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Chọn nhanh số tiền muốn nạp:
+              </label>
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {['20000', '50000', '100000', '200000', '500000', '1000000'].map((amt) => (
+                  <button 
+                    key={amt} 
+                    onClick={() => setRechargeAmount(amt)} 
+                    className={`py-2.5 px-2 rounded-2xl border text-xs font-extrabold transition cursor-pointer text-center font-mono ${
+                      rechargeAmount === amt 
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black shadow-[0_0_15px_rgba(16,185,129,0.4)] border-emerald-300' 
+                        : 'bg-[#05080E] border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
+                    }`}
+                  >
+                    {Number(amt).toLocaleString('vi-VN')}đ
+                  </button>
+                ))}
               </div>
-            ) : (
-              <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
-                {userTransactions.length === 0 ? (
-                  <div className="bg-[#05080E] border border-slate-800/80 p-8 rounded-2xl text-center text-xs text-slate-500">
-                    Chưa có lịch sử biến động số dư.
+            </div>
+
+            {/* Khung Mã QR và Thông Tin Ngân Hàng */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center bg-[#05080E] border border-slate-800/90 p-5 rounded-3xl shadow-inner">
+              
+              {/* QR Code */}
+              <div className="md:col-span-5 flex flex-col items-center justify-center p-3 rounded-2xl bg-[#0A0F18] border-2 border-emerald-500/40 shadow-[0_0_25px_rgba(16,185,129,0.2)]">
+                <img 
+                  src={`https://qr.sepay.vn/img?bank=BIDV&acc=96247JFG2G&template=compact&amount=${rechargeAmount}&des=${encodeURIComponent(`NAP ${currentUser.username}`)}`} 
+                  alt="QR SePay" 
+                  className="w-48 h-48 rounded-xl bg-white p-2 shadow-lg object-contain" 
+                />
+                <span className="text-[11px] font-black text-emerald-400 mt-2 font-mono">
+                  {Number(rechargeAmount).toLocaleString('vi-VN')} VNĐ
+                </span>
+              </div>
+
+              {/* Thông tin chuyển khoản */}
+              <div className="md:col-span-7 space-y-3 text-xs">
+                <div className="space-y-1">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Ngân hàng thụ hưởng</span>
+                  <div className="bg-[#0A0F18] border border-slate-800 px-3.5 py-2 rounded-xl text-white font-bold flex items-center justify-between">
+                    <span>BIDV (Ngân hàng TMCP Đầu tư và Phát triển)</span>
                   </div>
-                ) : (
-                  userTransactions.map((log: any, idx: number) => {
-                    const isPositive = log.amount > 0;
-                    const isCheckin = log.type === 'CHECKIN';
-                    const isBuy = log.type === 'BUY' || log.amount < 0;
+                </div>
 
-                    return (
-                      <div 
-                        key={idx} 
-                        className={`bg-[#05080E] border p-4 rounded-2xl flex items-center justify-between gap-3 text-xs transition duration-300 hover:-translate-y-0.5 ${
-                          isBuy 
-                            ? 'border-slate-800/90 hover:border-rose-500/40 hover:shadow-[0_0_15px_rgba(244,63,94,0.12)]' 
-                            : isCheckin 
-                            ? 'border-slate-800/90 hover:border-cyan-500/40 hover:shadow-[0_0_15px_rgba(6,182,212,0.12)]'
-                            : 'border-slate-800/90 hover:border-emerald-500/40 hover:shadow-[0_0_15px_rgba(16,185,129,0.12)]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
-                            isBuy 
-                              ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' 
-                              : isCheckin 
-                              ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
-                              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                          }`}>
-                            {isBuy ? <ShoppingBag className="w-5 h-5" /> : isCheckin ? <Gift className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
-                          </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Số tài khoản</span>
+                  <div className="bg-[#0A0F18] border border-slate-800 px-3.5 py-2 rounded-xl font-mono font-black text-cyan-300 flex items-center justify-between">
+                    <span className="text-sm">96247JFG2G</span>
+                    <button 
+                      onClick={() => handleCopyField('96247JFG2G', 'stk')}
+                      className="text-slate-400 hover:text-cyan-400 transition cursor-pointer flex items-center gap-1 text-[11px]"
+                    >
+                      {copiedField === 'stk' ? <span className="text-emerald-400 font-sans">Đã chép!</span> : <><Copy className="w-3.5 h-3.5" /> Sao chép</>}
+                    </button>
+                  </div>
+                </div>
 
-                          <div className="space-y-0.5 min-w-0">
-                            <span className="font-extrabold text-slate-100 block truncate text-xs sm:text-sm">
-                              {log.title}
-                            </span>
-                            <span className="text-[10px] font-mono font-bold text-slate-500 block">
-                              {log.created_at ? new Date(log.created_at).toLocaleString('vi-VN') : ''}
-                            </span>
-                          </div>
-                        </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] text-amber-400 font-extrabold uppercase tracking-wider block">
+                    Nội dung chuyển khoản (BẮT BUỘC CHÍNH XÁC)
+                  </span>
+                  <div className="bg-[#0A0F18] border-2 border-cyan-500/50 px-3.5 py-2 rounded-xl font-mono font-black text-amber-300 flex items-center justify-between shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+                    <span className="text-sm">NAP {currentUser.username}</span>
+                    <button 
+                      onClick={() => handleCopyField(`NAP ${currentUser.username}`, 'memo')}
+                      className="bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500 hover:text-slate-950 font-bold px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 text-[11px]"
+                    >
+                      {copiedField === 'memo' ? <span className="text-emerald-400 font-sans">Đã chép!</span> : <><Copy className="w-3.5 h-3.5" /> Chép cú pháp</>}
+                    </button>
+                  </div>
+                </div>
 
-                        <div className="text-right shrink-0">
-                          <span className={`text-sm font-mono font-black block ${
-                            isPositive ? 'text-emerald-400' : 'text-rose-400'
-                          }`}>
-                            {isPositive ? '+' : ''}{(log.amount || 0).toLocaleString('vi-VN')}đ
-                          </span>
-                          <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider block mt-0.5">
-                            {log.status || 'Thành công'}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
+                <p className="text-[10px] text-slate-500 italic leading-relaxed pt-1">
+                  * Lưu ý: Hãy ghi chính xác cú pháp chuyển khoản để hệ thống tự động cộng tiền ngay sau khi giao dịch thành công.
+                </p>
               </div>
-            )}
+
+            </div>
+
           </div>
         </div>
       )}
 
-      {/* ================= MODAL THÔNG TIN TÀI KHOẢN & TRẠNG THÁI MIỄN XÁC THỰC ================= */}
+      {/* ================= MODAL THÔNG TIN CÁ NHÂN, VIP & ĐỔI MẬT KHẨU ================= */}
       {showAccountInfoModal && currentUser && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-md rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] text-slate-200">
-            <button onClick={() => { setShowAccountInfoModal(false); setEmailActionMsg(null); setIsOtpSent(false); }} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
+          <div className={`bg-[#0A0F18] border-2 ${vipInfo.border} w-full max-w-lg rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_60px_rgba(6,182,212,0.3)] text-slate-200 max-h-[92vh] overflow-y-auto`}>
+            <button onClick={() => { setShowAccountInfoModal(false); setEmailActionMsg(null); setIsOtpSent(false); setPassMsg(null); }} className="absolute top-5 right-5 text-slate-400 hover:text-white p-2 rounded-2xl bg-[#05080E] border border-slate-800 cursor-pointer hover:border-cyan-400 transition"><X className="w-5 h-5" /></button>
             
-            {/* Header thông tin cá nhân */}
+            {/* Header Avatar Cực Bắt Mắt Theo Khung VIP */}
             <div className="text-center space-y-3 pt-2">
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-cyan-500 via-teal-400 to-cyan-300 border-2 border-cyan-300 flex items-center justify-center text-slate-950 mx-auto text-3xl font-black shadow-[0_0_25px_rgba(6,182,212,0.5)]">
-                {currentUser.username.substring(0, 1).toUpperCase()}
-              </div>
-              <div>
-                <h3 className="text-xl font-black text-white tracking-wide">{currentUser.username}</h3>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-[10px] font-black text-cyan-300 uppercase mt-1">
-                  <Sparkles className="w-3 h-3 text-cyan-400" /> THÀNH VIÊN HỆ THỐNG
+              <div className="relative inline-block">
+                <div className={`w-24 h-24 rounded-3xl p-1 flex items-center justify-center mx-auto text-4xl font-black ${vipInfo.avatarBg} ${vipInfo.border}`}>
+                  {currentUser.username.substring(0, 1).toUpperCase()}
+                </div>
+                <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-[#05080E] border border-slate-800 px-3 py-0.5 rounded-full flex items-center gap-1 shadow-lg whitespace-nowrap">
+                  <VipIcon className={`w-3.5 h-3.5 ${vipInfo.color}`} />
+                  <span className={`text-[10px] font-black ${vipInfo.color}`}>{vipInfo.title}</span>
                 </div>
               </div>
+
+              <div className="pt-2">
+                <h3 className="text-2xl font-black text-white tracking-wide">{currentUser.username}</h3>
+                <p className="text-xs text-slate-400 font-medium">{vipInfo.sub}</p>
+              </div>
             </div>
 
-            {/* Thông tin số dư ví & trạng thái xác thực */}
-            <div className="bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl space-y-3 text-xs">
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
-                <span className="text-slate-400 flex items-center gap-1.5"><Wallet className="w-4 h-4 text-cyan-400" /> Số dư ví:</span>
-                <b className="text-base text-emerald-400 font-mono font-black">{(currentUser.balance || 0).toLocaleString('vi-VN')} VNĐ</b>
-              </div>
+            {/* TAB CHUYỂN ĐỔI CHỨC NĂNG */}
+            <div className="grid grid-cols-3 gap-1.5 bg-[#05080E] p-1.5 rounded-2xl border border-slate-800 text-xs font-bold">
+              <button
+                onClick={() => setProfileTab('info')}
+                className={`py-2 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                  profileTab === 'info' ? 'bg-cyan-500 text-slate-950 font-black shadow-md' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <User className="w-3.5 h-3.5" /> Tổng quan
+              </button>
 
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-cyan-400" /> Trạng thái Gmail:</span>
+              <button
+                onClick={() => setProfileTab('password')}
+                className={`py-2 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                  profileTab === 'password' ? 'bg-cyan-500 text-slate-950 font-black shadow-md' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Key className="w-3.5 h-3.5" /> Đổi mật khẩu
+              </button>
+
+              <button
+                onClick={() => setProfileTab('email')}
+                className={`py-2 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                  profileTab === 'email' ? 'bg-cyan-500 text-slate-950 font-black shadow-md' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Mail className="w-3.5 h-3.5" /> Gmail OTP
+              </button>
+            </div>
+
+            {/* TAB 1: TỔNG QUAN VÍ & TIẾN TRÌNH VIP */}
+            {profileTab === 'info' && (
+              <div className="space-y-4">
                 
-                {/* HIỂN THỊ MIỄN XÁC THỰC / ĐÃ XÁC THỰC / CHƯA XÁC THỰC */}
-                {isExempt ? (
-                  <span className="text-[11px] font-black text-cyan-300 bg-cyan-500/20 border border-cyan-400 px-3 py-0.5 rounded-lg flex items-center gap-1.5 shadow-[0_0_12px_rgba(6,182,212,0.3)]">
-                    <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> MIỄN XÁC THỰC EMAIL
-                  </span>
-                ) : isVerified ? (
-                  <span className="text-[11px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> ĐÃ XÁC THỰC
-                  </span>
-                ) : (
-                  <span className="text-[11px] font-black text-rose-400 bg-rose-500/10 border border-rose-500/30 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
-                    <ShieldAlert className="w-3.5 h-3.5" /> CHƯA XÁC THỰC
-                  </span>
-                )}
-              </div>
-            </div>
+                {/* Số dư ví */}
+                <div className="bg-[#05080E] border border-slate-800/90 p-4.5 rounded-2xl flex items-center justify-between shadow-inner">
+                  <div>
+                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Số dư hiện tại</span>
+                    <b className="text-xl text-emerald-400 font-mono font-black">{(currentUser.balance || 0).toLocaleString('vi-VN')} VNĐ</b>
+                  </div>
+                  <button 
+                    onClick={() => { setShowAccountInfoModal(false); setShowRechargeModal(true); }}
+                    className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-4 py-2 rounded-xl text-xs shadow-md transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" /> Nạp thêm
+                  </button>
+                </div>
 
-            {/* Khung Nhập Email & Nhận OTP Xác Thực (Chỉ hiện khi chưa được Miễn xác thực) */}
-            {!isExempt && (
-              <div className="space-y-3 bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl">
+                {/* Khung Tiến Trình VIP */}
+                <div className="bg-[#05080E] border border-slate-800/90 p-4.5 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400 font-bold flex items-center gap-1.5">
+                      <Crown className="w-4 h-4 text-amber-400" /> Tích luỹ nạp:
+                    </span>
+                    <b className="text-cyan-300 font-mono font-black">{totalDeposited.toLocaleString('vi-VN')} VNĐ</b>
+                  </div>
+
+                  {/* Thanh Progress */}
+                  <div className="space-y-1.5">
+                    <div className="w-full bg-[#0A0F18] border border-slate-800 h-3 rounded-full overflow-hidden p-0.5">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-700 ${vipInfo.avatarBg}`} 
+                        style={{ width: `${vipInfo.progress}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold">
+                      <span>Tiến độ cấp hiện tại</span>
+                      <span className="text-cyan-400 font-mono">{vipInfo.progress}%</span>
+                    </div>
+                  </div>
+
+                  {vipInfo.level < 5 ? (
+                    <p className="text-[11px] text-slate-400 italic">
+                      Cần nạp thêm <b className="text-amber-400 font-mono">{Math.max(0, vipInfo.nextGoal - totalDeposited).toLocaleString('vi-VN')} VNĐ</b> để thăng hạng <b>VIP {vipInfo.level + 1}</b>.
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-rose-400 font-bold flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5" /> Bạn đã đạt cấp bậc VIP Huyền Thoại cao nhất!
+                    </p>
+                  )}
+                </div>
+
+                {/* Trạng thái xác thực */}
+                <div className="bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl space-y-2 text-xs">
+                  <div className="flex justify-between items-center border-b border-slate-800/80 pb-2.5">
+                    <span className="text-slate-400">Gmail liên kết:</span>
+                    <b className="text-slate-200 font-mono">{currentUser.email || 'Chưa liên kết'}</b>
+                  </div>
+                  <div className="flex justify-between items-center pt-1">
+                    <span className="text-slate-400">Trạng thái xác thực:</span>
+                    {isExempt ? (
+                      <span className="text-[11px] font-black text-cyan-300 bg-cyan-500/20 border border-cyan-400 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> MIỄN XÁC THỰC EMAIL
+                      </span>
+                    ) : isVerified ? (
+                      <span className="text-[11px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> ĐÃ XÁC THỰC
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-black text-rose-400 bg-rose-500/10 border border-rose-500/30 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
+                        <ShieldAlert className="w-3.5 h-3.5" /> CHƯA XÁC THỰC
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* TAB 2: ĐỔI MẬT KHẨU */}
+            {profileTab === 'password' && (
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-300">Mật khẩu hiện tại:</label>
+                  <input 
+                    type="password"
+                    placeholder="Nhập mật khẩu đang dùng..."
+                    value={oldPass}
+                    onChange={(e) => setOldPass(e.target.value)}
+                    className="w-full bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-300">Mật khẩu mới (Tối thiểu 6 ký tự):</label>
+                  <input 
+                    type="password"
+                    placeholder="Nhập mật khẩu mới..."
+                    value={newPass}
+                    onChange={(e) => setNewPass(e.target.value)}
+                    className="w-full bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-300">Xác nhận mật khẩu mới:</label>
+                  <input 
+                    type="password"
+                    placeholder="Nhập lại mật khẩu mới..."
+                    value={confirmPass}
+                    onChange={(e) => setConfirmPass(e.target.value)}
+                    className="w-full bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition"
+                  />
+                </div>
+
+                {passMsg && (
+                  <div className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${passMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'}`}>
+                    {passMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                    <span>{passMsg.text}</span>
+                  </div>
+                )}
+
+                <button
+                  disabled={passLoading}
+                  onClick={handleChangePassword}
+                  className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black py-3.5 rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-2 shadow-lg"
+                >
+                  {passLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
+                  CẬP NHẬT MẬT KHẨU MỚI
+                </button>
+              </div>
+            )}
+
+            {/* TAB 3: XÁC THỰC EMAIL */}
+            {profileTab === 'email' && (
+              <div className="space-y-4">
                 <div className="space-y-1.5">
                   <label className="block text-xs font-bold text-slate-300 flex items-center gap-1.5">
                     <Mail className="w-3.5 h-3.5 text-cyan-400" /> Địa chỉ Gmail của bạn:
@@ -1067,7 +1226,7 @@ export default function Navbar() {
                       value={accountEmailInput}
                       onChange={(e) => setAccountEmailInput(e.target.value)}
                       disabled={isVerified}
-                      className="flex-1 bg-[#0B1019] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition disabled:opacity-60 font-mono"
+                      className="flex-1 bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition disabled:opacity-60 font-mono"
                     />
                     {!isVerified && (
                       <button
@@ -1084,7 +1243,7 @@ export default function Navbar() {
 
                 {isOtpSent && !isVerified && (
                   <div className="space-y-2 pt-2 border-t border-slate-800/80 animate-fade-in">
-                    <label className="block text-xs font-bold text-cyan-300">Nhập mã OTP 6 số từ hòm thư Gmail:</label>
+                    <label className="block text-xs font-bold text-cyan-300">Nhập mã OTP 6 số từ Gmail:</label>
                     <div className="flex gap-2">
                       <input 
                         type="text"
@@ -1092,7 +1251,7 @@ export default function Navbar() {
                         placeholder="6 số OTP..."
                         value={otpInput}
                         onChange={(e) => setOtpInput(e.target.value)}
-                        className="flex-1 bg-[#0B1019] border border-cyan-500/50 rounded-xl px-3.5 py-2.5 text-xs text-center font-mono font-black text-cyan-300 tracking-widest focus:outline-none focus:border-cyan-400"
+                        className="flex-1 bg-[#05080E] border border-cyan-500/50 rounded-xl px-3.5 py-2.5 text-xs text-center font-mono font-black text-cyan-300 tracking-widest focus:outline-none focus:border-cyan-400"
                       />
                       <button
                         disabled={emailActionLoading}
@@ -1114,14 +1273,6 @@ export default function Navbar() {
               </div>
             )}
 
-            <div className="text-center">
-              <button 
-                onClick={() => { setShowAccountInfoModal(false); setShowRechargeModal(true); }}
-                className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black py-3 rounded-xl text-xs transition cursor-pointer shadow-md flex items-center justify-center gap-2"
-              >
-                <PlusCircle className="w-4 h-4" /> NẠP THÊM TIỀN VÀO VÍ
-              </button>
-            </div>
           </div>
         </div>
       )}
