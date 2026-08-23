@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { 
   User, Lock, LogIn, UserPlus, LogOut, Wallet, X, AlertCircle, CheckCircle2,
-  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift, Bell, Home, FolderKanban, Sparkles, Eye, EyeOff, ShieldCheck, Zap, ShoppingBag, Mail, Send, ShieldAlert
+  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift, Bell, Home, FolderKanban, Sparkles, Eye, EyeOff, ShieldCheck, Zap, ShoppingBag, Mail, Send, ShieldAlert, Shield
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -341,6 +341,7 @@ export default function Navbar() {
         return;
       }
 
+      // 1. Kiểm tra xem username đã tồn tại chưa
       const { data: existingUser } = await supabase
         .from('users')
         .select('username')
@@ -349,7 +350,20 @@ export default function Navbar() {
 
       if (existingUser) {
         setLoading(false);
-        setAuthMsg({ type: 'error', text: 'Tài khoản này đã tồn tại trên hệ thống!' });
+        setAuthMsg({ type: 'error', text: 'Tên tài khoản này đã tồn tại trên hệ thống!' });
+        return;
+      }
+
+      // 2. Kiểm tra xem Email đã được tài khoản nào đăng ký chưa
+      const { data: existingEmailUser } = await supabase
+        .from('users')
+        .select('username')
+        .eq('email', emailInput.trim().toLowerCase())
+        .single();
+
+      if (existingEmailUser) {
+        setLoading(false);
+        setAuthMsg({ type: 'error', text: 'Địa chỉ Email này đã được đăng ký cho một tài khoản khác!' });
         return;
       }
 
@@ -357,8 +371,9 @@ export default function Navbar() {
         .from('users')
         .insert([{ 
           username: usernameInput.trim(), 
-          email: emailInput.trim(),
+          email: emailInput.trim().toLowerCase(),
           is_verified: false,
+          is_exempt: false,
           password: passwordInput, 
           balance: 0, 
           isBanned: false, 
@@ -385,7 +400,6 @@ export default function Navbar() {
           setShowAuthModal(false); 
           resetForm(); 
           checkTodayCheckInStatus(newUser.username);
-          // Mở ngay modal Thông tin tài khoản để khách xác thực email
           setShowAccountInfoModal(true);
         }, 500);
       }
@@ -419,20 +433,36 @@ export default function Navbar() {
     }
   };
 
-  // Hàm Gửi mã OTP xác thực Gmail từ Modal Account Info
+  // Gửi mã OTP xác thực Gmail
   const handleSendEmailOTP = async () => {
     setEmailActionMsg(null);
-    if (!accountEmailInput.trim() || !accountEmailInput.includes('@')) {
+    const targetEmail = accountEmailInput.trim().toLowerCase();
+
+    if (!targetEmail || !targetEmail.includes('@')) {
       setEmailActionMsg({ type: 'error', text: 'Vui lòng nhập địa chỉ Gmail hợp lệ!' });
       return;
     }
 
     setEmailActionLoading(true);
+
+    const { data: duplicateEmailUser } = await supabase
+      .from('users')
+      .select('username')
+      .eq('email', targetEmail)
+      .neq('username', currentUser.username)
+      .single();
+
+    if (duplicateEmailUser) {
+      setEmailActionLoading(false);
+      setEmailActionMsg({ type: 'error', text: 'Địa chỉ Email này đã được đăng ký bởi tài khoản khác!' });
+      return;
+    }
+
     try {
       const res = await fetch('/api/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: accountEmailInput.trim(), username: currentUser.username })
+        body: JSON.stringify({ email: targetEmail, username: currentUser.username })
       });
       const data = await res.json();
       setEmailActionLoading(false);
@@ -449,7 +479,7 @@ export default function Navbar() {
     }
   };
 
-  // Hàm Xác nhận mã OTP từ Modal Account Info
+  // Xác nhận mã OTP
   const handleVerifyEmailOTP = async () => {
     setEmailActionMsg(null);
     if (!otpInput.trim() || otpInput.trim().length !== 6) {
@@ -462,7 +492,7 @@ export default function Navbar() {
       const res = await fetch('/api/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: accountEmailInput.trim(), username: currentUser.username, otp: otpInput.trim() })
+        body: JSON.stringify({ email: accountEmailInput.trim().toLowerCase(), username: currentUser.username, otp: otpInput.trim() })
       });
       const data = await res.json();
       setEmailActionLoading(false);
@@ -568,6 +598,10 @@ export default function Navbar() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Xác định trạng thái miễn xác thực hoặc đã xác thực
+  const isExempt = currentUser?.is_exempt === true;
+  const isVerified = currentUser?.is_verified === true || isExempt;
+
   return (
     <>
       {/* NAVBAR CHÍNH GLASSMORPHISM CYBERPUNK PRO */}
@@ -587,7 +621,7 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* MENU ĐIỀU HƯỚNG DẠNG PILL GLASS */}
+          {/* MENU ĐIỀU HƯỚNG */}
           <div className="hidden md:flex items-center gap-1.5 bg-[#0D131F] border border-slate-800/80 p-1.5 rounded-2xl shadow-inner">
             {[
               { name: 'Trang chủ', path: '/', icon: Home },
@@ -618,7 +652,7 @@ export default function Navbar() {
             {currentUser ? (
               <div className="flex items-center gap-3">
                 
-                {/* NÚT ĐIỂM DANH CẢI TIẾN CYBER GLOW */}
+                {/* NÚT ĐIỂM DANH */}
                 <button
                   disabled={hasCheckedInToday}
                   onClick={() => { setCheckInModalShow(true); setCheckInMsg(null); }}
@@ -640,7 +674,7 @@ export default function Navbar() {
                   )}
                 </button>
 
-                {/* NÚT NẠP TIỀN NEON */}
+                {/* NÚT NẠP TIỀN */}
                 <button
                   onClick={() => setShowRechargeModal(true)}
                   className="bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 hover:brightness-110 text-slate-950 font-black px-4 sm:px-5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 shadow-[0_0_20px_rgba(16,185,129,0.35)] hover:shadow-[0_0_25px_rgba(16,185,129,0.55)] transition duration-300 hover:scale-[1.03] cursor-pointer border border-emerald-300/50"
@@ -705,7 +739,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* MODAL HOÀN CHỈNH: ĐIỂM DANH HÀNG NGÀY */}
+      {/* MODAL ĐIỂM DANH HÀNG NGÀY */}
       {checkInModalShow && currentUser && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
           <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-md rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)]">
@@ -759,7 +793,7 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* MODAL HOÀN CHỈNH: DANH SÁCH TOOL ĐÃ MUA */}
+      {/* MODAL DANH SÁCH TOOL ĐÃ MUA */}
       {showPurchasedToolsModal && currentUser && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
           <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
@@ -793,8 +827,6 @@ export default function Navbar() {
 
                     return (
                       <div key={idx} className="bg-[#05080E] border border-slate-800/90 p-5 rounded-2xl space-y-4 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.12)] hover:-translate-y-0.5 transition duration-300">
-                        
-                        {/* Tiêu đề Tool & Badge Thời hạn */}
                         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3.5">
                           <div>
                             <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">BẢN QUYỀN HOẠT ĐỘNG</span>
@@ -805,9 +837,7 @@ export default function Navbar() {
                           </div>
                         </div>
 
-                        {/* Ô Thông tin Tài khoản / Mật khẩu Tool */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#0B1019] border border-slate-800/80 p-3.5 rounded-xl text-xs">
-                          {/* Tài khoản Tool */}
                           <div className="space-y-1">
                             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Tài khoản tool</span>
                             <div className="flex items-center justify-between bg-[#05080E] border border-slate-800/90 focus-within:border-cyan-400/60 px-3 py-2 rounded-lg font-mono font-bold text-cyan-300 transition">
@@ -822,7 +852,6 @@ export default function Navbar() {
                             </div>
                           </div>
 
-                          {/* Mật khẩu Tool */}
                           <div className="space-y-1">
                             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Mật khẩu tool</span>
                             <div className="flex items-center justify-between bg-[#05080E] border border-slate-800/90 focus-within:border-cyan-400/60 px-3 py-2 rounded-lg font-mono font-bold text-slate-200 transition">
@@ -847,7 +876,6 @@ export default function Navbar() {
                           </div>
                         </div>
 
-                        {/* Hàng nút Gia Hạn & Tải Tool */}
                         <div className="flex items-center justify-between gap-3 pt-1">
                           {!isLifetime ? (
                             <button
@@ -873,7 +901,6 @@ export default function Navbar() {
                             </a>
                           )}
                         </div>
-
                       </div>
                     );
                   })
@@ -896,7 +923,7 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* MODAL LỊCH SỬ GIAO DỊCH CYBERPUNK NÂNG CẤP */}
+      {/* MODAL LỊCH SỬ GIAO DỊCH */}
       {showHistoryModal && currentUser && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
           <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
@@ -980,7 +1007,7 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* ================= MODAL THÔNG TIN TÀI KHOẢN & XÁC THỰC GMAIL NÂNG CẤP CYBERPUNK ================= */}
+      {/* ================= MODAL THÔNG TIN TÀI KHOẢN & TRẠNG THÁI MIỄN XÁC THỰC ================= */}
       {showAccountInfoModal && currentUser && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
           <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-md rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] text-slate-200">
@@ -999,7 +1026,7 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Thông tin số dư ví & trạng thái */}
+            {/* Thông tin số dư ví & trạng thái xác thực */}
             <div className="bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl space-y-3 text-xs">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
                 <span className="text-slate-400 flex items-center gap-1.5"><Wallet className="w-4 h-4 text-cyan-400" /> Số dư ví:</span>
@@ -1008,7 +1035,13 @@ export default function Navbar() {
 
               <div className="flex items-center justify-between">
                 <span className="text-slate-400 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-cyan-400" /> Trạng thái Gmail:</span>
-                {currentUser.is_verified ? (
+                
+                {/* HIỂN THỊ MIỄN XÁC THỰC / ĐÃ XÁC THỰC / CHƯA XÁC THỰC */}
+                {isExempt ? (
+                  <span className="text-[11px] font-black text-cyan-300 bg-cyan-500/20 border border-cyan-400 px-3 py-0.5 rounded-lg flex items-center gap-1.5 shadow-[0_0_12px_rgba(6,182,212,0.3)]">
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> MIỄN XÁC THỰC EMAIL
+                  </span>
+                ) : isVerified ? (
                   <span className="text-[11px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5" /> ĐÃ XÁC THỰC
                   </span>
@@ -1020,65 +1053,66 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Khung Nhập Email & Nhận OTP Xác Thực */}
-            <div className="space-y-3 bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-cyan-400" /> Địa chỉ Gmail của bạn:
-                </label>
-                <div className="flex gap-2">
-                  <input 
-                    type="email"
-                    placeholder="example@gmail.com..."
-                    value={accountEmailInput}
-                    onChange={(e) => setAccountEmailInput(e.target.value)}
-                    disabled={currentUser.is_verified}
-                    className="flex-1 bg-[#0B1019] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition disabled:opacity-60 font-mono"
-                  />
-                  {!currentUser.is_verified && (
-                    <button
-                      disabled={emailActionLoading}
-                      onClick={handleSendEmailOTP}
-                      className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs transition cursor-pointer flex items-center gap-1.5 shrink-0 shadow-md"
-                    >
-                      {emailActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                      Gửi OTP
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Ô nhập OTP sau khi bấm gửi */}
-              {isOtpSent && !currentUser.is_verified && (
-                <div className="space-y-2 pt-2 border-t border-slate-800/80 animate-fade-in">
-                  <label className="block text-xs font-bold text-cyan-300">Nhập mã OTP 6 số từ hòm thư Gmail:</label>
+            {/* Khung Nhập Email & Nhận OTP Xác Thực (Chỉ hiện khi chưa được Miễn xác thực) */}
+            {!isExempt && (
+              <div className="space-y-3 bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-cyan-400" /> Địa chỉ Gmail của bạn:
+                  </label>
                   <div className="flex gap-2">
                     <input 
-                      type="text"
-                      maxLength={6}
-                      placeholder="6 số OTP..."
-                      value={otpInput}
-                      onChange={(e) => setOtpInput(e.target.value)}
-                      className="flex-1 bg-[#0B1019] border border-cyan-500/50 rounded-xl px-3.5 py-2.5 text-xs text-center font-mono font-black text-cyan-300 tracking-widest focus:outline-none focus:border-cyan-400"
+                      type="email"
+                      placeholder="example@gmail.com..."
+                      value={accountEmailInput}
+                      onChange={(e) => setAccountEmailInput(e.target.value)}
+                      disabled={isVerified}
+                      className="flex-1 bg-[#0B1019] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition disabled:opacity-60 font-mono"
                     />
-                    <button
-                      disabled={emailActionLoading}
-                      onClick={handleVerifyEmailOTP}
-                      className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-5 py-2.5 rounded-xl text-xs transition cursor-pointer shrink-0 shadow-md"
-                    >
-                      {emailActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Kích hoạt'}
-                    </button>
+                    {!isVerified && (
+                      <button
+                        disabled={emailActionLoading}
+                        onClick={handleSendEmailOTP}
+                        className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs transition cursor-pointer flex items-center gap-1.5 shrink-0 shadow-md"
+                      >
+                        {emailActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                        Gửi OTP
+                      </button>
+                    )}
                   </div>
                 </div>
-              )}
 
-              {emailActionMsg && (
-                <div className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${emailActionMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'}`}>
-                  {emailActionMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
-                  <span>{emailActionMsg.text}</span>
-                </div>
-              )}
-            </div>
+                {isOtpSent && !isVerified && (
+                  <div className="space-y-2 pt-2 border-t border-slate-800/80 animate-fade-in">
+                    <label className="block text-xs font-bold text-cyan-300">Nhập mã OTP 6 số từ hòm thư Gmail:</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text"
+                        maxLength={6}
+                        placeholder="6 số OTP..."
+                        value={otpInput}
+                        onChange={(e) => setOtpInput(e.target.value)}
+                        className="flex-1 bg-[#0B1019] border border-cyan-500/50 rounded-xl px-3.5 py-2.5 text-xs text-center font-mono font-black text-cyan-300 tracking-widest focus:outline-none focus:border-cyan-400"
+                      />
+                      <button
+                        disabled={emailActionLoading}
+                        onClick={handleVerifyEmailOTP}
+                        className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-5 py-2.5 rounded-xl text-xs transition cursor-pointer shrink-0 shadow-md"
+                      >
+                        {emailActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Kích hoạt'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {emailActionMsg && (
+                  <div className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${emailActionMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'}`}>
+                    {emailActionMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                    <span>{emailActionMsg.text}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="text-center">
               <button 
@@ -1092,7 +1126,7 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* ================= MODAL ĐĂNG NHẬP / ĐĂNG KÝ (CÓ THÊM EMAIL) ================= */}
+      {/* MODAL ĐĂNG NHẬP / ĐĂNG KÝ */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
           <div className="bg-[#0D121D] border border-cyan-400/80 w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_30px_rgba(6,182,212,0.25)]">
@@ -1102,11 +1136,11 @@ export default function Navbar() {
             <form onSubmit={handleAuthSubmit} className="space-y-4">
               <div><label className="block text-xs font-bold text-slate-300 mb-1">Tên tài khoản (Username)</label><input type="text" required placeholder="Nhập username..." value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} className="w-full bg-[#06090E] border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-cyan-400 transition" /></div>
               
-              {/* THÊM TRƯỜNG NHẬP GMAIL KHI ĐĂNG KÝ */}
+              {/* TRƯỜNG NHẬP GMAIL DUY NHẤT KHI ĐĂNG KÝ */}
               {authMode === 'register' && (
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1 flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-cyan-400" /> Địa chỉ Gmail (Bắt buộc để nhận OTP)
+                    <Mail className="w-3.5 h-3.5 text-cyan-400" /> Địa chỉ Gmail (Mỗi Email chỉ dùng cho 1 tài khoản)
                   </label>
                   <input 
                     type="email" 

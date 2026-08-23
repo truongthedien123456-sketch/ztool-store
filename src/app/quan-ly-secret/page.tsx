@@ -6,7 +6,7 @@ import {
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
   Ban, CheckCircle, CreditCard, KeyRound, Search, DollarSign, Settings,
-  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop
+  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -34,7 +34,7 @@ export default function AdminPage() {
   const [nowTime, setNowTime] = useState(Date.now());
 
   const [userSearch, setUserSearch] = useState('');
-  const [newUserForm, setNewUserForm] = useState({ username: '', password: '', balance: 0 });
+  const [newUserForm, setNewUserForm] = useState({ username: '', email: '', password: '', balance: 0 });
   
   // Modals Quản lý người dùng
   const [editUserPass, setEditUserPass] = useState<{ username: string; newPass: string } | null>(null);
@@ -42,6 +42,7 @@ export default function AdminPage() {
   const [showPasswords, setShowPasswords] = useState<{ [key: string]: boolean }>({});
   const [selectedUserHistory, setSelectedUserHistory] = useState<{ username: string; logs: any[] } | null>(null);
   const [loadingUserHistory, setLoadingUserHistory] = useState(false);
+  const [exemptLoadingId, setExemptLoadingId] = useState<number | null>(null);
 
   const [toolForm, setToolForm] = useState({
     id: 0, name: '', toolCode: '', image: '', status: 'Đang hoạt động',
@@ -191,6 +192,28 @@ export default function AdminPage() {
     if (!error && data) setSelectedUserHistory({ username, logs: data });
   };
 
+  // BẬT / TẮT MIỄN XÁC THỰC EMAIL CHO USER
+  const handleToggleExemptVerification = async (u: any) => {
+    setExemptLoadingId(u.id);
+    const newExemptState = !u.is_exempt;
+    const updatePayload: any = {
+      is_exempt: newExemptState,
+      is_verified: newExemptState ? true : u.is_verified
+    };
+
+    const { error } = await supabase
+      .from('users')
+      .update(updatePayload)
+      .eq('id', u.id);
+
+    setExemptLoadingId(null);
+    if (!error) {
+      setUsers(prev => prev.map(user => user.id === u.id ? { ...user, ...updatePayload } : user));
+    } else {
+      alert(`Lỗi cập nhật miễn xác thực: ${error.message}`);
+    }
+  };
+
   const handleFileChange = (e: React.FormEvent<HTMLInputElement>) => { 
     const target = e.target as HTMLInputElement;
     if (target.files && target.files[0]) { 
@@ -211,11 +234,20 @@ export default function AdminPage() {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault(); if (!newUserForm.username || !newUserForm.password) return alert('Nhập đủ username/password!');
-    const { error } = await supabase.from('users').insert([{ username: newUserForm.username.trim(), password: newUserForm.password, balance: Number(newUserForm.balance) || 0, isBanned: false, is_online: false }]);
+    const { error } = await supabase.from('users').insert([{ 
+      username: newUserForm.username.trim(), 
+      email: newUserForm.email.trim().toLowerCase(),
+      password: newUserForm.password, 
+      balance: Number(newUserForm.balance) || 0, 
+      is_verified: false,
+      is_exempt: false,
+      isBanned: false, 
+      is_online: false 
+    }]);
     if (error) alert('Lỗi tạo tài khoản: ' + error.message);
     else {
       await supabase.from('transactions').insert([{ username: newUserForm.username.trim(), type: 'INIT', title: 'Khởi tạo tài khoản thành công', amount: Number(newUserForm.balance) || 0, status: 'Thành công' }]);
-      setNewUserForm({ username: '', password: '', balance: 0 }); alert('Tạo người dùng thành công trên Cloud Database!'); loadAllSyncData();
+      setNewUserForm({ username: '', email: '', password: '', balance: 0 }); alert('Tạo người dùng thành công trên Cloud Database!'); loadAllSyncData();
     }
   };
 
@@ -432,8 +464,9 @@ export default function AdminPage() {
               <h3 className="text-xs font-extrabold text-white flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase tracking-wider">
                 <Plus className="w-4 h-4 text-cyan-400" /> Tạo tài khoản người dùng mới
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <input type="text" placeholder="Tên tài khoản..." value={newUserForm.username} onChange={e => setNewUserForm({ ...newUserForm, username: e.target.value })} className="bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition" />
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <input type="text" placeholder="Tên tài khoản (username)..." value={newUserForm.username} onChange={e => setNewUserForm({ ...newUserForm, username: e.target.value })} className="bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition" />
+                <input type="email" placeholder="Địa chỉ Gmail..." value={newUserForm.email} onChange={e => setNewUserForm({ ...newUserForm, email: e.target.value })} className="bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition" />
                 <input type="text" placeholder="Mật khẩu..." value={newUserForm.password} onChange={e => setNewUserForm({ ...newUserForm, password: e.target.value })} className="bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition" />
                 <input type="number" placeholder="Số dư ban đầu (VNĐ)..." value={newUserForm.balance || ''} onChange={e => setNewUserForm({ ...newUserForm, balance: Number(e.target.value) })} className="bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition" />
               </div>
@@ -447,7 +480,7 @@ export default function AdminPage() {
                 </h2>
                 <div className="relative w-64">
                   <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3.5 top-3" />
-                  <input type="text" placeholder="Tìm kiếm tài khoản..." value={userSearch} onChange={e => setUserSearch(e.target.value)} className="w-full bg-[#05080E] border border-slate-800 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 transition" />
+                  <input type="text" placeholder="Tìm theo username, email..." value={userSearch} onChange={e => setUserSearch(e.target.value)} className="w-full bg-[#05080E] border border-slate-800 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 transition" />
                 </div>
               </div>
 
@@ -456,21 +489,32 @@ export default function AdminPage() {
                   <thead className="bg-[#05080E] border-b border-slate-800/80 text-slate-400 uppercase text-[10px] tracking-wider">
                     <tr>
                       <th className="p-3.5">Tài khoản</th>
+                      <th className="p-3.5">Email</th>
                       <th className="p-3.5">Mật khẩu</th>
                       <th className="p-3.5">Số dư ví</th>
-                      <th className="p-3.5">Trạng thái Online</th>
+                      <th className="p-3.5 text-center">Trạng thái Gmail</th>
+                      <th className="p-3.5 text-center">Miễn xác thực</th>
+                      <th className="p-3.5">Online</th>
                       <th className="p-3.5">Trạng thái Khóa</th>
                       <th className="p-3.5 text-right">Hành động</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60">
-                    {users.filter(u => u.username?.toLowerCase().includes(userSearch.toLowerCase())).map((u, i) => {
+                    {users.filter(u => 
+                      u.username?.toLowerCase().includes(userSearch.toLowerCase()) || 
+                      u.email?.toLowerCase().includes(userSearch.toLowerCase())
+                    ).map((u, i) => {
                       const lastSeenMs = u.last_seen ? new Date(u.last_seen).getTime() : 0;
                       const isUserOnline = u.is_online === true && (nowTime - lastSeenMs < 20000);
+                      const isExempt = u.is_exempt === true;
+                      const isVerified = u.is_verified === true || isExempt;
 
                       return (
                         <tr key={i} className="hover:bg-[#05080E]/60 transition">
                           <td className="p-3.5 font-bold text-white">{u.username}</td>
+                          <td className="p-3.5 font-mono text-slate-300">
+                            {u.email || <span className="text-slate-600 italic">Chưa có</span>}
+                          </td>
                           <td className="p-3.5 font-mono">
                             <div className="flex items-center gap-2">
                               <span className="text-cyan-300 font-bold">
@@ -482,6 +526,45 @@ export default function AdminPage() {
                             </div>
                           </td>
                           <td className="p-3.5 font-mono font-bold text-emerald-400">{(u.balance || 0).toLocaleString('vi-VN')} VNĐ</td>
+
+                          {/* Cột hiển thị Trạng thái Gmail */}
+                          <td className="p-3.5 text-center">
+                            {isExempt ? (
+                              <span className="text-cyan-300 font-bold bg-cyan-500/20 px-2.5 py-0.5 rounded-lg border border-cyan-400 text-[10px] inline-flex items-center gap-1">
+                                <Sparkles className="w-3 h-3 text-cyan-400" /> MIỄN XÁC THỰC
+                              </span>
+                            ) : isVerified ? (
+                              <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-0.5 rounded-lg border border-emerald-500/30 text-[10px] inline-flex items-center gap-1">
+                                <CheckCircle className="w-3 h-3" /> ĐÃ XÁC THỰC
+                              </span>
+                            ) : (
+                              <span className="text-rose-400 font-bold bg-rose-500/10 px-2.5 py-0.5 rounded-lg border border-rose-500/30 text-[10px] inline-flex items-center gap-1">
+                                <XCircle className="w-3 h-3" /> CHƯA XÁC THỰC
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Cột Toggle Nút Miễn xác thực */}
+                          <td className="p-3.5 text-center">
+                            <button
+                              disabled={exemptLoadingId === u.id}
+                              onClick={() => handleToggleExemptVerification(u)}
+                              className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer border flex items-center gap-1 mx-auto ${
+                                isExempt 
+                                  ? 'bg-amber-500/10 border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-slate-950'
+                                  : 'bg-[#05080E] border-slate-700 hover:border-cyan-400 text-slate-300 hover:text-cyan-300'
+                              }`}
+                            >
+                              {exemptLoadingId === u.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : isExempt ? (
+                                <>Bỏ miễn xác thực</>
+                              ) : (
+                                <><Shield className="w-3 h-3 text-cyan-400" /> Miễn xác thực</>
+                              )}
+                            </button>
+                          </td>
+
                           <td className="p-3.5">
                             {isUserOnline ? (
                               <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 text-[10px] inline-flex items-center gap-1.5">
@@ -745,7 +828,7 @@ export default function AdminPage() {
         {/* TAB 7: ĐÓNG GÓP Ý KIẾN */}
         {activeTab === 'feedback' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-2xl p-6 space-y-4 shadow-xl">
-            <h2 className="text-sm font-bold text-white border-b border-slate-800/80 pb-3 uppercase flex items-center gap-2"><MessageSquare className="w-4 h-4 text-cyan-400" /> Ý KIẾN ĐÓNG GÓP TỪ KHÁCH HÀNG</h2>
+            <h2 className="text-sm font-bold text-white border-b border-slate-800/80 pb-3 uppercase flex items-center gap-2"><MessageSquare className="w-4 h-4 text-cyan-400" /> Ý KIẾN ĐÓNG GÓP TỪ KHÁCH HÀNG</h2>
             <div className="space-y-3">
               {feedbacks.length === 0 ? <p className="text-xs text-slate-500 text-center py-6">Chưa có ý kiến đóng góp nào.</p> : feedbacks.map((f) => (
                 <div key={f.id} className="bg-[#05080E] border border-slate-800 p-4 rounded-xl flex items-start justify-between gap-4">
@@ -896,7 +979,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* ==================== POPUP 3: CỘT/TRỪ TIỀN VÍ NỔI ==================== */}
+      {/* ==================== POPUP 3: CỘNG/TRỪ TIỀN VÍ NỔI ==================== */}
       {adjustBal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#0B1019] border-2 border-emerald-500/50 w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-[0_0_50px_rgba(16,185,129,0.25)]">
