@@ -9,28 +9,41 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Địa chỉ Email không hợp lệ!' }, { status: 400 });
     }
 
-    // 1. Tạo mã OTP 6 chữ số ngẫu nhiên
+    // 1. Tạo mã OTP 6 số ngẫu nhiên
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // Hết hạn sau 5 phút
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 phút hết hạn
 
-    // 2. Xóa các mã OTP cũ của email này và lưu mã mới
-    await supabase.from('email_otps').delete().eq('email', email);
+    // 2. Xóa các mã cũ của email này trước
+    await supabase.from('email_otps').delete().eq('email', email.toLowerCase().trim());
+
+    // 3. Thêm mã OTP mới vào bảng
     const { error: insertError } = await supabase.from('email_otps').insert([
-      { email, otp_code: otp, expires_at: expiresAt }
+      { 
+        email: email.toLowerCase().trim(), 
+        otp_code: otp, 
+        expires_at: expiresAt 
+      }
     ]);
 
     if (insertError) {
-      return NextResponse.json({ success: false, message: 'Không thể tạo mã OTP, vui lòng thử lại!' }, { status: 500 });
+      console.error('Lỗi insert OTP:', insertError);
+      return NextResponse.json({ 
+        success: false, 
+        message: `Lỗi Database: ${insertError.message}` 
+      }, { status: 500 });
     }
 
-    // 3. Gửi email OTP (Sử dụng Supabase Auth built-in hoặc Resend/Nodemailer)
-    // Mặc định gọi hàm gửi email của Supabase Auth:
-    const { error: authError } = await supabase.auth.signInWithOtp({
-      email: email,
-      options: {
-        data: { otp_code: otp, username: username }
-      }
-    });
+    // 4. Gửi email xác thực qua Supabase Auth
+    try {
+      await supabase.auth.signInWithOtp({
+        email: email.toLowerCase().trim(),
+        options: {
+          data: { otp_code: otp, username: username }
+        }
+      });
+    } catch (e) {
+      console.error('Lỗi gọi Supabase Auth OTP:', e);
+    }
 
     return NextResponse.json({ 
       success: true, 
