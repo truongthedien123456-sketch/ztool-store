@@ -6,7 +6,7 @@ import {
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
   Ban, CheckCircle, CheckCircle2, CreditCard, KeyRound, Search, DollarSign, Settings,
-  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent, Crown, Gem, Flame, Star, Award
+  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent, Crown, Gem, Flame, Star, Award, Video
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -48,7 +48,7 @@ export default function AdminPage() {
 
   const [toolForm, setToolForm] = useState({
     id: 0, name: '', toolCode: '', image: '', status: 'Đang hoạt động',
-    priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: ''
+    priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '', videoLink: ''
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -219,6 +219,7 @@ export default function AdminPage() {
           id: t.id, name: t.name, toolCode: t.toolCode || t.tool_code || '', image: t.image, status: t.status || 'Đang hoạt động',
           priceDay: t.priceDay || t.price_day || '', priceWeek: t.priceWeek || t.price_week || '', priceMonth: t.priceMonth || t.price_month || '',
           priceLifetime: t.priceLifetime || t.price_lifetime || '', description: t.description, downloadLink: t.downloadLink || t.download_link || '',
+          videoLink: t.videoLink || t.video_link || '',
           views: t.views || 0, sales: t.sales || 0
         })));
       }
@@ -344,8 +345,8 @@ export default function AdminPage() {
       email: newUserForm.email ? newUserForm.email.trim().toLowerCase() : null,
       password: newUserForm.password, 
       balance: Number(newUserForm.balance) || 0, 
-      is_verified: false,
-      is_exempt: false,
+      is_verified: false, 
+      is_exempt: false, 
       isBanned: false, 
       is_online: false 
     }]);
@@ -398,13 +399,21 @@ export default function AdminPage() {
       if (uploadError) { setIsUploading(false); return alert('Lỗi tải ảnh lên Storage: ' + uploadError.message); }
       const { data: urlData } = supabase.storage.from('tool-images').getPublicUrl(filePath); finalImageUrl = urlData.publicUrl;
     }
-    const payload = { name: toolForm.name, toolCode: toolForm.toolCode.trim(), image: finalImageUrl, status: toolForm.status, priceDay: toolForm.priceDay, priceWeek: toolForm.priceWeek, priceMonth: toolForm.priceMonth, priceLifetime: toolForm.priceLifetime, description: toolForm.description, downloadLink: toolForm.downloadLink };
+    const payload = { 
+      name: toolForm.name, toolCode: toolForm.toolCode.trim(), image: finalImageUrl, status: toolForm.status, 
+      priceDay: toolForm.priceDay, priceWeek: toolForm.priceWeek, priceMonth: toolForm.priceMonth, priceLifetime: toolForm.priceLifetime, 
+      description: toolForm.description, downloadLink: toolForm.downloadLink, video_link: toolForm.videoLink 
+    };
     let result;
     if (isEditingTool && toolForm.id) result = await supabase.from('tools').update(payload).eq('id', toolForm.id);
     else result = await supabase.from('tools').insert([payload]);
     setIsUploading(false);
     if (result.error) alert('Lỗi lưu Tool: ' + result.error.message);
-    else { setImageFile(null); setPreviewUrl(''); setToolForm({ id: 0, name: '', toolCode: '', image: '', status: 'Đang hoạt động', priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '' }); setIsEditingTool(false); alert('Lưu sản phẩm thành công!'); loadAllSyncData(); }
+    else { 
+      setImageFile(null); setPreviewUrl(''); 
+      setToolForm({ id: 0, name: '', toolCode: '', image: '', status: 'Đang hoạt động', priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '', videoLink: '' }); 
+      setIsEditingTool(false); alert('Lưu sản phẩm thành công!'); loadAllSyncData(); 
+    }
   };
 
   const handleDeleteTool = async (id: number) => { if (!confirm('Xóa Tool này khỏi hệ thống?')) return; const { error } = await supabase.from('tools').delete().eq('id', id); if (!error) loadAllSyncData(); };
@@ -668,17 +677,18 @@ export default function AdminPage() {
                       const hasValidEmail = u.email && u.email.trim() !== '' && u.email.includes('@');
                       const isVerified = isExempt || (hasValidEmail && u.is_verified === true);
                       
-                      const depositedAmount = userVipMap[u.username] || 0;
+                      const depositedAmount = Math.max(0, userVipMap[u.username] || 0);
 
                       return (
                         <tr key={i} className="hover:bg-[#080D17]/80 transition">
                           <td className="p-4 font-bold text-white whitespace-nowrap">
                             <span className="font-mono text-cyan-300 font-black">{u.username}</span>
                           </td>
-                          {/* Cột Cấp bậc VIP */}
+                          {/* Cột Cấp bậc VIP có kèm số tiền tổng nạp */}
                           <td className="p-4 text-center whitespace-nowrap">
-                            <div className="flex items-center justify-center">
+                            <div className="flex flex-col items-center justify-center gap-1.5">
                               {getVipBadge(depositedAmount)}
+                              <span className="text-[9px] text-slate-500 font-mono font-bold">Nạp: {depositedAmount.toLocaleString('vi-VN')}đ</span>
                             </div>
                           </td>
                           <td className="p-4 font-mono whitespace-nowrap">
@@ -714,11 +724,11 @@ export default function AdminPage() {
                               </span>
                             ) : isVerified ? (
                               <span className="text-emerald-400 font-black bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/30 text-[10px] inline-flex items-center gap-1.5">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-400" /> ĐÃ XÁC THỰC
+                                <CheckCircle2 className="w-3.5 h-3.5" /> ĐÃ XÁC THỰC
                               </span>
                             ) : (
                               <span className="text-rose-400 font-black bg-rose-500/10 px-3 py-1 rounded-xl border border-rose-500/30 text-[10px] inline-flex items-center gap-1.5">
-                                <XCircle className="w-3 h-3 text-rose-400" /> CHƯA XÁC THỰC
+                                <XCircle className="w-3.5 h-3.5 text-rose-400" /> CHƯA XÁC THỰC
                               </span>
                             )}
                           </td>
@@ -855,7 +865,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 3: SẢN PHẨM TOOL */}
+        {/* TAB 3: SẢN PHẨM TOOL (CÓ Ô NHẬP VIDEO YOUTUBE) */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
@@ -863,7 +873,14 @@ export default function AdminPage() {
               <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Tên Tool</label><input type="text" required value={toolForm.name} onChange={e => setToolForm({ ...toolForm, name: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" placeholder="vd: AUTO FARM F17" /></div>
               <div><label className="block text-[11px] text-cyan-400 mb-1 font-bold">Mã Tool (Dùng xác thực đăng nhập Gist)</label><input type="text" required value={toolForm.toolCode} onChange={e => setToolForm({ ...toolForm, toolCode: e.target.value })} className="w-full bg-[#05080E] border border-cyan-500/50 rounded-xl p-2.5 text-xs text-white focus:outline-none font-mono" placeholder="vd: congtruongf17" /></div>
               <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Trạng Thái</label><select value={toolForm.status} onChange={e => setToolForm({ ...toolForm, status: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white"><option value="Đang hoạt động">Đang hoạt động</option><option value="Tạm ngưng">Tạm ngưng</option></select></div>
+              
               <div className="space-y-2"><label className="block text-[11px] text-slate-400 font-bold">Ảnh sản phẩm</label><label className="flex items-center justify-center gap-2 bg-[#05080E] border border-dashed border-slate-800 text-slate-300 p-3 rounded-xl text-xs cursor-pointer hover:border-cyan-400"><Upload className="w-4 h-4 text-cyan-400" /><span className="truncate">{imageFile ? imageFile.name : 'Chọn ảnh...' }</span><input type="file" accept="image/*" onChange={handleFileChange} className="hidden" /></label>{(previewUrl || toolForm.image) && (<div className="w-full aspect-square bg-[#05080E] border border-slate-800 rounded-xl overflow-hidden relative"><img src={previewUrl || toolForm.image} alt="Preview" className="w-full h-full object-cover" /></div>)}</div>
+              
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1 font-bold flex items-center gap-1.5"><Video className="w-3.5 h-3.5 text-rose-500" /> Link Video Youtube (Giới thiệu)</label>
+                <input type="text" value={toolForm.videoLink || ''} onChange={e => setToolForm({ ...toolForm, videoLink: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" placeholder="https://youtube.com/watch?v=..." />
+              </div>
+
               <div className="grid grid-cols-2 gap-2"><div><label className="block text-[10px] text-slate-400 font-bold">Giá Ngày</label><input type="text" value={toolForm.priceDay} onChange={e => setToolForm({ ...toolForm, priceDay: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white" placeholder="5000" /></div><div><label className="block text-[10px] text-slate-400 font-bold">Giá Tuần</label><input type="text" value={toolForm.priceWeek} onChange={e => setToolForm({ ...toolForm, priceWeek: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white" placeholder="20000" /></div><div><label className="block text-[10px] text-slate-400 font-bold">Giá Tháng</label><input type="text" value={toolForm.priceMonth} onChange={e => setToolForm({ ...toolForm, priceMonth: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white" placeholder="50000" /></div><div><label className="block text-[10px] text-slate-400 font-bold">Giá Vĩnh Viễn</label><input type="text" value={toolForm.priceLifetime} onChange={e => setToolForm({ ...toolForm, priceLifetime: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white" placeholder="100000" /></div></div>
               <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Mô tả sản phẩm</label><textarea value={toolForm.description} onChange={e => setToolForm({ ...toolForm, description: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white" rows={3} /></div>
               <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Link Tải Tool</label><input type="text" value={toolForm.downloadLink} onChange={e => setToolForm({ ...toolForm, downloadLink: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white" placeholder="https://..." /></div>
@@ -905,6 +922,12 @@ export default function AdminPage() {
                       </div>
                     </div>
 
+                    {t.videoLink && (
+                      <div className="text-[10px] text-rose-400 flex items-center gap-1 font-medium italic truncate bg-[#0B1019] border border-slate-800 p-2 rounded-xl">
+                        <Video className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{t.videoLink}</span>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-[#0B1019] border border-slate-800 p-2.5 rounded-xl text-[11px]">
                       <div><span className="text-slate-500 block">Ngày:</span><b className="text-emerald-400">{t.priceDay ? `${Number(t.priceDay).toLocaleString('vi-VN')}đ` : '---'}</b></div>
                       <div><span className="text-slate-500 block">Tuần:</span><b className="text-emerald-400">{t.priceWeek ? `${Number(t.priceWeek).toLocaleString('vi-VN')}đ` : '---'}</b></div>
@@ -928,149 +951,55 @@ export default function AdminPage() {
               
               <div>
                 <label className="block text-[11px] text-slate-400 mb-1 font-bold">Mã Code</label>
-                <input 
-                  type="text" 
-                  required 
-                  value={couponForm.code} 
-                  onChange={e => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })} 
-                  className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono uppercase focus:border-cyan-400" 
-                  placeholder="VD: GIAM20PT, SALE5K" 
-                />
+                <input type="text" required value={couponForm.code} onChange={e => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono uppercase focus:border-cyan-400" placeholder="VD: GIAM20PT, SALE5K" />
               </div>
 
               <div>
                 <label className="block text-[11px] text-slate-400 mb-1 font-bold">Tool áp dụng</label>
-                <select 
-                  value={couponForm.toolCode} 
-                  onChange={e => setCouponForm({ ...couponForm, toolCode: e.target.value })} 
-                  className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white"
-                >
+                <select value={couponForm.toolCode} onChange={e => setCouponForm({ ...couponForm, toolCode: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white">
                   <option value="ALL">Tất cả sản phẩm (ALL)</option>
-                  {tools.map((t) => (
-                    <option key={t.id} value={t.toolCode || t.tool_code}>{t.name}</option>
-                  ))}
+                  {tools.map((t) => (<option key={t.id} value={t.toolCode || t.tool_code}>{t.name}</option>))}
                 </select>
               </div>
 
               <div>
                 <label className="block text-[11px] text-slate-400 mb-1 font-bold">Hình thức giảm giá</label>
                 <div className="grid grid-cols-2 gap-2 bg-[#05080E] p-1 rounded-xl border border-slate-800 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setCouponForm({ ...couponForm, discountType: 'FIXED' })}
-                    className={`py-2 rounded-lg font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${couponForm.discountType === 'FIXED' ? 'bg-cyan-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'}`}
-                  >
-                    <DollarSign className="w-3.5 h-3.5" /> Giảm Số Tiền (VNĐ)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCouponForm({ ...couponForm, discountType: 'PERCENT' })}
-                    className={`py-2 rounded-lg font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${couponForm.discountType === 'PERCENT' ? 'bg-cyan-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'}`}
-                  >
-                    <Percent className="w-3.5 h-3.5" /> Giảm Phần Trăm (%)
-                  </button>
+                  <button type="button" onClick={() => setCouponForm({ ...couponForm, discountType: 'FIXED' })} className={`py-2 rounded-lg font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${couponForm.discountType === 'FIXED' ? 'bg-cyan-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'}`}><DollarSign className="w-3.5 h-3.5" /> Giảm Số Tiền</button>
+                  <button type="button" onClick={() => setCouponForm({ ...couponForm, discountType: 'PERCENT' })} className={`py-2 rounded-lg font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${couponForm.discountType === 'PERCENT' ? 'bg-cyan-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'}`}><Percent className="w-3.5 h-3.5" /> Giảm %</button>
                 </div>
               </div>
 
               {couponForm.discountType === 'FIXED' ? (
-                <div>
-                  <label className="block text-[11px] text-slate-400 mb-1 font-bold">Số tiền giảm trực tiếp (VNĐ)</label>
-                  <input 
-                    type="number" 
-                    min="1000" 
-                    required 
-                    value={couponForm.discountAmount} 
-                    onChange={e => setCouponForm({ ...couponForm, discountAmount: Number(e.target.value) })} 
-                    className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono" 
-                  />
-                </div>
+                <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Số tiền giảm trực tiếp (VNĐ)</label><input type="number" min="1000" required value={couponForm.discountAmount} onChange={e => setCouponForm({ ...couponForm, discountAmount: Number(e.target.value) })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono" /></div>
               ) : (
-                <div>
-                  <label className="block text-[11px] text-slate-400 mb-1 font-bold">Phần trăm giảm (1% - 100%)</label>
-                  <input 
-                    type="number" 
-                    min="1" 
-                    max="100" 
-                    required 
-                    value={couponForm.discountPercent} 
-                    onChange={e => setCouponForm({ ...couponForm, discountPercent: Number(e.target.value) })} 
-                    className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono" 
-                    placeholder="VD: 10, 20, 50"
-                  />
-                </div>
+                <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Phần trăm giảm (1% - 100%)</label><input type="number" min="1" max="100" required value={couponForm.discountPercent} onChange={e => setCouponForm({ ...couponForm, discountPercent: Number(e.target.value) })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono" /></div>
               )}
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] text-slate-400 mb-1 font-bold">Tổng lượt dùng toàn shop</label>
-                  <input 
-                    type="number" 
-                    min="1" 
-                    required 
-                    value={couponForm.quantity} 
-                    onChange={e => setCouponForm({ ...couponForm, quantity: Number(e.target.value) })} 
-                    className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] text-slate-400 mb-1 font-bold">Giới hạn/tài khoản</label>
-                  <input 
-                    type="number" 
-                    min="1" 
-                    required 
-                    value={couponForm.maxUsesPerUser} 
-                    onChange={e => setCouponForm({ ...couponForm, maxUsesPerUser: Number(e.target.value) })} 
-                    className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono" 
-                    placeholder="VD: 1 lần"
-                  />
-                </div>
+                <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Tổng lượt dùng toàn shop</label><input type="number" min="1" required value={couponForm.quantity} onChange={e => setCouponForm({ ...couponForm, quantity: Number(e.target.value) })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono" /></div>
+                <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Giới hạn/tài khoản</label><input type="number" min="1" required value={couponForm.maxUsesPerUser} onChange={e => setCouponForm({ ...couponForm, maxUsesPerUser: Number(e.target.value) })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono" /></div>
               </div>
 
-              <button type="submit" className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 py-3 rounded-xl text-xs font-black transition cursor-pointer shadow-sm hover:bg-cyan-500 hover:text-slate-950">
-                PHÁT HÀNH MÃ GIẢM GIÁ
-              </button>
+              <button type="submit" className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 py-3 rounded-xl text-xs font-black transition cursor-pointer shadow-sm hover:bg-cyan-500 hover:text-slate-950">PHÁT HÀNH MÃ GIẢM GIÁ</button>
             </form>
 
             <div className="lg:col-span-2 bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
-              <h3 className="text-xs font-bold text-white border-b border-slate-800/80 pb-3 uppercase tracking-wider">
-                DANH SÁCH MÃ GIẢM GIÁ HIỆN HÀNH ({coupons.length})
-              </h3>
+              <h3 className="text-xs font-bold text-white border-b border-slate-800/80 pb-3 uppercase tracking-wider">DANH SÁCH MÃ GIẢM GIÁ HIỆN HÀNH ({coupons.length})</h3>
               <div className="space-y-3">
-                {coupons.length === 0 ? (
-                  <p className="text-xs text-slate-500 py-8 text-center">Chưa có mã giảm giá nào được tạo.</p>
-                ) : (
-                  coupons.map((c) => {
-                    const isPercent = c.discount_type === 'PERCENT' || (c.discount_percent && Number(c.discount_percent) > 0);
-                    const discountLabel = isPercent ? `-${c.discount_percent}%` : `-${Number(c.discount_amount || 0).toLocaleString('vi-VN')}đ`;
-
-                    return (
-                      <div key={c.id} className="bg-[#05080E] border border-slate-800 p-4 rounded-2xl flex items-center justify-between gap-4 hover:border-cyan-500/40 transition">
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-black text-cyan-300 text-sm bg-cyan-500/10 px-3 py-0.5 rounded-lg border border-cyan-500/30">
-                              {c.code}
-                            </span>
-                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${isPercent ? 'bg-purple-500/10 border-purple-500/30 text-purple-300' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>
-                              {isPercent ? 'GIẢM THEO %' : 'GIẢM SỐ TIỀN'}
-                            </span>
-                          </div>
-                          <div className="text-xs text-slate-300 flex items-center gap-3 flex-wrap">
-                            <span>Mức giảm: <b className="text-emerald-400 font-mono font-black">{discountLabel}</b></span>
-                            <span>|</span>
-                            <span>Số lượt còn: <b className="text-amber-400 font-mono font-bold">{c.quantity}</b></span>
-                            <span>|</span>
-                            <span>Giới hạn: <b className="text-cyan-300 font-mono font-bold">{c.max_uses_per_user || 1} lần/user</b></span>
-                            <span>|</span>
-                            <span>Tool: <b className="text-slate-400 font-mono uppercase">{c.tool_code || 'ALL'}</b></span>
-                          </div>
-                        </div>
-                        <button onClick={() => handleDeleteCoupon(c.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-xl cursor-pointer transition">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                {coupons.map((c) => {
+                  const isPercent = c.discount_type === 'PERCENT' || (c.discount_percent && Number(c.discount_percent) > 0);
+                  const discountLabel = isPercent ? `-${c.discount_percent}%` : `-${Number(c.discount_amount || 0).toLocaleString('vi-VN')}đ`;
+                  return (
+                    <div key={c.id} className="bg-[#05080E] border border-slate-800 p-4 rounded-2xl flex items-center justify-between gap-4 hover:border-cyan-500/40 transition">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2"><span className="font-mono font-black text-cyan-300 text-sm bg-cyan-500/10 px-3 py-0.5 rounded-lg border border-cyan-500/30">{c.code}</span><span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${isPercent ? 'bg-purple-500/10 border-purple-500/30 text-purple-300' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>{isPercent ? 'GIẢM %' : 'GIẢM SỐ TIỀN'}</span></div>
+                        <div className="text-xs text-slate-300 flex items-center gap-3 flex-wrap"><span>Mức giảm: <b className="text-emerald-400 font-mono font-black">{discountLabel}</b></span><span>|</span><span>Còn lại: <b className="text-amber-400 font-mono font-bold">{c.quantity}</b></span><span>|</span><span>Tool: <b className="text-slate-400 font-mono uppercase">{c.tool_code || 'ALL'}</b></span></div>
                       </div>
-                    );
-                  })
-                )}
+                      <button onClick={() => handleDeleteCoupon(c.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-xl cursor-pointer transition"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -1087,16 +1016,12 @@ export default function AdminPage() {
               <div><label className="block text-xs text-slate-400 mb-1 font-bold">Mô tả dự án</label><textarea value={projectForm.description} onChange={e => setProjectForm({ ...projectForm, description: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white" rows={3} /></div>
               <button type="submit" disabled={isUploadingProject} className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 py-3 rounded-xl text-xs font-black transition cursor-pointer">{isUploadingProject ? 'ĐANG UPLOAD...' : 'LƯU DỰ ÁN'}</button>
             </form>
-
             <div className="lg:col-span-2 bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
               <h3 className="text-xs font-bold text-white border-b border-slate-800/80 pb-3 uppercase">DANH SÁCH DỰ ÁN</h3>
               <div className="space-y-3">
                 {projects.map((p) => (
                   <div key={p.id} className="bg-[#05080E] border border-slate-800 p-4 rounded-xl flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-4 flex-1">
-                      {p.image && (<div className="w-16 h-16 bg-[#0B1019] border border-slate-800 rounded-xl overflow-hidden shrink-0"><img src={p.image} alt={p.title} className="w-full h-full object-cover" /></div>)}
-                      <div><h4 className="font-bold text-white text-xs">{p.title}</h4><span className="text-[10px] text-cyan-300 font-bold">{p.status}</span></div>
-                    </div>
+                    <div className="flex items-center gap-4 flex-1">{p.image && (<div className="w-16 h-16 bg-[#0B1019] border border-slate-800 rounded-xl overflow-hidden shrink-0"><img src={p.image} alt={p.title} className="w-full h-full object-cover" /></div>)}<div><h4 className="font-bold text-white text-xs">{p.title}</h4><span className="text-[10px] text-cyan-300 font-bold">{p.status}</span></div></div>
                     <button onClick={() => handleDeleteProject(p.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg cursor-pointer transition"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 ))}
