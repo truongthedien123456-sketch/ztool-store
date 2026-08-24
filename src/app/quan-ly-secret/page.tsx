@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { 
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
   Ban, CheckCircle, CheckCircle2, CreditCard, KeyRound, Search, DollarSign, Settings,
-  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent, Crown, Gem, Flame, Star, Award, Video
+  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent, Crown, Gem, Flame, Star, Award, Video, Send, Headset
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -15,7 +15,7 @@ export default function AdminPage() {
   const [passwordInput, setPasswordInput] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'users' | 'tools' | 'projects' | 'gist_accounts' | 'sepay' | 'feedback' | 'coupons' | 'settings'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'tools' | 'projects' | 'gist_accounts' | 'sepay' | 'feedback' | 'coupons' | 'settings' | 'chat'>('users');
 
   const [users, setUsers] = useState<any[]>([]);
   const [userVipMap, setUserVipMap] = useState<{ [key: string]: number }>({});
@@ -25,6 +25,14 @@ export default function AdminPage() {
   const [sepayLogs, setSepayLogs] = useState<any[]>([]);
   const [coupons, setCoupons] = useState<any[]>([]);
   
+  // State Chat Hỗ Trợ Khách Hàng Realtime
+  const [chatUsers, setChatUsers] = useState<string[]>([]);
+  const [selectedChatUser, setSelectedChatUser] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [adminReplyText, setAdminReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+
   // State Thông báo
   const [noticeForm, setNoticeForm] = useState({ text: '', active: false });
   const [currentActiveNotice, setCurrentActiveNotice] = useState<{ text: string, active: boolean } | null>(null);
@@ -32,6 +40,7 @@ export default function AdminPage() {
   const [gistAccounts, setGistAccounts] = useState<any[]>([]);
   const [loadingGist, setLoadingGist] = useState(false);
   const [resettingHwid, setResettingHwid] = useState<string | null>(null);
+  const [deletingGistKey, setDeletingGistKey] = useState<string | null>(null);
   const [nowTime, setNowTime] = useState(Date.now());
 
   const [userSearch, setUserSearch] = useState('');
@@ -76,6 +85,7 @@ export default function AdminPage() {
     if (isLogged === 'true') {
       setIsAuthenticated(true);
       loadAllSyncData();
+      loadChatUsers();
     }
 
     const channel = supabase
@@ -87,6 +97,12 @@ export default function AdminPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => loadAllSyncData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'coupons' }, () => loadAllSyncData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => loadAllSyncData())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+        loadChatUsers();
+        if (selectedChatUser && (payload.new.sender_username === selectedChatUser || payload.new.receiver_username === selectedChatUser)) {
+          setChatMessages((prev) => [...prev, payload.new]);
+        }
+      })
       .subscribe();
 
     const timer = setInterval(() => { setNowTime(Date.now()); }, 1000);
@@ -95,47 +111,106 @@ export default function AdminPage() {
       supabase.removeChannel(channel);
       clearInterval(timer);
     };
-  }, []);
+  }, [selectedChatUser]);
+
+  useEffect(() => {
+    chatScrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  const loadChatUsers = async () => {
+    const { data } = await supabase
+      .from('messages')
+      .select('sender_username, receiver_username')
+      .order('id', { ascending: false });
+
+    if (data) {
+      const unique = Array.from(
+        new Set(
+          data
+            .map(m => m.sender_username === 'admin' ? m.receiver_username : m.sender_username)
+            .filter(u => u && u !== 'admin')
+        )
+      );
+      setChatUsers(unique);
+      if (!selectedChatUser && unique.length > 0) {
+        setSelectedChatUser(unique[0]);
+        loadConversation(unique[0]);
+      }
+    }
+  };
+
+  const loadConversation = async (targetUser: string) => {
+    const { data } = await supabase
+      .from('messages')
+      .select('*')
+      .or(`sender_username.eq.${targetUser},receiver_username.eq.${targetUser}`)
+      .order('id', { ascending: true });
+
+    if (data) setChatMessages(data);
+  };
+
+  const handleAdminSendReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedChatUser || !adminReplyText.trim() || sendingReply) return;
+
+    const text = adminReplyText.trim();
+    setAdminReplyText('');
+    setSendingReply(true);
+
+    const newMsg = {
+      sender_username: 'admin',
+      sender_role: 'admin',
+      receiver_username: selectedChatUser,
+      message: text
+    };
+
+    const { data, error } = await supabase.from('messages').insert([newMsg]).select().single();
+    setSendingReply(false);
+
+    if (!error && data) {
+      setChatMessages((prev) => [...prev, data]);
+    }
+  };
 
   // Hàm tính toán cấp bậc VIP theo số tiền nạp tích lũy
   const getVipBadge = (amount: number) => {
     if (amount >= 5000000) {
       return (
-        <span className="text-[10px] font-black bg-gradient-to-r from-rose-600/30 via-pink-600/30 to-amber-500/30 border border-rose-400 text-rose-200 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-pulse">
+        <span className="text-[10px] font-black bg-gradient-to-r from-rose-600/30 via-pink-600/30 to-amber-500/30 border border-rose-400 text-rose-200 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-pulse w-full">
           <Flame className="w-3 h-3 text-rose-400" /> VIP 5
         </span>
       );
     }
     if (amount >= 3000000) {
       return (
-        <span className="text-[10px] font-black bg-gradient-to-r from-purple-500/30 to-indigo-500/30 border border-purple-400 text-purple-200 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_10px_rgba(168,85,247,0.5)] animate-pulse">
+        <span className="text-[10px] font-black bg-gradient-to-r from-purple-500/30 to-indigo-500/30 border border-purple-400 text-purple-200 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_10px_rgba(168,85,247,0.5)] animate-pulse w-full">
           <Gem className="w-3 h-3 text-purple-300" /> VIP 4
         </span>
       );
     }
     if (amount >= 2000000) {
       return (
-        <span className="text-[10px] font-black bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/60 text-amber-300 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(251,191,36,0.3)]">
+        <span className="text-[10px] font-black bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/60 text-amber-300 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(251,191,36,0.3)] w-full">
           <Crown className="w-3 h-3 text-amber-400" /> VIP 3
         </span>
       );
     }
     if (amount >= 1000000) {
       return (
-        <span className="text-[10px] font-black bg-gradient-to-r from-slate-400/20 to-cyan-500/20 border border-cyan-400/50 text-cyan-300 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(6,182,212,0.3)]">
+        <span className="text-[10px] font-black bg-gradient-to-r from-slate-400/20 to-cyan-500/20 border border-cyan-400/50 text-cyan-300 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(6,182,212,0.3)] w-full">
           <Star className="w-3 h-3 text-cyan-300" /> VIP 2
         </span>
       );
     }
     if (amount >= 500000) {
       return (
-        <span className="text-[10px] font-black bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/50 text-orange-300 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(249,115,22,0.3)]">
+        <span className="text-[10px] font-black bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/50 text-orange-300 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(249,115,22,0.3)] w-full">
           <Award className="w-3 h-3 text-orange-400" /> VIP 1
         </span>
       );
     }
     return (
-      <span className="text-[10px] font-bold bg-slate-800/80 border border-slate-700 text-slate-400 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1">
+      <span className="text-[10px] font-bold bg-slate-800/80 border border-slate-700 text-slate-400 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 w-full">
         <User className="w-3 h-3 text-slate-500" /> Thành viên
       </span>
     );
@@ -180,6 +255,29 @@ export default function AdminPage() {
       alert(`Lỗi kết nối máy chủ: ${err.message}`);
     } finally {
       setResettingHwid(null);
+    }
+  };
+
+  const handleDeleteGistAccount = async (accountName: string) => {
+    if (!confirm(`Xác nhận XÓA VĨNH VIỄN tài khoản "${accountName}" khỏi kho GitHub Gist?`)) return;
+    setDeletingGistKey(accountName);
+    try {
+      const res = await fetch('/api/gist-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountKey: accountName, action: 'DELETE_ACCOUNT' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Đã xóa tài khoản "${accountName}" khỏi Gist thành công!`);
+        fetchGistAccountsData();
+      } else {
+        alert(`Lỗi xóa tài khoản Gist: ${data.message}`);
+      }
+    } catch (err: any) {
+      alert(`Lỗi kết nối máy chủ: ${err.message}`);
+    } finally {
+      setDeletingGistKey(null);
     }
   };
 
@@ -588,13 +686,14 @@ export default function AdminPage() {
           <button onClick={() => setActiveTab('tools')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'tools' ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}><Wrench className="w-4 h-4" /> SẢN PHẨM TOOL ({tools.length})</button>
           <button onClick={() => { setActiveTab('gist_accounts'); fetchGistAccountsData(); }} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'gist_accounts' ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}><KeyRound className="w-4 h-4" /> KHO ACC TOOL ({gistAccounts.length})</button>
           <button onClick={() => setActiveTab('coupons')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'coupons' ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}><Tag className="w-4 h-4" /> MÃ GIẢM GIÁ ({coupons.length})</button>
+          <button onClick={() => setActiveTab('chat')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'chat' ? 'bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}><Headset className="w-4 h-4 text-cyan-400" /> LIVE CHAT ({chatUsers.length})</button>
           <button onClick={() => setActiveTab('projects')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'projects' ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}><FolderKanban className="w-4 h-4" /> DỰ ÁN CỦA SHOP ({projects.length})</button>
           <button onClick={() => setActiveTab('sepay')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'sepay' ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}><CreditCard className="w-4 h-4" /> LỊCH SỬ SEPAY ({sepayLogs.length})</button>
           <button onClick={() => setActiveTab('feedback')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'feedback' ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}><MessageSquare className="w-4 h-4" /> ĐÓNG GÓP ({feedbacks.length})</button>
           <button onClick={() => setActiveTab('settings')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'settings' ? 'bg-amber-500 text-slate-950 font-black shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'text-amber-400 hover:text-amber-300 hover:bg-slate-800/50'}`}><Bell className="w-4 h-4" /> THÔNG BÁO CHUNG</button>
         </div>
 
-        {/* ================= TAB 1: QUẢN LÝ NGƯỜI DÙNG CÓ CỘT VIP ================= */}
+        {/* ================= TAB 1: QUẢN LÝ NGƯỜI DÙNG ================= */}
         {activeTab === 'users' && (
           <div className="space-y-6">
             <form onSubmit={handleCreateUser} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
@@ -720,11 +819,11 @@ export default function AdminPage() {
                           <td className="p-4 text-center whitespace-nowrap">
                             {isExempt ? (
                               <span className="text-cyan-300 font-black bg-cyan-500/20 px-3 py-1 rounded-xl border border-cyan-400 text-[10px] inline-flex items-center gap-1.5 shadow-[0_0_10px_rgba(6,182,212,0.25)]">
-                                <Sparkles className="w-3 h-3 text-cyan-400" /> MIỄN XÁC THỰC
+                                <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> MIỄN XÁC THỰC
                               </span>
                             ) : isVerified ? (
                               <span className="text-emerald-400 font-black bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/30 text-[10px] inline-flex items-center gap-1.5">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> ĐÃ XÁC THỰC
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> ĐÃ XÁC THỰC
                               </span>
                             ) : (
                               <span className="text-rose-400 font-black bg-rose-500/10 px-3 py-1 rounded-xl border border-rose-500/30 text-[10px] inline-flex items-center gap-1.5">
@@ -784,7 +883,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 2: KHO ACC TOOL TRÊN GITHUB GIST */}
+        {/* ================= TAB 2: KHO ACC TOOL (ĐÃ THÊM NÚT XÓA TÀI KHOẢN) ================= */}
         {activeTab === 'gist_accounts' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
@@ -792,7 +891,7 @@ export default function AdminPage() {
                 <h2 className="text-sm font-bold text-white uppercase flex items-center gap-2">
                   <KeyRound className="w-4 h-4 text-cyan-400" /> KHO TÀI KHOẢN TOOL (GITHUB GIST ACCOUNTS.JSON)
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">Quản lý tài khoản kích hoạt, thời hạn và quản lý Mã Thiết Bị (HWID)</p>
+                <p className="text-xs text-slate-400 mt-0.5">Quản lý tài khoản kích hoạt, thời hạn, HWID và Xóa tài khoản trực tiếp</p>
               </div>
               <button onClick={fetchGistAccountsData} className="bg-[#05080E] border border-slate-800 hover:border-cyan-400 text-cyan-300 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer transition">
                 <RefreshCw className={`w-3.5 h-3.5 ${loadingGist ? 'animate-spin' : ''}`} /> Tải lại dữ liệu Gist
@@ -813,7 +912,7 @@ export default function AdminPage() {
                       <th className="p-3.5">Tool Code</th>
                       <th className="p-3.5">Mã thiết bị (HWID)</th>
                       <th className="p-3.5">Thời gian còn lại</th>
-                      <th className="p-3.5 text-right">Quản lý HWID</th>
+                      <th className="p-3.5 text-right">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60">
@@ -839,20 +938,29 @@ export default function AdminPage() {
                               )}
                             </td>
                             <td className="p-3.5">{renderRemainingTime(acc.expire_timestamp)}</td>
-                            <td className="p-3.5 text-right">
-                              {hasHwid ? (
+                            <td className="p-3.5 text-right space-x-2">
+                              {hasHwid && (
                                 <button
                                   disabled={resettingHwid === acc.username}
                                   onClick={() => handleResetHwid(acc.username)}
-                                  className="bg-rose-500/10 border border-rose-500/40 hover:bg-rose-500/25 text-rose-300 font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer shadow-sm inline-flex items-center gap-1.5"
+                                  className="bg-amber-500/10 border border-amber-500/40 hover:bg-amber-500/25 text-amber-300 font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer shadow-sm inline-flex items-center gap-1.5"
                                   title="Xóa mã thiết bị để đăng nhập máy mới"
                                 >
-                                  {resettingHwid === acc.username ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Cpu className="w-3.5 h-3.5 text-rose-400" />}
+                                  {resettingHwid === acc.username ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Cpu className="w-3.5 h-3.5 text-amber-400" />}
                                   <span>Reset HWID</span>
                                 </button>
-                              ) : (
-                                <span className="text-[11px] text-slate-600 font-medium italic">Sẵn sàng dùng</span>
                               )}
+
+                              {/* NÚT XÓA TÀI KHOẢN GIST */}
+                              <button
+                                disabled={deletingGistKey === acc.username}
+                                onClick={() => handleDeleteGistAccount(acc.username)}
+                                className="bg-rose-500/10 border border-rose-500/40 hover:bg-rose-500/25 text-rose-300 font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer shadow-sm inline-flex items-center gap-1.5"
+                                title="Xóa tài khoản này khỏi Gist"
+                              >
+                                {deletingGistKey === acc.username ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5 text-rose-400" />}
+                                <span>Xóa Acc</span>
+                              </button>
                             </td>
                           </tr>
                         );
@@ -865,7 +973,104 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 3: SẢN PHẨM TOOL (CÓ Ô NHẬP VIDEO YOUTUBE) */}
+        {/* ================= TAB 3: HỖ TRỢ KHÁCH HÀNG (LIVE CHAT) ================= */}
+        {activeTab === 'chat' && (
+          <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+              <div>
+                <h2 className="text-sm font-bold text-white uppercase flex items-center gap-2">
+                  <Headset className="w-4 h-4 text-cyan-400" /> TRUNG TÂM CHAT & HỖ TRỢ KHÁCH HÀNG
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">Trò chuyện và hỗ trợ trực tiếp thời gian thực cho từng khách hàng</p>
+              </div>
+              <button onClick={loadChatUsers} className="bg-[#05080E] border border-slate-800 hover:border-cyan-400 text-cyan-300 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer transition">
+                <RefreshCw className="w-3.5 h-3.5" /> Làm mới hội thoại
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-[500px]">
+              {/* Cột danh sách khách hàng chat */}
+              <div className="md:col-span-4 bg-[#05080E] border border-slate-800 rounded-2xl p-3 space-y-2 overflow-y-auto">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block px-2">Khách hàng cần hỗ trợ ({chatUsers.length})</span>
+                {chatUsers.length === 0 ? (
+                  <p className="text-xs text-slate-500 text-center py-8">Chưa có tin nhắn nào từ khách.</p>
+                ) : (
+                  chatUsers.map((u, i) => (
+                    <button
+                      key={i}
+                      onClick={() => { setSelectedChatUser(u); loadConversation(u); }}
+                      className={`w-full p-3 rounded-xl text-left text-xs font-bold flex items-center justify-between transition cursor-pointer ${
+                        selectedChatUser === u ? 'bg-cyan-500 text-slate-950 shadow-md font-black' : 'bg-[#0B1019] text-slate-300 hover:bg-slate-800/60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 truncate">
+                        <User className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{u}</span>
+                      </div>
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+                    </button>
+                  ))
+                )}
+              </div>
+
+              {/* Khung trò chuyện */}
+              <div className="md:col-span-8 bg-[#05080E] border border-slate-800 rounded-2xl flex flex-col overflow-hidden">
+                {selectedChatUser ? (
+                  <>
+                    <div className="bg-[#080D15] p-3 border-b border-slate-800 flex items-center justify-between">
+                      <span className="text-xs font-bold text-white flex items-center gap-2">
+                        Đang chat với: <b className="text-cyan-400 font-mono">{selectedChatUser}</b>
+                      </span>
+                    </div>
+
+                    <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#05080E] text-xs">
+                      {chatMessages.map((m, idx) => {
+                        const isAdmin = m.sender_username === 'admin';
+                        return (
+                          <div key={idx} className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}>
+                            <span className="text-[9px] text-slate-500 mb-0.5 font-mono">{isAdmin ? 'Admin (Bạn)' : m.sender_username}</span>
+                            <div className={`p-3 rounded-2xl max-w-[80%] leading-relaxed ${
+                              isAdmin 
+                                ? 'bg-cyan-500 text-slate-950 font-bold rounded-tr-none shadow-md' 
+                                : 'bg-[#0B1019] border border-slate-800 text-slate-100 rounded-tl-none'
+                            }`}>
+                              {m.message}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div ref={chatScrollRef} />
+                    </div>
+
+                    <form onSubmit={handleAdminSendReply} className="p-3 bg-[#080D15] border-t border-slate-800 flex items-center gap-2">
+                      <input 
+                        type="text"
+                        placeholder={`Trả lời cho ${selectedChatUser}...`}
+                        value={adminReplyText}
+                        onChange={(e) => setAdminReplyText(e.target.value)}
+                        className="flex-1 bg-[#05080E] border border-slate-800 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none transition"
+                      />
+                      <button 
+                        type="submit" 
+                        disabled={sendingReply || !adminReplyText.trim()}
+                        className="bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-slate-950 font-bold px-4 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-1.5"
+                      >
+                        {sendingReply ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                        <span>Gửi</span>
+                      </button>
+                    </form>
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-xs text-slate-500">
+                    Chọn một khách hàng ở danh sách bên trái để bắt đầu chat.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: SẢN PHẨM TOOL */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
@@ -904,18 +1109,6 @@ export default function AdminPage() {
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-3 bg-[#0B1019] border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
-                        <div className="flex items-center gap-1 text-slate-400" title="Lượt xem">
-                          <Eye className="w-3.5 h-3.5 text-cyan-400" />
-                          <span className="font-bold text-white">{t.views || 0}</span>
-                        </div>
-                        <span className="text-slate-600">|</span>
-                        <div className="flex items-center gap-1 text-slate-400" title="Lượt mua">
-                          <ShoppingBag className="w-3.5 h-3.5 text-emerald-400" />
-                          <span className="font-bold text-emerald-400">{t.sales || 0}</span>
-                        </div>
-                      </div>
-
                       <div className="flex gap-2">
                         <button onClick={() => { setToolForm(t); setPreviewUrl(t.image); setIsEditingTool(true); }} className="text-cyan-300 p-2 hover:bg-cyan-500/10 rounded-lg cursor-pointer transition"><Edit className="w-4 h-4" /></button>
                         <button onClick={() => handleDeleteTool(t.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg cursor-pointer transition"><Trash2 className="w-4 h-4" /></button>
@@ -941,7 +1134,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 4: MÃ GIẢM GIÁ */}
+        {/* TAB 5: MÃ GIẢM GIÁ */}
         {activeTab === 'coupons' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleCreateCoupon} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
@@ -993,7 +1186,7 @@ export default function AdminPage() {
                   return (
                     <div key={c.id} className="bg-[#05080E] border border-slate-800 p-4 rounded-2xl flex items-center justify-between gap-4 hover:border-cyan-500/40 transition">
                       <div className="space-y-1.5">
-                        <div className="flex items-center gap-2"><span className="font-mono font-black text-cyan-300 text-sm bg-cyan-500/10 px-3 py-0.5 rounded-lg border border-cyan-500/30">{c.code}</span><span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${isPercent ? 'bg-purple-500/10 border-purple-500/30 text-purple-300' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>{isPercent ? 'GIẢM %' : 'GIẢM SỐ TIỀN'}</span></div>
+                        <div className="flex items-center gap-2"><span className="font-mono font-black text-cyan-300 text-sm bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-cyan-500/30">{c.code}</span><span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${isPercent ? 'bg-purple-500/10 border-purple-500/30 text-purple-300' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>{isPercent ? 'GIẢM %' : 'GIẢM SỐ TIỀN'}</span></div>
                         <div className="text-xs text-slate-300 flex items-center gap-3 flex-wrap"><span>Mức giảm: <b className="text-emerald-400 font-mono font-black">{discountLabel}</b></span><span>|</span><span>Còn lại: <b className="text-amber-400 font-mono font-bold">{c.quantity}</b></span><span>|</span><span>Tool: <b className="text-slate-400 font-mono uppercase">{c.tool_code || 'ALL'}</b></span></div>
                       </div>
                       <button onClick={() => handleDeleteCoupon(c.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-xl cursor-pointer transition"><Trash2 className="w-4 h-4" /></button>
@@ -1005,7 +1198,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 5: DỰ ÁN SHOP */}
+        {/* TAB 6: DỰ ÁN SHOP */}
         {activeTab === 'projects' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveProject} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
@@ -1030,7 +1223,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 6: LỊCH SỬ SEPAY */}
+        {/* TAB 7: LỊCH SỬ SEPAY */}
         {activeTab === 'sepay' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
             <h2 className="text-sm font-bold text-white border-b border-slate-800/80 pb-3 uppercase flex items-center gap-2"><CreditCard className="w-4 h-4 text-cyan-400" /> LỊCH SỬ BIẾN ĐỘNG SEPAY AUTO</h2>
@@ -1052,7 +1245,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 7: ĐÓNG GÓP Ý KIẾN */}
+        {/* TAB 8: ĐÓNG GÓP Ý KIẾN */}
         {activeTab === 'feedback' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
             <h2 className="text-sm font-bold text-white border-b border-slate-800/80 pb-3 uppercase flex items-center gap-2"><MessageSquare className="w-4 h-4 text-cyan-400" /> Ý KIẾN ĐÓNG GÓP TỪ KHÁCH HÀNG</h2>
@@ -1067,7 +1260,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 8: THÔNG BÁO CHUNG */}
+        {/* TAB 9: THÔNG BÁO CHUNG */}
         {activeTab === 'settings' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
