@@ -28,10 +28,10 @@ export default function AdminPage() {
   // State Chat Hỗ Trợ Khách Hàng Realtime
   const [chatUsers, setChatUsers] = useState<string[]>([]);
   const [selectedChatUser, setSelectedChatUser] = useState<string | null>(null);
+  const selectedChatUserRef = useRef<string | null>(null);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [adminReplyText, setAdminReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
-  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   // State Thông báo
   const [noticeForm, setNoticeForm] = useState({ text: '', active: false });
@@ -80,7 +80,12 @@ export default function AdminPage() {
     maxUsesPerUser: 1 
   });
 
-  // Hàm phát âm thanh thông báo chuông (Web Audio API)
+  // Đồng bộ ref của user đang chat để realtime nhận diện chính xác
+  useEffect(() => {
+    selectedChatUserRef.current = selectedChatUser;
+  }, [selectedChatUser]);
+
+  // Hàm phát âm thanh thông báo chuông Realtime
   const playNotificationSound = () => {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -92,13 +97,14 @@ export default function AdminPage() {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, audioCtx.currentTime); // Tần số A5
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // Nốt D5
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.08); // Nốt A5
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.3);
+      osc.stop(audioCtx.currentTime + 0.35);
     } catch (e) { console.error('Lỗi âm thanh:', e); }
   };
 
@@ -110,8 +116,9 @@ export default function AdminPage() {
       loadChatUsers();
     }
 
+    // Đăng ký kênh Realtime độc nhất, duy trì kết nối liên tục
     const channel = supabase
-      .channel('admin_realtime_changes')
+      .channel(`admin_global_rt_${Date.now()}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => loadAllSyncData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => loadAllSyncData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'feedbacks' }, () => loadAllSyncData())
@@ -120,14 +127,21 @@ export default function AdminPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'coupons' }, () => loadAllSyncData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => loadAllSyncData())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+        const msg = payload.new;
         loadChatUsers();
-        if (payload.new.sender_role === 'user') {
+        
+        if (msg.sender_role === 'user') {
           playNotificationSound();
         }
-        if (selectedChatUser && (payload.new.sender_username === selectedChatUser || payload.new.receiver_username === selectedChatUser)) {
+
+        const activeChat = selectedChatUserRef.current;
+        if (
+          activeChat &&
+          (msg.sender_username === activeChat || msg.receiver_username === activeChat)
+        ) {
           setChatMessages((prev) => {
-            if (prev.some(m => m.id === payload.new.id)) return prev;
-            return [...prev, payload.new];
+            if (prev.some((m) => m.id === msg.id)) return prev;
+            return [...prev, msg];
           });
         }
       })
@@ -139,10 +153,14 @@ export default function AdminPage() {
       supabase.removeChannel(channel);
       clearInterval(timer);
     };
-  }, [selectedChatUser]);
+  }, []);
 
   const loadChatUsers = async () => {
-    const { data } = await supabase.from('messages').select('sender_username, receiver_username').order('id', { ascending: false });
+    const { data } = await supabase
+      .from('messages')
+      .select('sender_username, receiver_username')
+      .order('id', { ascending: false });
+
     if (data) {
       const unique = Array.from(
         new Set(
@@ -152,7 +170,7 @@ export default function AdminPage() {
         )
       );
       setChatUsers(unique);
-      if (!selectedChatUser && unique.length > 0) {
+      if (!selectedChatUserRef.current && unique.length > 0) {
         setSelectedChatUser(unique[0]);
         loadConversation(unique[0]);
       }
@@ -168,7 +186,6 @@ export default function AdminPage() {
 
     if (data) {
       setChatMessages(data);
-      // Đã loại bỏ lệnh tự động cuộn xuống dưới cùng khi bấm chọn người dùng
     }
   };
 
@@ -192,7 +209,7 @@ export default function AdminPage() {
 
     if (!error && data) {
       setChatMessages((prev) => {
-        if (prev.some(m => m.id === data.id)) return prev;
+        if (prev.some((m) => m.id === data.id)) return prev;
         return [...prev, data];
       });
     }
@@ -398,8 +415,14 @@ export default function AdminPage() {
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (usernameInput.trim() === 'mienprovip' && passwordInput === 'Vietduc123456@') {
-      localStorage.setItem('ztool_admin_authenticated', 'true'); setIsAuthenticated(true); setLoginError(''); loadAllSyncData(); loadChatUsers();
-    } else { setLoginError('Tài khoản hoặc mật khẩu Quản trị không chính xác!'); }
+      localStorage.setItem('ztool_admin_authenticated', 'true');
+      setIsAuthenticated(true);
+      setLoginError('');
+      loadAllSyncData();
+      loadChatUsers();
+    } else {
+      setLoginError('Tài khoản hoặc mật khẩu Quản trị không chính xác!');
+    }
   };
 
   const handleAdminLogout = () => { localStorage.removeItem('ztool_admin_authenticated'); setIsAuthenticated(false); };
@@ -419,77 +442,38 @@ export default function AdminPage() {
     const hasValidEmail = u.email && u.email.trim() !== '' && u.email.includes('@');
     const newVerifiedState = newExemptState ? true : (hasValidEmail ? (u.is_verified === true) : false);
 
-    const updatePayload: any = {
-      is_exempt: newExemptState,
-      is_verified: newVerifiedState
-    };
-
-    const { error } = await supabase
-      .from('users')
-      .update(updatePayload)
-      .eq('id', u.id);
-
+    const updatePayload: any = { is_exempt: newExemptState, is_verified: newVerifiedState };
+    const { error } = await supabase.from('users').update(updatePayload).eq('id', u.id);
     setExemptLoadingId(null);
-    if (!error) {
-      setUsers(prev => prev.map(user => user.id === u.id ? { ...user, ...updatePayload } : user));
-    } else {
-      alert(`Lỗi cập nhật miễn xác thực: ${error.message}`);
-    }
+    if (!error) setUsers(prev => prev.map(user => user.id === u.id ? { ...user, ...updatePayload } : user));
+    else alert(`Lỗi cập nhật miễn xác thực: ${error.message}`);
   };
 
   const handleDeleteUserEmail = async (u: any) => {
-    if (!confirm(`Xác nhận xóa địa chỉ Gmail của tài khoản "${u.username}"? Tài khoản sẽ chuyển về trạng thái Chưa xác thực.`)) return;
-
+    if (!confirm(`Xác nhận xóa địa chỉ Gmail của tài khoản "${u.username}"?`)) return;
     setDeleteEmailLoadingId(u.id);
-    const updatePayload = {
-      email: null,
-      is_verified: false,
-      is_exempt: false
-    };
-
-    const { error } = await supabase
-      .from('users')
-      .update(updatePayload)
-      .eq('id', u.id);
-
+    const updatePayload = { email: null, is_verified: false, is_exempt: false };
+    const { error } = await supabase.from('users').update(updatePayload).eq('id', u.id);
     setDeleteEmailLoadingId(null);
-    if (!error) {
-      setUsers(prev => prev.map(user => user.id === u.id ? { ...user, ...updatePayload } : user));
-      alert(`Đã xóa Gmail cho tài khoản ${u.username} thành công!`);
-    } else {
-      alert(`Lỗi xóa Gmail: ${error.message}`);
-    }
+    if (!error) { setUsers(prev => prev.map(user => user.id === u.id ? { ...user, ...updatePayload } : user)); alert('Đã xóa thành công!'); }
+    else alert(`Lỗi xóa Gmail: ${error.message}`);
   };
 
   const handleFileChange = (e: React.FormEvent<HTMLInputElement>) => { 
     const target = e.target as HTMLInputElement;
-    if (target.files && target.files[0]) { 
-      const file = target.files[0]; 
-      setImageFile(file); 
-      setPreviewUrl(URL.createObjectURL(file)); 
-    } 
+    if (target.files && target.files[0]) { setImageFile(target.files[0]); setPreviewUrl(URL.createObjectURL(target.files[0])); } 
   };
   
   const handleProjectFileChange = (e: React.FormEvent<HTMLInputElement>) => { 
     const target = e.target as HTMLInputElement;
-    if (target.files && target.files[0]) { 
-      const file = target.files[0]; 
-      setProjectImageFile(file); 
-      setProjectPreviewUrl(URL.createObjectURL(file)); 
-    } 
+    if (target.files && target.files[0]) { setProjectImageFile(target.files[0]); setProjectPreviewUrl(URL.createObjectURL(target.files[0])); } 
   };
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault(); if (!newUserForm.username || !newUserForm.password) return alert('Nhập đủ username/password!');
     const { error } = await supabase.from('users').insert([{ 
-      username: newUserForm.username.trim(), 
-      email: newUserForm.email ? newUserForm.email.trim().toLowerCase() : null,
-      password: newUserForm.password, 
-      balance: Number(newUserForm.balance) || 0, 
-      is_verified: false, 
-      is_exempt: false, 
-      isBanned: false, 
-      is_online: false 
+      username: newUserForm.username.trim(), email: newUserForm.email ? newUserForm.email.trim().toLowerCase() : null,
+      password: newUserForm.password, balance: Number(newUserForm.balance) || 0, is_verified: false, is_exempt: false, isBanned: false, is_online: false 
     }]);
     if (error) alert('Lỗi tạo tài khoản: ' + error.message);
     else {
@@ -505,11 +489,7 @@ export default function AdminPage() {
     if (!editUserPass || !editUserPass.newPass.trim()) return alert('Vui lòng nhập mật khẩu mới!'); 
     const { error } = await supabase.from('users').update({ password: editUserPass.newPass.trim() }).eq('username', editUserPass.username); 
     if (error) alert('Lỗi đổi mật khẩu: ' + error.message);
-    else { 
-      setEditUserPass(null); 
-      alert(`Đã cập nhật mật khẩu mới cho ${editUserPass.username} thành công!`); 
-      loadAllSyncData(); 
-    } 
+    else { setEditUserPass(null); alert('Đã cập nhật mật khẩu mới!'); loadAllSyncData(); } 
   };
   
   const handleExecAdjustBalance = async (isAddMode: boolean) => {
@@ -525,9 +505,7 @@ export default function AdminPage() {
     if (updateError) alert('Lỗi cập nhật số dư: ' + updateError.message);
     else {
       await supabase.from('transactions').insert([{ username: targetUser.username, type: isAddMode ? 'ADMIN_ADD' : 'ADMIN_SUB', title: isAddMode ? 'Admin cộng tiền vào ví' : 'Admin trừ tiền khỏi ví', amount: isAddMode ? changeAmt : -changeAmt, status: 'Thành công' }]);
-      setAdjustBal(null); 
-      alert(`${isAddMode ? 'Cộng' : 'Trừ'} ${changeAmt.toLocaleString('vi-VN')}đ thành công cho tài khoản ${targetUser.username}!`); 
-      loadAllSyncData();
+      setAdjustBal(null); alert('Điều chỉnh số dư thành công!'); loadAllSyncData();
     }
   };
 
@@ -583,46 +561,23 @@ export default function AdminPage() {
     if (!couponForm.code.trim()) return alert('Vui lòng nhập mã giảm giá!');
 
     const payload: any = {
-      code: couponForm.code.trim().toUpperCase(),
-      tool_code: couponForm.toolCode,
-      discount_type: couponForm.discountType,
+      code: couponForm.code.trim().toUpperCase(), tool_code: couponForm.toolCode, discount_type: couponForm.discountType,
       discount_amount: couponForm.discountType === 'FIXED' ? Number(couponForm.discountAmount) : 0,
       discount_percent: couponForm.discountType === 'PERCENT' ? Number(couponForm.discountPercent) : 0,
-      quantity: Number(couponForm.quantity),
-      max_uses_per_user: Number(couponForm.maxUsesPerUser) || 1
+      quantity: Number(couponForm.quantity), max_uses_per_user: Number(couponForm.maxUsesPerUser) || 1
     };
 
     const { error } = await supabase.from('coupons').insert([payload]);
     if (error) alert('Lỗi tạo mã giảm giá: ' + error.message);
-    else { 
-      alert('Tạo mã giảm giá thành công!'); 
-      setCouponForm({ 
-        code: '', 
-        toolCode: 'ALL', 
-        discountType: 'FIXED', 
-        discountAmount: 5000, 
-        discountPercent: 10, 
-        quantity: 50, 
-        maxUsesPerUser: 1 
-      }); 
-      loadAllSyncData(); 
-    }
+    else { alert('Tạo mã giảm giá thành công!'); setCouponForm({ code: '', toolCode: 'ALL', discountType: 'FIXED', discountAmount: 5000, discountPercent: 10, quantity: 50, maxUsesPerUser: 1 }); loadAllSyncData(); }
   };
 
   const handleDeleteCoupon = async (id: number) => { if (!confirm('Xóa mã giảm giá này khỏi hệ thống?')) return; const { error } = await supabase.from('coupons').delete().eq('id', id); if (!error) loadAllSyncData(); };
 
   const handleSaveNotice = async () => {
-    const { error } = await supabase.from('settings').upsert({ 
-      id: 1, 
-      notice_text: noticeForm.text, 
-      is_active: noticeForm.active 
-    });
-    if (error) {
-      alert('Lỗi lưu thông báo: ' + error.message);
-    } else {
-      setCurrentActiveNotice({ text: noticeForm.text, active: noticeForm.active });
-      alert('Đã lưu và cập nhật thông báo thành công!');
-    }
+    const { error } = await supabase.from('settings').upsert({ id: 1, notice_text: noticeForm.text, is_active: noticeForm.active });
+    if (error) alert('Lỗi lưu thông báo: ' + error.message);
+    else { setCurrentActiveNotice({ text: noticeForm.text, active: noticeForm.active }); alert('Đã lưu và cập nhật thông báo thành công!'); }
   };
 
   if (!isAuthenticated) {
@@ -685,40 +640,25 @@ export default function AdminPage() {
         </div>
       </header>
 
-      {/* KHUNG NỘI DUNG CHÍNH RỘNG TOÀN DIỆN */}
+      {/* KHUNG NỘI DUNG CHÍNH */}
       <div className="max-w-[1700px] w-full mx-auto px-4 sm:px-6 py-8 space-y-8 flex-1">
         
-        {/* OVERVIEW STATS */}
+        {/* STATS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-[#0B1019] border border-slate-800/80 p-5 rounded-2xl flex items-center justify-between hover:border-cyan-500/40 transition">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">TỔNG KHÁCH HÀNG</span>
-              <span className="text-2xl font-black text-white font-mono">{users.length}</span>
-            </div>
+            <div className="space-y-1"><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">TỔNG KHÁCH HÀNG</span><span className="text-2xl font-black text-white font-mono">{users.length}</span></div>
             <div className="w-11 h-11 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400"><Users className="w-5 h-5" /></div>
           </div>
-
           <div className="bg-[#0B1019] border border-slate-800/80 p-5 rounded-2xl flex items-center justify-between hover:border-emerald-500/40 transition">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">SỐ DƯ KHÁCH CÒN LẠI</span>
-              <span className="text-2xl font-black text-emerald-400 font-mono">{totalUserBalance.toLocaleString('vi-VN')}đ</span>
-            </div>
+            <div className="space-y-1"><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">SỐ DƯ KHÁCH CÒN LẠI</span><span className="text-2xl font-black text-emerald-400 font-mono">{totalUserBalance.toLocaleString('vi-VN')}đ</span></div>
             <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400"><CreditCard className="w-5 h-5" /></div>
           </div>
-
           <div className="bg-[#0B1019] border border-slate-800/80 p-5 rounded-2xl flex items-center justify-between hover:border-amber-500/40 transition">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">SẢN PHẨM TOOL AUTO</span>
-              <span className="text-2xl font-black text-amber-400 font-mono">{tools.length}</span>
-            </div>
+            <div className="space-y-1"><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">SẢN PHẨM TOOL AUTO</span><span className="text-2xl font-black text-amber-400 font-mono">{tools.length}</span></div>
             <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400"><Wrench className="w-5 h-5" /></div>
           </div>
-
           <div className="bg-[#0B1019] border border-slate-800/80 p-5 rounded-2xl flex items-center justify-between hover:border-purple-500/40 transition">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">MÃ GIẢM GIÁ HIỆN CÓ</span>
-              <span className="text-2xl font-black text-purple-400 font-mono">{coupons.length}</span>
-            </div>
+            <div className="space-y-1"><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">MÃ GIẢM GIÁ HIỆN CÓ</span><span className="text-2xl font-black text-purple-400 font-mono">{coupons.length}</span></div>
             <div className="w-11 h-11 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400"><Tag className="w-5 h-5" /></div>
           </div>
         </div>
@@ -740,181 +680,54 @@ export default function AdminPage() {
         {activeTab === 'users' && (
           <div className="space-y-6">
             <form onSubmit={handleCreateUser} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
-              <h3 className="text-xs font-extrabold text-white flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase tracking-wider">
-                <Plus className="w-4 h-4 text-cyan-400" /> Tạo tài khoản người dùng mới
-              </h3>
+              <h3 className="text-xs font-extrabold text-white flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase tracking-wider"><Plus className="w-4 h-4 text-cyan-400" /> Tạo tài khoản người dùng mới</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1">Tên tài khoản (Username):</label>
-                  <input type="text" placeholder="Nhập username..." value={newUserForm.username} onChange={e => setNewUserForm({ ...newUserForm, username: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition font-mono" />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1">Địa chỉ Gmail:</label>
-                  <input type="email" placeholder="example@gmail.com..." value={newUserForm.email} onChange={e => setNewUserForm({ ...newUserForm, email: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition font-mono" />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1">Mật khẩu:</label>
-                  <input type="text" placeholder="Nhập mật khẩu..." value={newUserForm.password} onChange={e => setNewUserForm({ ...newUserForm, password: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition font-mono" />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1">Số dư ban đầu (VNĐ):</label>
-                  <input type="number" placeholder="0" value={newUserForm.balance || ''} onChange={e => setNewUserForm({ ...newUserForm, balance: Number(e.target.value) })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition font-mono" />
-                </div>
+                <div><label className="block text-[11px] font-bold text-slate-400 mb-1">Username:</label><input type="text" placeholder="Nhập username..." value={newUserForm.username} onChange={e => setNewUserForm({ ...newUserForm, username: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition font-mono" /></div>
+                <div><label className="block text-[11px] font-bold text-slate-400 mb-1">Gmail:</label><input type="email" placeholder="example@gmail.com..." value={newUserForm.email} onChange={e => setNewUserForm({ ...newUserForm, email: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition font-mono" /></div>
+                <div><label className="block text-[11px] font-bold text-slate-400 mb-1">Mật khẩu:</label><input type="text" placeholder="Nhập mật khẩu..." value={newUserForm.password} onChange={e => setNewUserForm({ ...newUserForm, password: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition font-mono" /></div>
+                <div><label className="block text-[11px] font-bold text-slate-400 mb-1">Số dư ban đầu:</label><input type="number" placeholder="0" value={newUserForm.balance || ''} onChange={e => setNewUserForm({ ...newUserForm, balance: Number(e.target.value) })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition font-mono" /></div>
               </div>
-              <button type="submit" className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 px-6 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer shadow-sm flex items-center gap-1.5">
-                <Plus className="w-3.5 h-3.5" /> Tạo người dùng mới
-              </button>
+              <button type="submit" className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 px-6 py-2.5 rounded-xl text-xs font-bold hover:bg-cyan-500/30 transition cursor-pointer shadow-sm flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> Tạo người dùng</button>
             </form>
 
             <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-5 shadow-2xl">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
-                <div>
-                  <h2 className="text-base font-black text-white flex items-center gap-2 tracking-wide uppercase">
-                    <Users className="w-5 h-5 text-cyan-400" /> DANH SÁCH KHÁCH HÀNG ({users.length})
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">Quản lý tài khoản, Cấp bậc VIP, Gmail xác thực, quyền miễn xác thực và điều chỉnh số dư ví</p>
-                </div>
-
-                <div className="relative w-full md:w-80">
-                  <Search className="w-4 h-4 text-cyan-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input 
-                    type="text" 
-                    placeholder="Tìm nhanh tên tài khoản, Gmail..." 
-                    value={userSearch} 
-                    onChange={e => setUserSearch(e.target.value)} 
-                    className="w-full bg-[#05080E] border border-slate-800 focus:border-cyan-400 rounded-2xl pl-10 pr-10 py-2.5 text-xs text-white focus:outline-none transition shadow-inner font-mono" 
-                  />
-                  {userSearch && (
-                    <button onClick={() => setUserSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-1 rounded-md">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
+                <div><h2 className="text-base font-black text-white flex items-center gap-2"><Users className="w-5 h-5 text-cyan-400" /> DANH SÁCH KHÁCH HÀNG ({users.length})</h2><p className="text-xs text-slate-400">Quản lý tài khoản, VIP, xác thực...</p></div>
+                <div className="relative w-full md:w-80"><Search className="w-4 h-4 text-cyan-400 absolute left-3.5 top-1/2 -translate-y-1/2" /><input type="text" placeholder="Tìm tên tài khoản, Gmail..." value={userSearch} onChange={e => setUserSearch(e.target.value)} className="w-full bg-[#05080E] border border-slate-800 focus:border-cyan-400 rounded-2xl pl-10 pr-10 py-2.5 text-xs text-white focus:outline-none transition shadow-inner font-mono" />{userSearch && (<button onClick={() => setUserSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-1 rounded-md"><X className="w-3.5 h-3.5" /></button>)}</div>
               </div>
 
               <div className="overflow-x-auto border border-slate-800/60 rounded-2xl bg-[#05080E]/40">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead className="bg-[#05080E] border-b border-slate-800/80 text-slate-400 uppercase text-[10px] tracking-wider font-black">
-                    <tr>
-                      <th className="p-4 whitespace-nowrap min-w-[130px]">Tài khoản</th>
-                      <th className="p-4 whitespace-nowrap text-center min-w-[120px]">Cấp bậc VIP</th>
-                      <th className="p-4 whitespace-nowrap min-w-[200px]">Gmail liên kết</th>
-                      <th className="p-4 whitespace-nowrap min-w-[120px]">Mật khẩu</th>
-                      <th className="p-4 whitespace-nowrap min-w-[120px]">Số dư ví</th>
-                      <th className="p-4 whitespace-nowrap text-center min-w-[140px]">Trạng thái Gmail</th>
-                      <th className="p-4 whitespace-nowrap text-center min-w-[140px]">Miễn xác thực</th>
-                      <th className="p-4 whitespace-nowrap text-center min-w-[90px]">Online</th>
-                      <th className="p-4 whitespace-nowrap text-center min-w-[90px]">Khóa</th>
-                      <th className="p-4 whitespace-nowrap text-right min-w-[180px]">Hành động</th>
-                    </tr>
+                    <tr><th className="p-4">Tài khoản</th><th className="p-4 text-center">VIP</th><th className="p-4">Gmail</th><th className="p-4">Mật khẩu</th><th className="p-4">Số dư</th><th className="p-4 text-center">Trạng thái Gmail</th><th className="p-4 text-center">Miễn xác thực</th><th className="p-4 text-center">Online</th><th className="p-4 text-center">Khóa</th><th className="p-4 text-right">Hành động</th></tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 font-medium">
-                    {users.filter(u => 
-                      u.username?.toLowerCase().includes(userSearch.toLowerCase()) || 
-                      (u.email && u.email.toLowerCase().includes(userSearch.toLowerCase()))
-                    ).map((u, i) => {
+                    {users.filter(u => u.username?.toLowerCase().includes(userSearch.toLowerCase()) || (u.email && u.email.toLowerCase().includes(userSearch.toLowerCase()))).map((u, i) => {
                       const lastSeenMs = u.last_seen ? new Date(u.last_seen).getTime() : 0;
                       const isUserOnline = u.is_online === true && (nowTime - lastSeenMs < 20000);
                       const isExempt = u.is_exempt === true;
                       const hasValidEmail = u.email && u.email.trim() !== '' && u.email.includes('@');
                       const isVerified = isExempt || (hasValidEmail && u.is_verified === true);
-                      
-                      const depositedAmount = Math.max(0, userVipMap[u.username] || 0);
+                      const depositedAmount = userVipMap[u.username] || 0;
 
                       return (
                         <tr key={i} className="hover:bg-[#080D17]/80 transition">
-                          <td className="p-4 font-bold text-white whitespace-nowrap">
-                            <span className="font-mono text-cyan-300 font-black">{u.username}</span>
-                          </td>
-                          <td className="p-4 text-center whitespace-nowrap">
-                            <div className="flex flex-col items-center justify-center gap-1.5">
-                              {getVipBadge(depositedAmount)}
-                              <span className="text-[9px] text-slate-500 font-mono font-bold">Nạp: {depositedAmount.toLocaleString('vi-VN')}đ</span>
-                            </div>
-                          </td>
+                          <td className="p-4 font-bold text-white whitespace-nowrap"><span className="font-mono text-cyan-300 font-black">{u.username}</span></td>
+                          <td className="p-4 text-center whitespace-nowrap"><div className="flex flex-col items-center justify-center gap-1">{getVipBadge(depositedAmount)}<span className="text-[9px] text-slate-500 font-mono font-bold">Nạp: {depositedAmount.toLocaleString('vi-VN')}đ</span></div></td>
                           <td className="p-4 font-mono whitespace-nowrap">
                             {hasValidEmail ? (
-                              <div className="inline-flex items-center gap-2 bg-[#0B1019] border border-slate-800 px-2.5 py-1 rounded-xl">
-                                <span className="text-slate-200 text-xs">{u.email}</span>
-                                <button
-                                  disabled={deleteEmailLoadingId === u.id}
-                                  onClick={() => handleDeleteUserEmail(u)}
-                                  className="text-rose-400 hover:text-rose-300 p-1 hover:bg-rose-500/20 rounded-md transition cursor-pointer"
-                                  title="Xóa Gmail khỏi tài khoản này"
-                                >
-                                  {deleteEmailLoadingId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3.5 h-3.5 text-rose-400/80 hover:text-rose-400" />}
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="text-slate-600 italic">Chưa có</span>
-                            )}
+                              <div className="inline-flex items-center gap-2 bg-[#0B1019] border border-slate-800 px-2.5 py-1 rounded-xl"><span className="text-slate-200 text-xs">{u.email}</span><button disabled={deleteEmailLoadingId === u.id} onClick={() => handleDeleteUserEmail(u)} className="text-rose-400 hover:text-rose-300 p-1 hover:bg-rose-500/20 rounded-md transition cursor-pointer">{deleteEmailLoadingId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3.5 h-3.5 text-rose-400/80 hover:text-rose-400" />}</button></div>
+                            ) : (<span className="text-slate-600 italic">Chưa có</span>)}
                           </td>
-                          <td className="p-4 font-mono whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <span className="text-slate-300 font-bold">{showPasswords[u.username] ? u.password || '---' : '••••••••'}</span>
-                              <button onClick={() => handleToggleShowPass(u.username)} className="text-slate-500 hover:text-white transition cursor-pointer">
-                                {showPasswords[u.username] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                              </button>
-                            </div>
-                          </td>
+                          <td className="p-4 font-mono whitespace-nowrap"><div className="flex items-center gap-2"><span className="text-slate-300 font-bold">{showPasswords[u.username] ? u.password || '---' : '••••••••'}</span><button onClick={() => handleToggleShowPass(u.username)} className="text-slate-500 hover:text-white transition cursor-pointer">{showPasswords[u.username] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}</button></div></td>
                           <td className="p-4 font-mono font-black text-emerald-400 whitespace-nowrap">{(u.balance || 0).toLocaleString('vi-VN')}đ</td>
                           <td className="p-4 text-center whitespace-nowrap">
-                            {isExempt ? (
-                              <span className="text-cyan-300 font-black bg-cyan-500/20 px-3 py-1 rounded-xl border border-cyan-400 text-[10px] inline-flex items-center gap-1.5 shadow-[0_0_10px_rgba(6,182,212,0.25)]">
-                                <Sparkles className="w-3 h-3 text-cyan-400" /> MIỄN XÁC THỰC
-                              </span>
-                            ) : isVerified ? (
-                              <span className="text-emerald-400 font-black bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/30 text-[10px] inline-flex items-center gap-1.5">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-400" /> ĐÃ XÁC THỰC
-                              </span>
-                            ) : (
-                              <span className="text-rose-400 font-black bg-rose-500/10 px-3 py-1 rounded-xl border border-rose-500/30 text-[10px] inline-flex items-center gap-1.5">
-                                <XCircle className="w-3 h-3 text-rose-400" /> CHƯA XÁC THỰC
-                              </span>
-                            )}
+                            {isExempt ? <span className="text-cyan-300 font-black bg-cyan-500/20 px-3 py-1 rounded-xl border border-cyan-400 text-[10px] inline-flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5 text-cyan-400" /> MIỄN XÁC THỰC</span> : isVerified ? <span className="text-emerald-400 font-black bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/30 text-[10px] inline-flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> ĐÃ XÁC THỰC</span> : <span className="text-rose-400 font-black bg-rose-500/10 px-3 py-1 rounded-xl border border-rose-500/30 text-[10px] inline-flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5 text-rose-400" /> CHƯA XÁC THỰC</span>}
                           </td>
-                          <td className="p-4 text-center whitespace-nowrap">
-                            <button
-                              disabled={exemptLoadingId === u.id}
-                              onClick={() => handleToggleExemptVerification(u)}
-                              className={`px-3.5 py-1.5 rounded-xl text-[11px] font-black transition cursor-pointer border inline-flex items-center gap-1.5 ${
-                                isExempt 
-                                  ? 'bg-amber-500/10 border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-slate-950'
-                                  : 'bg-[#05080E] border-slate-700 hover:border-cyan-400 text-slate-300 hover:text-cyan-300'
-                              }`}
-                            >
-                              {exemptLoadingId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : isExempt ? <>Bỏ miễn xác thực</> : <><Shield className="w-3.5 h-3.5 text-cyan-400" /> Miễn xác thực</>}
-                            </button>
-                          </td>
-                          <td className="p-4 text-center whitespace-nowrap">
-                            {isUserOnline ? (
-                              <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 text-[10px] inline-flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Online
-                              </span>
-                            ) : (
-                              <span className="text-slate-500 font-medium bg-slate-500/10 px-2.5 py-1 rounded-full border border-slate-500/20 text-[10px] inline-flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Offline
-                              </span>
-                            )}
-                          </td>
-                          <td className="p-4 text-center whitespace-nowrap">
-                            {u.isBanned ? (
-                              <span className="text-rose-400 font-bold bg-rose-500/10 px-2.5 py-1 rounded border border-rose-500/20 text-[10px]">Bị BAN</span>
-                            ) : (
-                              <span className="text-cyan-400 font-bold bg-cyan-500/10 px-2.5 py-1 rounded border border-cyan-500/20 text-[10px]">Hoạt động</span>
-                            )}
-                          </td>
-                          <td className="p-4 text-right space-x-1.5 whitespace-nowrap">
-                            <button onClick={() => handleViewUserTransactions(u.username)} className="bg-cyan-500/10 text-cyan-400 p-2 rounded-xl border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer transition inline-flex" title="Xem lịch sử giao dịch">
-                              <History className="w-3.5 h-3.5" />
-                            </button>
-                            <button onClick={() => setAdjustBal({ username: u.username, amount: 0, isAdd: true })} className="bg-emerald-500/10 text-emerald-400 p-2 rounded-xl border border-emerald-500/20 hover:bg-emerald-500/20 cursor-pointer transition inline-flex" title="Cộng/Trừ tiền ví"><DollarSign className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => setEditUserPass({ username: u.username, newPass: '' })} className="bg-cyan-500/10 text-cyan-400 p-2 rounded-xl border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer transition inline-flex" title="Đổi mật khẩu"><Key className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => handleToggleBanUser(u)} className={`p-2 rounded-xl border cursor-pointer transition inline-flex ${u.isBanned ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
-                              {u.isBanned ? <CheckCircle className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
-                            </button>
-                            <button onClick={() => handleDeleteUser(u.id, u.username)} className="bg-rose-500/10 text-rose-400 p-2 rounded-xl border border-rose-500/20 hover:bg-rose-500/20 cursor-pointer transition inline-flex"><Trash2 className="w-3.5 h-3.5" /></button>
-                          </td>
+                          <td className="p-4 text-center whitespace-nowrap"><button disabled={exemptLoadingId === u.id} onClick={() => handleToggleExemptVerification(u)} className={`px-3.5 py-1.5 rounded-xl text-[11px] font-black transition cursor-pointer border inline-flex items-center gap-1.5 ${isExempt ? 'bg-amber-500/10 border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-slate-950' : 'bg-[#05080E] border-slate-700 hover:border-cyan-400 text-slate-300 hover:text-cyan-300'}`}>{exemptLoadingId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : isExempt ? <>Bỏ miễn xác thực</> : <><Shield className="w-3.5 h-3.5 text-cyan-400" /> Miễn xác thực</>}</button></td>
+                          <td className="p-4 text-center whitespace-nowrap">{isUserOnline ? <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 text-[10px] inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Online</span> : <span className="text-slate-500 font-medium bg-slate-500/10 px-2.5 py-1 rounded-full border border-slate-500/20 text-[10px] inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Offline</span>}</td>
+                          <td className="p-4 text-center whitespace-nowrap">{u.isBanned ? <span className="text-rose-400 font-bold bg-rose-500/10 px-2.5 py-1 rounded border border-rose-500/20 text-[10px]">Bị BAN</span> : <span className="text-cyan-400 font-bold bg-cyan-500/10 px-2.5 py-1 rounded border border-cyan-500/20 text-[10px]">Hoạt động</span>}</td>
+                          <td className="p-4 text-right space-x-1.5 whitespace-nowrap"><button onClick={() => handleViewUserTransactions(u.username)} className="bg-cyan-500/10 text-cyan-400 p-2 rounded-xl border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer transition inline-flex" title="Xem lịch sử giao dịch"><History className="w-3.5 h-3.5" /></button><button onClick={() => setAdjustBal({ username: u.username, amount: 0, isAdd: true })} className="bg-emerald-500/10 text-emerald-400 p-2 rounded-xl border border-emerald-500/20 hover:bg-emerald-500/20 cursor-pointer transition inline-flex" title="Cộng/Trừ tiền ví"><DollarSign className="w-3.5 h-3.5" /></button><button onClick={() => setEditUserPass({ username: u.username, newPass: '' })} className="bg-cyan-500/10 text-cyan-400 p-2 rounded-xl border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer transition inline-flex" title="Đổi mật khẩu"><Key className="w-3.5 h-3.5" /></button><button onClick={() => handleToggleBanUser(u)} className={`p-2 rounded-xl border cursor-pointer transition inline-flex ${u.isBanned ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>{u.isBanned ? <CheckCircle className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}</button><button onClick={() => handleDeleteUser(u.id, u.username)} className="bg-rose-500/10 text-rose-400 p-2 rounded-xl border border-rose-500/20 hover:bg-rose-500/20 cursor-pointer transition inline-flex"><Trash2 className="w-3.5 h-3.5" /></button></td>
                         </tr>
                       );
                     })}
@@ -1093,7 +906,6 @@ export default function AdminPage() {
                           </div>
                         );
                       })}
-                      <div ref={chatScrollRef} />
                     </div>
 
                     <form onSubmit={handleAdminSendReply} className="p-3 bg-[#080D15] border-t border-slate-800 flex items-center gap-2">
@@ -1189,7 +1001,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 4: MÃ GIẢM GIÁ */}
+        {/* TAB 5: MÃ GIẢM GIÁ */}
         {activeTab === 'coupons' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleCreateCoupon} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
@@ -1253,7 +1065,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 5: DỰ ÁN SHOP */}
+        {/* TAB 6: DỰ ÁN SHOP */}
         {activeTab === 'projects' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveProject} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
@@ -1278,7 +1090,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 6: LỊCH SỬ SEPAY */}
+        {/* TAB 7: LỊCH SỬ SEPAY */}
         {activeTab === 'sepay' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
             <h2 className="text-sm font-bold text-white border-b border-slate-800/80 pb-3 uppercase flex items-center gap-2"><CreditCard className="w-4 h-4 text-cyan-400" /> LỊCH SỬ BIẾN ĐỘNG SEPAY AUTO</h2>
@@ -1300,7 +1112,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 7: ĐÓNG GÓP Ý KIẾN */}
+        {/* TAB 8: ĐÓNG GÓP Ý KIẾN */}
         {activeTab === 'feedback' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
             <h2 className="text-sm font-bold text-white border-b border-slate-800/80 pb-3 uppercase flex items-center gap-2"><MessageSquare className="w-4 h-4 text-cyan-400" /> Ý KIẾN ĐÓNG GÓP TỪ KHÁCH HÀNG</h2>
@@ -1315,7 +1127,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 8: THÔNG BÁO CHUNG */}
+        {/* TAB 9: THÔNG BÁO CHUNG */}
         {activeTab === 'settings' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
@@ -1334,7 +1146,7 @@ export default function AdminPage() {
                   />
                 </div>
                 <div className="flex items-center justify-between bg-[#05080E] border border-slate-800 p-4 rounded-xl">
-                  <label className="block text-xs font-bold text-slate-300">Trạng thái bật/tắt hiển thị:</label>
+                  <label className="text-xs font-bold text-slate-300">Trạng thái bật/tắt hiển thị:</label>
                   <button 
                     onClick={() => setNoticeForm({ ...noticeForm, active: !noticeForm.active })}
                     className={`px-4 py-2 rounded-xl text-xs font-black border transition cursor-pointer flex items-center gap-2 ${noticeForm.active ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-400'}`}

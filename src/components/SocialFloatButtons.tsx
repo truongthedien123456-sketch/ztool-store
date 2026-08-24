@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  MessageSquare, X, Send, User, Shield, Sparkles, Loader2, Bot, Circle 
+  MessageSquare, X, Send, Shield, Sparkles, Loader2, Video, ImageIcon
 } from 'lucide-react';
 
 export default function SocialFloatButtons() {
@@ -16,8 +16,14 @@ export default function SocialFloatButtons() {
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Lắng nghe sự kiện từ Footer gửi tới để mở popup Zalo
+  // Ẩn toàn bộ nút floating nếu đang ở trang admin /quan-ly-secret
+  const [isAdminPage, setIsAdminPage] = useState(false);
+
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsAdminPage(window.location.pathname.includes('/quan-ly-secret'));
+    }
+
     const handleOpenZalo = () => setShowZaloModal(true);
     window.addEventListener('open-zalo-modal', handleOpenZalo);
     return () => window.removeEventListener('open-zalo-modal', handleOpenZalo);
@@ -25,41 +31,58 @@ export default function SocialFloatButtons() {
 
   // Khởi tạo Username khách chat
   useEffect(() => {
-    const savedUser = localStorage.getItem('ztool_current_user') || 'Khách_' + Math.floor(1000 + Math.random() * 9000);
-    if (!localStorage.getItem('ztool_current_user')) {
-      localStorage.setItem('ztool_temp_guest', savedUser);
+    let user = localStorage.getItem('ztool_current_user');
+    if (!user) {
+      user = localStorage.getItem('ztool_temp_guest');
+      if (!user) {
+        user = 'Khach_' + Math.floor(1000 + Math.random() * 9000);
+        localStorage.setItem('ztool_temp_guest', user);
+      }
     }
-    setCurrentUsername(savedUser);
+    setCurrentUsername(user);
   }, []);
 
-  // Lắng nghe tin nhắn Realtime qua Supabase
+  // Lắng nghe Realtime Toàn diện cho Khách
   useEffect(() => {
-    if (!currentUsername || !isOpenChat) return;
+    if (!currentUsername) return;
 
     loadMessages();
 
+    // Channel realtime lắng nghe trực tiếp
     const channel = supabase
-      .channel(`chat_${currentUsername}`)
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'messages',
-        filter: `receiver_username=eq.${currentUsername}`
-      }, (payload) => {
-        setMessages((prev) => [...prev, payload.new]);
-      })
+      .channel(`client_chat_${currentUsername}_${Date.now()}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        (payload) => {
+          const newMsg = payload.new;
+          // Nhận nếu tin nhắn liên quan tới user hiện tại
+          if (
+            newMsg.sender_username === currentUsername ||
+            newMsg.receiver_username === currentUsername
+          ) {
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === newMsg.id)) return prev;
+              return [...prev, newMsg];
+            });
+          }
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentUsername, isOpenChat]);
+  }, [currentUsername]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (isOpenChat) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isOpenChat]);
 
   const loadMessages = async () => {
+    if (!currentUsername) return;
     const { data } = await supabase
       .from('messages')
       .select('*')
@@ -71,7 +94,7 @@ export default function SocialFloatButtons() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputMsg.trim() || sending) return;
+    if (!inputMsg.trim() || sending || !currentUsername) return;
 
     const text = inputMsg.trim();
     setInputMsg('');
@@ -88,7 +111,10 @@ export default function SocialFloatButtons() {
     setSending(false);
 
     if (!error && data) {
-      setMessages((prev) => [...prev, data]);
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === data.id)) return prev;
+        return [...prev, data];
+      });
     }
   };
 
@@ -102,12 +128,12 @@ export default function SocialFloatButtons() {
     }
   };
 
+  if (isAdminPage) return null;
+
   return (
     <>
-      {/* CỤM NÚT NỔI Ở GÓC DƯỚI BÊN PHẢI MÀN HÌNH */}
+      {/* CỤM NÚT NỔI Ở GÓC DƯỚI BÊN PHẢI */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col space-y-3 items-end">
-        
-        {/* 1. NÚT FACEBOOK */}
         <a
           href="https://www.facebook.com/profile.php?id=61592809269339"
           target="_blank"
@@ -121,7 +147,6 @@ export default function SocialFloatButtons() {
           </span>
         </a>
 
-        {/* 2. NÚT ZALO */}
         <button
           onClick={() => setShowZaloModal(true)}
           className="group relative flex items-center justify-center w-12 h-12 sm:w-13 sm:h-13 bg-gradient-to-tr from-sky-600 to-blue-500 hover:from-sky-500 hover:to-blue-400 text-white rounded-2xl shadow-xl shadow-sky-600/30 border border-sky-400/50 transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer backdrop-blur-md"
@@ -133,9 +158,11 @@ export default function SocialFloatButtons() {
           </span>
         </button>
 
-        {/* 3. NÚT CHAT TRỰC TIẾP LIVE CHAT */}
         <button
-          onClick={() => setIsOpenChat(!isOpenChat)}
+          onClick={() => {
+            setIsOpenChat(!isOpenChat);
+            if (!isOpenChat) loadMessages();
+          }}
           className="group relative flex items-center justify-center w-12 h-12 sm:w-13 sm:h-13 bg-gradient-to-tr from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-slate-950 rounded-2xl shadow-[0_0_25px_rgba(6,182,212,0.45)] border-2 border-cyan-300 transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer"
           title="Chat trực tuyến"
         >
@@ -148,10 +175,9 @@ export default function SocialFloatButtons() {
             Hỗ trợ trực tuyến 24/7
           </span>
         </button>
-
       </div>
 
-      {/* CỬA SỔ CHAT TRỰC TIẾP NÂNG CẤP CYBERPUNK GLASSMORPHISM */}
+      {/* CỬA SỔ CHAT TRỰC TIẾP */}
       <AnimatePresence>
         {isOpenChat && (
           <motion.div 
@@ -161,7 +187,7 @@ export default function SocialFloatButtons() {
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="fixed right-4 sm:right-6 bottom-24 z-50 w-[92vw] sm:w-[380px] bg-[#0B1019]/95 backdrop-blur-2xl border-2 border-cyan-500/50 rounded-3xl shadow-[0_15px_50px_rgba(0,0,0,0.85)] overflow-hidden flex flex-col h-[520px] max-h-[82vh]"
           >
-            {/* Header Chat */}
+            {/* Header */}
             <div className="bg-gradient-to-r from-[#05080E] via-[#09101C] to-[#05080E] border-b border-slate-800/90 p-4 flex items-center justify-between shadow-md">
               <div className="flex items-center gap-3">
                 <div className="relative">
@@ -177,7 +203,7 @@ export default function SocialFloatButtons() {
                     HỖ TRỢ ZTOOL <Sparkles className="w-3 h-3 text-cyan-400" />
                   </h4>
                   <span className="text-[10px] text-slate-400 block font-mono">
-                    Tài khoản: <b className="text-cyan-300">{currentUsername}</b>
+                    ID: <b className="text-cyan-300">{currentUsername}</b>
                   </span>
                 </div>
               </div>
@@ -191,8 +217,6 @@ export default function SocialFloatButtons() {
 
             {/* Khung Tin Nhắn Cuộn */}
             <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-[#080D15]/80 text-xs custom-scrollbar">
-              
-              {/* Lời Chào Mở Đầu */}
               <div className="flex items-start gap-2.5">
                 <div className="w-7 h-7 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shrink-0 text-xs font-black">
                   Z
@@ -201,18 +225,14 @@ export default function SocialFloatButtons() {
                   <div className="bg-[#0E1522] border border-cyan-500/30 p-3.5 rounded-2xl rounded-tl-sm text-slate-200 leading-relaxed shadow-md">
                     👋 <b>Xin chào bạn!</b> Hãy để lại lời nhắn hoặc câu hỏi cần giải đáp, Admin ZTool sẽ hỗ trợ bạn ngay lập tức.
                   </div>
-                  <span className="text-[9px] text-slate-500 font-mono block pl-1">Hệ thống CSKH</span>
+                  <span className="text-[9px] text-slate-500 font-mono block pl-1">Hệ thống CSKH 24/7</span>
                 </div>
               </div>
 
-              {/* Danh Sách Tin Nhắn Đã Gửi & Nhận */}
               {messages.map((m, idx) => {
                 const isMe = m.sender_username === currentUsername;
-
                 return (
                   <div key={idx} className={`flex items-start gap-2.5 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
-                    
-                    {/* Avatar nhỏ bên cạnh bong bóng chat */}
                     <div className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-[11px] uppercase shrink-0 shadow-sm ${
                       isMe 
                         ? 'bg-gradient-to-tr from-cyan-500 to-teal-400 text-slate-950' 
@@ -221,7 +241,6 @@ export default function SocialFloatButtons() {
                       {isMe ? currentUsername.charAt(0).toUpperCase() : 'AD'}
                     </div>
 
-                    {/* Bong bóng tin nhắn */}
                     <div className={`space-y-1 max-w-[78%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                       <div className={`p-3.5 rounded-2xl leading-relaxed text-xs break-words shadow-md ${
                         isMe 
@@ -234,14 +253,13 @@ export default function SocialFloatButtons() {
                         {formatMessageTime(m.created_at) || (isMe ? 'Đã gửi' : 'Admin')}
                       </span>
                     </div>
-
                   </div>
                 );
               })}
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Ô Nhập Tin Nhắn Gửi Đi */}
+            {/* Ô Nhập Tin Nhắn */}
             <form onSubmit={handleSendMessage} className="p-3 bg-[#05080E] border-t border-slate-800/90 flex items-center gap-2">
               <input 
                 type="text"
@@ -262,7 +280,7 @@ export default function SocialFloatButtons() {
         )}
       </AnimatePresence>
 
-      {/* POPUP HIỂN THỊ MÃ QR ZALO */}
+      {/* POPUP ZALO */}
       {showZaloModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 animate-fade-in">
           <div className="bg-[#0D121D] border-2 border-cyan-400 w-full max-w-sm rounded-3xl p-6 relative text-center space-y-4 shadow-2xl shadow-cyan-500/30">
@@ -281,7 +299,7 @@ export default function SocialFloatButtons() {
             <div className="bg-white p-3 rounded-2xl inline-block shadow-inner">
               <img
                 src="/zalo-qr.jpg"
-                alt="Zalo QR Code Nguyễn Minh Khang"
+                alt="Zalo QR Code"
                 className="w-56 h-auto object-cover rounded-xl mx-auto"
               />
             </div>
