@@ -83,17 +83,23 @@ export default function AdminPage() {
   // Hàm phát âm thanh thông báo chuông (Web Audio API)
   const playNotificationSound = () => {
     try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const audioCtx = new AudioCtx();
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(880, audioCtx.currentTime); // Tần số A5
-      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.18);
-    } catch (e) { console.error(e); }
+      osc.stop(audioCtx.currentTime + 0.3);
+    } catch (e) { console.error('Lỗi âm thanh:', e); }
   };
 
   useEffect(() => {
@@ -119,7 +125,10 @@ export default function AdminPage() {
           playNotificationSound();
         }
         if (selectedChatUser && (payload.new.sender_username === selectedChatUser || payload.new.receiver_username === selectedChatUser)) {
-          setChatMessages((prev) => [...prev, payload.new]);
+          setChatMessages((prev) => {
+            if (prev.some(m => m.id === payload.new.id)) return prev;
+            return [...prev, payload.new];
+          });
         }
       })
       .subscribe();
@@ -131,10 +140,6 @@ export default function AdminPage() {
       clearInterval(timer);
     };
   }, [selectedChatUser]);
-
-  useEffect(() => {
-    chatScrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages, selectedChatUser]);
 
   const loadChatUsers = async () => {
     const { data } = await supabase.from('messages').select('sender_username, receiver_username').order('id', { ascending: false });
@@ -163,10 +168,7 @@ export default function AdminPage() {
 
     if (data) {
       setChatMessages(data);
-      // Tự động cuộn xuống dưới cùng khi chọn khách hàng
-      setTimeout(() => {
-        chatScrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 50);
+      // Đã loại bỏ lệnh tự động cuộn xuống dưới cùng khi bấm chọn người dùng
     }
   };
 
@@ -189,7 +191,10 @@ export default function AdminPage() {
     setSendingReply(false);
 
     if (!error && data) {
-      setChatMessages((prev) => [...prev, data]);
+      setChatMessages((prev) => {
+        if (prev.some(m => m.id === data.id)) return prev;
+        return [...prev, data];
+      });
     }
   };
 
@@ -1072,7 +1077,7 @@ export default function AdminPage() {
                       </button>
                     </div>
 
-                    <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#05080E] text-xs custom-scrollbar">
+                    <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#05080E] text-xs">
                       {chatMessages.map((m, idx) => {
                         const isAdmin = m.sender_username === 'admin';
                         return (
