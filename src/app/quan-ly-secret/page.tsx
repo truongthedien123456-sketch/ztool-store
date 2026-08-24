@@ -6,7 +6,7 @@ import {
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
   Ban, CheckCircle, CheckCircle2, CreditCard, KeyRound, Search, DollarSign, Settings,
-  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent, Crown, Gem, Flame, Star, Award, Video, Send, Headset
+  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent, Crown, Gem, Flame, Star, Award, Video, Send, Headset, Volume2
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -33,7 +33,7 @@ export default function AdminPage() {
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [adminReplyText, setAdminReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
-  const audioCtxRef = useRef<AudioContext | null>(null);
+  const lastProcessedMsgIdRef = useRef<number>(0);
 
   // State Thông báo
   const [noticeForm, setNoticeForm] = useState({ text: '', active: false });
@@ -75,64 +75,33 @@ export default function AdminPage() {
     discountAmount: 5000, discountPercent: 10, quantity: 50, maxUsesPerUser: 1 
   });
 
-  // Giữ ref của khách hàng đang được chọn chat
   useEffect(() => {
     selectedChatUserRef.current = selectedChatUser;
   }, [selectedChatUser]);
 
-  // Mở khóa AudioContext khi người dùng click vào trang
-  useEffect(() => {
-    const unlockAudio = () => {
-      if (!audioCtxRef.current) {
-        const AudioClass = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioClass) {
-          audioCtxRef.current = new AudioClass();
-        }
-      }
-      if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
-        audioCtxRef.current.resume();
-      }
-    };
-
-    window.addEventListener('click', unlockAudio, { once: true });
-    window.addEventListener('keydown', unlockAudio, { once: true });
-    return () => {
-      window.removeEventListener('click', unlockAudio);
-      window.removeEventListener('keydown', unlockAudio);
-    };
-  }, []);
-
-  // Hàm phát âm thanh thông báo chuông (Web Audio API)
+  // Phát chuông thông báo
   const playNotificationSound = () => {
     try {
-      if (!audioCtxRef.current) {
-        const AudioClass = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioClass) audioCtxRef.current = new AudioClass();
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContextClass) {
+        const ctx = new AudioContextClass();
+        if (ctx.state === 'suspended') {
+          ctx.resume();
+        }
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        osc.frequency.setValueAtTime(1200, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
       }
-      const ctx = audioCtxRef.current;
-      if (!ctx) return;
-      if (ctx.state === 'suspended') {
-        ctx.resume();
-      }
-
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = 'sine';
-      // Chuông đôi Ding-Dong: Nốt B5 (987.77Hz) chuyển sang E6 (1318.51Hz)
-      osc.frequency.setValueAtTime(987.77, ctx.currentTime);
-      osc.frequency.setValueAtTime(1318.51, ctx.currentTime + 0.1);
-
-      gain.gain.setValueAtTime(0.25, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start();
-      osc.stop(ctx.currentTime + 0.45);
     } catch (e) {
-      console.error('Lỗi phát âm thanh:', e);
+      console.error('Audio error:', e);
     }
   };
 
@@ -144,7 +113,14 @@ export default function AdminPage() {
       loadChatUsers();
     }
 
-    // Đăng ký kênh Realtime duy trì liên tục
+    // Khởi tạo lấy tin nhắn cao nhất
+    supabase.from('messages').select('id').order('id', { ascending: false }).limit(1).then(({ data }) => {
+      if (data && data.length > 0) {
+        lastProcessedMsgIdRef.current = data[0].id;
+      }
+    });
+
+    // Lắng nghe Realtime
     const channel = supabase
       .channel(`admin_chat_rt_${Date.now()}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => loadAllSyncData())
@@ -156,58 +132,29 @@ export default function AdminPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => loadAllSyncData())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
         const msg = payload.new;
-        const sender = msg.sender_username;
-        const currentActive = selectedChatUserRef.current;
-
-        // Nếu tin nhắn từ phía người dùng gửi tới
-        if (msg.sender_role === 'user') {
-          playNotificationSound();
-
-          // Nếu chưa bấm chọn người dùng này -> Tăng số đếm tin nhắn chưa đọc
-          if (sender !== currentActive) {
-            setUnreadCounts((prev) => ({
-              ...prev,
-              [sender]: (prev[sender] || 0) + 1
-            }));
-          }
-        }
-
-        loadChatUsers();
-
-        // Nếu đang mở đúng phòng chat của khách đó
-        if (
-          currentActive &&
-          (msg.sender_username === currentActive || msg.receiver_username === currentActive)
-        ) {
-          setChatMessages((prev) => {
-            if (prev.some((m) => m.id === msg.id)) return prev;
-            return [...prev, msg];
-          });
+        if (msg.id > lastProcessedMsgIdRef.current) {
+          lastProcessedMsgIdRef.current = msg.id;
+          handleIncomingMessage(msg);
         }
       })
       .subscribe();
 
-    // Polling tự động làm mới mỗi 1.5s
-    const pollInterval = setInterval(() => {
-      const activeUser = selectedChatUserRef.current;
-      if (activeUser) {
-        supabase
-          .from('messages')
-          .select('*')
-          .or(`sender_username.eq.${activeUser},receiver_username.eq.${activeUser}`)
-          .order('id', { ascending: true })
-          .then(({ data }) => {
-            if (data) {
-              setChatMessages((prev) => {
-                if (data.length !== prev.length) {
-                  return data;
-                }
-                return prev;
-              });
-            }
-          });
+    // Polling dự phòng kiểm tra tin nhắn mới mỗi 1.5s
+    const pollInterval = setInterval(async () => {
+      const { data } = await supabase
+        .from('messages')
+        .select('*')
+        .gt('id', lastProcessedMsgIdRef.current)
+        .order('id', { ascending: true });
+
+      if (data && data.length > 0) {
+        data.forEach((msg) => {
+          if (msg.id > lastProcessedMsgIdRef.current) {
+            lastProcessedMsgIdRef.current = msg.id;
+            handleIncomingMessage(msg);
+          }
+        });
       }
-      loadChatUsers();
     }, 1500);
 
     const timer = setInterval(() => { setNowTime(Date.now()); }, 1000);
@@ -218,6 +165,38 @@ export default function AdminPage() {
       clearInterval(timer);
     };
   }, []);
+
+  const handleIncomingMessage = (msg: any) => {
+    const sender = msg.sender_username;
+    const currentActive = selectedChatUserRef.current;
+
+    if (msg.sender_role === 'user') {
+      playNotificationSound();
+
+      if (sender !== currentActive) {
+        setUnreadCounts((prev) => ({
+          ...prev,
+          [sender]: (prev[sender] || 0) + 1
+        }));
+      }
+    }
+
+    setChatUsers((prev) => {
+      const targetUser = msg.sender_username === 'admin' ? msg.receiver_username : msg.sender_username;
+      if (!prev.includes(targetUser)) return [targetUser, ...prev];
+      return prev;
+    });
+
+    if (
+      currentActive &&
+      (msg.sender_username === currentActive || msg.receiver_username === currentActive)
+    ) {
+      setChatMessages((prev) => {
+        if (prev.some((m) => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
+    }
+  };
 
   const loadChatUsers = async () => {
     const { data } = await supabase
@@ -242,7 +221,7 @@ export default function AdminPage() {
   };
 
   const loadConversation = async (targetUser: string) => {
-    // Xóa badge chưa đọc khi Admin nhấp vào xem hội thoại
+    // Xóa tin nhắn chưa đọc của người này
     setUnreadCounts((prev) => ({
       ...prev,
       [targetUser]: 0
@@ -278,6 +257,7 @@ export default function AdminPage() {
     setSendingReply(false);
 
     if (!error && data) {
+      lastProcessedMsgIdRef.current = Math.max(lastProcessedMsgIdRef.current, data.id);
       setChatMessages((prev) => {
         if (prev.some((m) => m.id === data.id)) return prev;
         return [...prev, data];
@@ -333,8 +313,12 @@ export default function AdminPage() {
       const res = await fetch('/api/gist-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accountKey: accountName, action: 'RESET_DEVICE' })
+        body: JSON.stringify({
+          accountKey: accountName,
+          action: 'RESET_DEVICE'
+        })
       });
+
       const data = await res.json();
       if (data.success) {
         alert(`Đã xóa Mã thiết bị thành công cho tài khoản ${accountName}!`);
@@ -342,8 +326,11 @@ export default function AdminPage() {
       } else {
         alert(`Lỗi reset thiết bị: ${data.message || 'Không thể cập nhật Gist'}`);
       }
-    } catch (err: any) { alert(`Lỗi kết nối máy chủ: ${err.message}`); } 
-    finally { setResettingHwid(null); }
+    } catch (err: any) {
+      alert(`Lỗi kết nối máy chủ: ${err.message}`);
+    } finally {
+      setResettingHwid(null);
+    }
   };
 
   const handleDeleteGistAccount = async (accountName: string) => {
@@ -362,8 +349,11 @@ export default function AdminPage() {
       } else {
         alert(`Lỗi xóa tài khoản Gist: ${data.message}`);
       }
-    } catch (err: any) { alert(`Lỗi kết nối máy chủ: ${err.message}`); } 
-    finally { setDeletingGistKey(null); }
+    } catch (err: any) {
+      alert(`Lỗi kết nối máy chủ: ${err.message}`);
+    } finally {
+      setDeletingGistKey(null);
+    }
   };
 
   const loadAllSyncData = async () => {
@@ -371,16 +361,25 @@ export default function AdminPage() {
       const { data: userData } = await supabase.from('users').select('*').order('id', { ascending: false });
       if (userData) {
         setUsers(userData);
+
         const usernames = userData.map((u: any) => u.username).filter(Boolean);
         if (usernames.length > 0) {
-          const { data: transData } = await supabase.from('transactions').select('username, amount, type').in('username', usernames).in('type', ['RECHARGE', 'ADMIN_ADD', 'ADMIN_SUB']);
+          const { data: transData } = await supabase
+            .from('transactions')
+            .select('username, amount, type')
+            .in('username', usernames)
+            .in('type', ['RECHARGE', 'ADMIN_ADD', 'ADMIN_SUB']);
+
           if (transData) {
             const map: { [key: string]: number } = {};
             transData.forEach((t: any) => {
               const u = t.username;
               if (!map[u]) map[u] = 0;
-              if (t.type === 'ADMIN_SUB') map[u] -= Math.abs(Number(t.amount) || 0);
-              else map[u] += (Number(t.amount) || 0);
+              if (t.type === 'ADMIN_SUB') {
+                map[u] -= Math.abs(Number(t.amount) || 0);
+              } else {
+                map[u] += (Number(t.amount) || 0);
+              }
             });
             setUserVipMap(map);
           }
@@ -436,6 +435,7 @@ export default function AdminPage() {
       setLoginError('');
       loadAllSyncData();
       loadChatUsers();
+      playNotificationSound(); // Kích hoạt AudioContext
     } else {
       setLoginError('Tài khoản hoặc mật khẩu Quản trị không chính xác!');
     }
@@ -635,7 +635,7 @@ export default function AdminPage() {
   return (
     <main className="min-h-screen bg-[#05070D] text-slate-200 font-sans flex flex-col pb-20 relative">
       
-      {/* HEADER DÀNH CHO ADMIN */}
+      {/* HEADER */}
       <header className="bg-[#0B1019]/90 backdrop-blur-xl border-b border-slate-800/80 px-6 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-40 shadow-xl">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.25)]"><Settings className="w-5 h-5 animate-spin" style={{ animationDuration: '12s' }} /></div>
@@ -647,6 +647,9 @@ export default function AdminPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <button onClick={playNotificationSound} className="bg-[#05080E] border border-slate-800 hover:border-cyan-400 text-slate-400 hover:text-cyan-300 p-2.5 rounded-xl transition cursor-pointer" title="Test âm thanh">
+            <Volume2 className="w-4 h-4" />
+          </button>
           <button onClick={loadAllSyncData} className="bg-[#05080E] border border-slate-800 hover:border-cyan-400 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition cursor-pointer shadow-sm">
             <RefreshCw className="w-3.5 h-3.5 text-cyan-400" /> Tải lại dữ liệu Cloud
           </button>
@@ -745,7 +748,7 @@ export default function AdminPage() {
                           <td className="p-4 font-mono whitespace-nowrap"><div className="flex items-center gap-2"><span className="text-slate-300 font-bold">{showPasswords[u.username] ? u.password || '---' : '••••••••'}</span><button onClick={() => handleToggleShowPass(u.username)} className="text-slate-500 hover:text-white transition cursor-pointer">{showPasswords[u.username] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}</button></div></td>
                           <td className="p-4 font-mono font-black text-emerald-400 whitespace-nowrap">{(u.balance || 0).toLocaleString('vi-VN')}đ</td>
                           <td className="p-4 text-center whitespace-nowrap">
-                            {isExempt ? <span className="text-cyan-300 font-black bg-cyan-500/20 px-3 py-1 rounded-xl border border-cyan-400 text-[10px] inline-flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5 text-cyan-400" /> MIỄN XÁC THỰC</span> : isVerified ? <span className="text-emerald-400 font-black bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/30 text-[10px] inline-flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> ĐÃ XÁC THỰC</span> : <span className="text-rose-400 font-black bg-rose-500/10 px-3 py-1 rounded-xl border border-rose-500/30 text-[10px] inline-flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5 text-rose-400" /> CHƯA XÁC THỰC</span>}
+                            {isExempt ? <span className="text-cyan-300 font-black bg-cyan-500/20 px-3 py-1 rounded-xl border border-cyan-400 text-[10px] inline-flex items-center gap-1.5 shadow-[0_0_10px_rgba(6,182,212,0.25)]"><Sparkles className="w-3.5 h-3.5 text-cyan-400" /> MIỄN XÁC THỰC</span> : isVerified ? <span className="text-emerald-400 font-black bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/30 text-[10px] inline-flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> ĐÃ XÁC THỰC</span> : <span className="text-rose-400 font-black bg-rose-500/10 px-3 py-1 rounded-xl border border-rose-500/30 text-[10px] inline-flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5 text-rose-400" /> CHƯA XÁC THỰC</span>}
                           </td>
                           <td className="p-4 text-center whitespace-nowrap"><button disabled={exemptLoadingId === u.id} onClick={() => handleToggleExemptVerification(u)} className={`px-3.5 py-1.5 rounded-xl text-[11px] font-black transition cursor-pointer border inline-flex items-center gap-1.5 ${isExempt ? 'bg-amber-500/10 border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-slate-950' : 'bg-[#05080E] border-slate-700 hover:border-cyan-400 text-slate-300 hover:text-cyan-300'}`}>{exemptLoadingId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : isExempt ? <>Bỏ miễn xác thực</> : <><Shield className="w-3.5 h-3.5 text-cyan-400" /> Miễn xác thực</>}</button></td>
                           <td className="p-4 text-center whitespace-nowrap">{isUserOnline ? <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 text-[10px] inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Online</span> : <span className="text-slate-500 font-medium bg-slate-500/10 px-2.5 py-1 rounded-full border border-slate-500/20 text-[10px] inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Offline</span>}</td>
@@ -850,7 +853,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 3: TRUNG TÂM LIVE CHAT CÓ BADGE SỐ 1 ================= */}
+        {/* ================= TAB 3: TRUNG TÂM LIVE CHAT ================= */}
         {activeTab === 'chat' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
@@ -894,7 +897,6 @@ export default function AdminPage() {
                         </div>
                         
                         <div className="flex items-center gap-1.5 shrink-0">
-                          {/* HIỂN THỊ SỐ TIN NHẮN CHƯA ĐỌC */}
                           {unread > 0 && !isSelected && (
                             <span className="bg-rose-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full shadow-[0_0_10px_rgba(244,63,94,0.6)] animate-pulse">
                               {unread}
@@ -917,7 +919,6 @@ export default function AdminPage() {
                         Đang chat với: <b className="text-cyan-400 font-mono">{selectedChatUser}</b>
                       </span>
                       
-                      {/* NÚT XÓA CUỘC HỘI THOẠI */}
                       <button 
                         onClick={handleDeleteConversation}
                         className="bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-400 px-3 py-1 rounded-xl text-[11px] font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm"
