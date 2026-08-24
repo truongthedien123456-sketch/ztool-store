@@ -25,13 +25,15 @@ export default function AdminPage() {
   const [sepayLogs, setSepayLogs] = useState<any[]>([]);
   const [coupons, setCoupons] = useState<any[]>([]);
   
-  // State Chat Hỗ Trợ Khách Hàng Realtime
+  // State Chat Hỗ Trợ Khách Hàng Realtime & Đếm tin chưa đọc
   const [chatUsers, setChatUsers] = useState<string[]>([]);
   const [selectedChatUser, setSelectedChatUser] = useState<string | null>(null);
   const selectedChatUserRef = useRef<string | null>(null);
+  const [unreadCounts, setUnreadCounts] = useState<{ [username: string]: number }>({});
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [adminReplyText, setAdminReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   // State Thông báo
   const [noticeForm, setNoticeForm] = useState({ text: '', active: false });
@@ -73,31 +75,65 @@ export default function AdminPage() {
     discountAmount: 5000, discountPercent: 10, quantity: 50, maxUsesPerUser: 1 
   });
 
+  // Giữ ref của khách hàng đang được chọn chat
   useEffect(() => {
     selectedChatUserRef.current = selectedChatUser;
   }, [selectedChatUser]);
 
-  // Âm thanh thông báo chuông
+  // Mở khóa AudioContext khi người dùng click vào trang
+  useEffect(() => {
+    const unlockAudio = () => {
+      if (!audioCtxRef.current) {
+        const AudioClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioClass) {
+          audioCtxRef.current = new AudioClass();
+        }
+      }
+      if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume();
+      }
+    };
+
+    window.addEventListener('click', unlockAudio, { once: true });
+    window.addEventListener('keydown', unlockAudio, { once: true });
+    return () => {
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+    };
+  }, []);
+
+  // Hàm phát âm thanh thông báo chuông (Web Audio API)
   const playNotificationSound = () => {
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      const audioCtx = new AudioCtx();
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
+      if (!audioCtxRef.current) {
+        const AudioClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioClass) audioCtxRef.current = new AudioClass();
       }
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
+      const ctx = audioCtxRef.current;
+      if (!ctx) return;
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
-      osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.08); // A5
-      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+      // Chuông đôi Ding-Dong: Nốt B5 (987.77Hz) chuyển sang E6 (1318.51Hz)
+      osc.frequency.setValueAtTime(987.77, ctx.currentTime);
+      osc.frequency.setValueAtTime(1318.51, ctx.currentTime + 0.1);
+
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+
       osc.connect(gain);
-      gain.connect(audioCtx.destination);
+      gain.connect(ctx.destination);
+
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.35);
-    } catch (e) { console.error('Lỗi âm thanh:', e); }
+      osc.stop(ctx.currentTime + 0.45);
+    } catch (e) {
+      console.error('Lỗi phát âm thanh:', e);
+    }
   };
 
   useEffect(() => {
@@ -108,7 +144,7 @@ export default function AdminPage() {
       loadChatUsers();
     }
 
-    // 1. Lắng nghe Realtime qua WebSocket Supabase
+    // Đăng ký kênh Realtime duy trì liên tục
     const channel = supabase
       .channel(`admin_chat_rt_${Date.now()}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => loadAllSyncData())
@@ -120,16 +156,28 @@ export default function AdminPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => loadAllSyncData())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
         const msg = payload.new;
-        loadChatUsers();
-        
+        const sender = msg.sender_username;
+        const currentActive = selectedChatUserRef.current;
+
+        // Nếu tin nhắn từ phía người dùng gửi tới
         if (msg.sender_role === 'user') {
           playNotificationSound();
+
+          // Nếu chưa bấm chọn người dùng này -> Tăng số đếm tin nhắn chưa đọc
+          if (sender !== currentActive) {
+            setUnreadCounts((prev) => ({
+              ...prev,
+              [sender]: (prev[sender] || 0) + 1
+            }));
+          }
         }
 
-        const activeChat = selectedChatUserRef.current;
+        loadChatUsers();
+
+        // Nếu đang mở đúng phòng chat của khách đó
         if (
-          activeChat &&
-          (msg.sender_username === activeChat || msg.receiver_username === activeChat)
+          currentActive &&
+          (msg.sender_username === currentActive || msg.receiver_username === currentActive)
         ) {
           setChatMessages((prev) => {
             if (prev.some((m) => m.id === msg.id)) return prev;
@@ -139,7 +187,7 @@ export default function AdminPage() {
       })
       .subscribe();
 
-    // 2. Cơ chế Polling tự động kiểm tra mỗi 1.5s đảm bảo không bao giờ trễ tin
+    // Polling tự động làm mới mỗi 1.5s
     const pollInterval = setInterval(() => {
       const activeUser = selectedChatUserRef.current;
       if (activeUser) {
@@ -194,6 +242,12 @@ export default function AdminPage() {
   };
 
   const loadConversation = async (targetUser: string) => {
+    // Xóa badge chưa đọc khi Admin nhấp vào xem hội thoại
+    setUnreadCounts((prev) => ({
+      ...prev,
+      [targetUser]: 0
+    }));
+
     const { data } = await supabase
       .from('messages')
       .select('*')
@@ -631,7 +685,14 @@ export default function AdminPage() {
           <button onClick={() => setActiveTab('tools')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'tools' ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}><Wrench className="w-4 h-4" /> SẢN PHẨM TOOL ({tools.length})</button>
           <button onClick={() => { setActiveTab('gist_accounts'); fetchGistAccountsData(); }} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'gist_accounts' ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}><KeyRound className="w-4 h-4" /> KHO ACC TOOL ({gistAccounts.length})</button>
           <button onClick={() => setActiveTab('coupons')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'coupons' ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}><Tag className="w-4 h-4" /> MÃ GIẢM GIÁ ({coupons.length})</button>
-          <button onClick={() => setActiveTab('chat')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'chat' ? 'bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}><Headset className="w-4 h-4 text-cyan-400" /> LIVE CHAT ({chatUsers.length})</button>
+          <button onClick={() => setActiveTab('chat')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer relative ${activeTab === 'chat' ? 'bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}>
+            <Headset className="w-4 h-4 text-cyan-400" /> LIVE CHAT ({chatUsers.length})
+            {Object.values(unreadCounts).reduce((a, b) => a + b, 0) > 0 && (
+              <span className="bg-rose-500 text-white font-black text-[10px] px-1.5 py-0.2 rounded-full animate-bounce">
+                {Object.values(unreadCounts).reduce((a, b) => a + b, 0)}
+              </span>
+            )}
+          </button>
           <button onClick={() => setActiveTab('projects')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'projects' ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}><FolderKanban className="w-4 h-4" /> DỰ ÁN CỦA SHOP ({projects.length})</button>
           <button onClick={() => setActiveTab('sepay')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'sepay' ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}><CreditCard className="w-4 h-4" /> LỊCH SỬ SEPAY ({sepayLogs.length})</button>
           <button onClick={() => setActiveTab('feedback')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'feedback' ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}><MessageSquare className="w-4 h-4" /> ĐÓNG GÓP ({feedbacks.length})</button>
@@ -789,7 +850,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 3: TRUNG TÂM LIVE CHAT ================= */}
+        {/* ================= TAB 3: TRUNG TÂM LIVE CHAT CÓ BADGE SỐ 1 ================= */}
         {activeTab === 'chat' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
@@ -806,30 +867,44 @@ export default function AdminPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-[500px]">
               
-              {/* Cột danh sách khách hàng chat */}
+              {/* Cột danh sách khách hàng chat có Badge đếm số tin nhắn mới */}
               <div className="md:col-span-4 bg-[#05080E] border border-slate-800 rounded-2xl p-3 space-y-2 overflow-y-auto">
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block px-2">Khách hàng cần hỗ trợ ({chatUsers.length})</span>
                 {chatUsers.length === 0 ? (
                   <p className="text-xs text-slate-500 text-center py-8">Chưa có tin nhắn nào từ khách.</p>
                 ) : (
-                  chatUsers.map((u, i) => (
-                    <button
-                      key={i}
-                      onClick={() => { 
-                        setSelectedChatUser(u); 
-                        loadConversation(u); 
-                      }}
-                      className={`w-full p-3 rounded-xl text-left text-xs font-bold flex items-center justify-between transition cursor-pointer ${
-                        selectedChatUser === u ? 'bg-cyan-500 text-slate-950 shadow-md font-black' : 'bg-[#0B1019] text-slate-300 hover:bg-slate-800/60'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 truncate">
-                        <User className="w-4 h-4 shrink-0" />
-                        <span className="truncate">{u}</span>
-                      </div>
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
-                    </button>
-                  ))
+                  chatUsers.map((u, i) => {
+                    const unread = unreadCounts[u] || 0;
+                    const isSelected = selectedChatUser === u;
+
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => { 
+                          setSelectedChatUser(u); 
+                          loadConversation(u); 
+                        }}
+                        className={`w-full p-3 rounded-xl text-left text-xs font-bold flex items-center justify-between transition cursor-pointer ${
+                          isSelected ? 'bg-cyan-500 text-slate-950 shadow-md font-black' : 'bg-[#0B1019] text-slate-300 hover:bg-slate-800/60'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 truncate">
+                          <User className="w-4 h-4 shrink-0" />
+                          <span className="truncate">{u}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {/* HIỂN THỊ SỐ TIN NHẮN CHƯA ĐỌC */}
+                          {unread > 0 && !isSelected && (
+                            <span className="bg-rose-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full shadow-[0_0_10px_rgba(244,63,94,0.6)] animate-pulse">
+                              {unread}
+                            </span>
+                          )}
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        </div>
+                      </button>
+                    );
+                  })
                 )}
               </div>
 
