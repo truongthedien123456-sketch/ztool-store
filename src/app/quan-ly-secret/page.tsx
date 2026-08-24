@@ -80,6 +80,22 @@ export default function AdminPage() {
     maxUsesPerUser: 1 
   });
 
+  // Hàm phát âm thanh thông báo chuông (Web Audio API)
+  const playNotificationSound = () => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime); // Tần số A5
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.18);
+    } catch (e) { console.error(e); }
+  };
+
   useEffect(() => {
     const isLogged = localStorage.getItem('ztool_admin_authenticated');
     if (isLogged === 'true') {
@@ -99,6 +115,9 @@ export default function AdminPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => loadAllSyncData())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
         loadChatUsers();
+        if (payload.new.sender_role === 'user') {
+          playNotificationSound();
+        }
         if (selectedChatUser && (payload.new.sender_username === selectedChatUser || payload.new.receiver_username === selectedChatUser)) {
           setChatMessages((prev) => [...prev, payload.new]);
         }
@@ -115,14 +134,10 @@ export default function AdminPage() {
 
   useEffect(() => {
     chatScrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
+  }, [chatMessages, selectedChatUser]);
 
   const loadChatUsers = async () => {
-    const { data } = await supabase
-      .from('messages')
-      .select('sender_username, receiver_username')
-      .order('id', { ascending: false });
-
+    const { data } = await supabase.from('messages').select('sender_username, receiver_username').order('id', { ascending: false });
     if (data) {
       const unique = Array.from(
         new Set(
@@ -146,7 +161,13 @@ export default function AdminPage() {
       .or(`sender_username.eq.${targetUser},receiver_username.eq.${targetUser}`)
       .order('id', { ascending: true });
 
-    if (data) setChatMessages(data);
+    if (data) {
+      setChatMessages(data);
+      // Tự động cuộn xuống dưới cùng khi chọn khách hàng
+      setTimeout(() => {
+        chatScrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 50);
+    }
   };
 
   const handleAdminSendReply = async (e: React.FormEvent) => {
@@ -169,6 +190,23 @@ export default function AdminPage() {
 
     if (!error && data) {
       setChatMessages((prev) => [...prev, data]);
+    }
+  };
+
+  const handleDeleteConversation = async () => {
+    if (!selectedChatUser || !confirm(`Xóa toàn bộ lịch sử trò chuyện với khách hàng "${selectedChatUser}"?`)) return;
+
+    const { error } = await supabase
+      .from('messages')
+      .delete()
+      .or(`sender_username.eq.${selectedChatUser},receiver_username.eq.${selectedChatUser}`);
+
+    if (!error) {
+      setChatMessages([]);
+      loadChatUsers();
+      alert('Đã xóa cuộc hội thoại thành công!');
+    } else {
+      alert('Lỗi xóa hội thoại: ' + error.message);
     }
   };
 
@@ -355,7 +393,7 @@ export default function AdminPage() {
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (usernameInput.trim() === 'mienprovip' && passwordInput === 'Vietduc123456@') {
-      localStorage.setItem('ztool_admin_authenticated', 'true'); setIsAuthenticated(true); setLoginError(''); loadAllSyncData();
+      localStorage.setItem('ztool_admin_authenticated', 'true'); setIsAuthenticated(true); setLoginError(''); loadAllSyncData(); loadChatUsers();
     } else { setLoginError('Tài khoản hoặc mật khẩu Quản trị không chính xác!'); }
   };
 
@@ -783,7 +821,6 @@ export default function AdminPage() {
                           <td className="p-4 font-bold text-white whitespace-nowrap">
                             <span className="font-mono text-cyan-300 font-black">{u.username}</span>
                           </td>
-                          {/* Cột Cấp bậc VIP có kèm số tiền tổng nạp */}
                           <td className="p-4 text-center whitespace-nowrap">
                             <div className="flex flex-col items-center justify-center gap-1.5">
                               {getVipBadge(depositedAmount)}
@@ -819,15 +856,15 @@ export default function AdminPage() {
                           <td className="p-4 text-center whitespace-nowrap">
                             {isExempt ? (
                               <span className="text-cyan-300 font-black bg-cyan-500/20 px-3 py-1 rounded-xl border border-cyan-400 text-[10px] inline-flex items-center gap-1.5 shadow-[0_0_10px_rgba(6,182,212,0.25)]">
-                                <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> MIỄN XÁC THỰC
+                                <Sparkles className="w-3 h-3 text-cyan-400" /> MIỄN XÁC THỰC
                               </span>
                             ) : isVerified ? (
                               <span className="text-emerald-400 font-black bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/30 text-[10px] inline-flex items-center gap-1.5">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> ĐÃ XÁC THỰC
+                                <CheckCircle2 className="w-3 h-3 text-emerald-400" /> ĐÃ XÁC THỰC
                               </span>
                             ) : (
                               <span className="text-rose-400 font-black bg-rose-500/10 px-3 py-1 rounded-xl border border-rose-500/30 text-[10px] inline-flex items-center gap-1.5">
-                                <XCircle className="w-3.5 h-3.5 text-rose-400" /> CHƯA XÁC THỰC
+                                <XCircle className="w-3 h-3 text-rose-400" /> CHƯA XÁC THỰC
                               </span>
                             )}
                           </td>
@@ -883,7 +920,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 2: KHO ACC TOOL (ĐÃ THÊM NÚT XÓA TÀI KHOẢN) ================= */}
+        {/* ================= TAB 2: KHO ACC TOOL ================= */}
         {activeTab === 'gist_accounts' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
@@ -951,7 +988,6 @@ export default function AdminPage() {
                                 </button>
                               )}
 
-                              {/* NÚT XÓA TÀI KHOẢN GIST */}
                               <button
                                 disabled={deletingGistKey === acc.username}
                                 onClick={() => handleDeleteGistAccount(acc.username)}
@@ -973,7 +1009,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 3: HỖ TRỢ KHÁCH HÀNG (LIVE CHAT) ================= */}
+        {/* ================= TAB 3: TRUNG TÂM LIVE CHAT ================= */}
         {activeTab === 'chat' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
@@ -989,6 +1025,7 @@ export default function AdminPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-[500px]">
+              
               {/* Cột danh sách khách hàng chat */}
               <div className="md:col-span-4 bg-[#05080E] border border-slate-800 rounded-2xl p-3 space-y-2 overflow-y-auto">
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block px-2">Khách hàng cần hỗ trợ ({chatUsers.length})</span>
@@ -998,7 +1035,10 @@ export default function AdminPage() {
                   chatUsers.map((u, i) => (
                     <button
                       key={i}
-                      onClick={() => { setSelectedChatUser(u); loadConversation(u); }}
+                      onClick={() => { 
+                        setSelectedChatUser(u); 
+                        loadConversation(u); 
+                      }}
                       className={`w-full p-3 rounded-xl text-left text-xs font-bold flex items-center justify-between transition cursor-pointer ${
                         selectedChatUser === u ? 'bg-cyan-500 text-slate-950 shadow-md font-black' : 'bg-[#0B1019] text-slate-300 hover:bg-slate-800/60'
                       }`}
@@ -1021,9 +1061,18 @@ export default function AdminPage() {
                       <span className="text-xs font-bold text-white flex items-center gap-2">
                         Đang chat với: <b className="text-cyan-400 font-mono">{selectedChatUser}</b>
                       </span>
+                      
+                      {/* NÚT XÓA CUỘC HỘI THOẠI */}
+                      <button 
+                        onClick={handleDeleteConversation}
+                        className="bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-400 px-3 py-1 rounded-xl text-[11px] font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                        title="Xóa toàn bộ tin nhắn với khách này"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Xóa hội thoại
+                      </button>
                     </div>
 
-                    <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#05080E] text-xs">
+                    <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#05080E] text-xs custom-scrollbar">
                       {chatMessages.map((m, idx) => {
                         const isAdmin = m.sender_username === 'admin';
                         return (
@@ -1066,6 +1115,7 @@ export default function AdminPage() {
                   </div>
                 )}
               </div>
+
             </div>
           </div>
         )}
@@ -1134,7 +1184,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 5: MÃ GIẢM GIÁ */}
+        {/* TAB 4: MÃ GIẢM GIÁ */}
         {activeTab === 'coupons' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleCreateCoupon} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
@@ -1186,8 +1236,8 @@ export default function AdminPage() {
                   return (
                     <div key={c.id} className="bg-[#05080E] border border-slate-800 p-4 rounded-2xl flex items-center justify-between gap-4 hover:border-cyan-500/40 transition">
                       <div className="space-y-1.5">
-                        <div className="flex items-center gap-2"><span className="font-mono font-black text-cyan-300 text-sm bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-cyan-500/30">{c.code}</span><span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${isPercent ? 'bg-purple-500/10 border-purple-500/30 text-purple-300' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>{isPercent ? 'GIẢM %' : 'GIẢM SỐ TIỀN'}</span></div>
-                        <div className="text-xs text-slate-300 flex items-center gap-3 flex-wrap"><span>Mức giảm: <b className="text-emerald-400 font-mono font-black">{discountLabel}</b></span><span>|</span><span>Còn lại: <b className="text-amber-400 font-mono font-bold">{c.quantity}</b></span><span>|</span><span>Tool: <b className="text-slate-400 font-mono uppercase">{c.tool_code || 'ALL'}</b></span></div>
+                        <div className="flex items-center gap-2"><span className="font-mono font-black text-cyan-300 text-sm bg-cyan-500/10 px-3 py-0.5 rounded-lg border border-cyan-500/30">{c.code}</span><span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${isPercent ? 'bg-purple-500/10 border-purple-500/30 text-purple-300' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>{isPercent ? 'GIẢM %' : 'GIẢM SỐ TIỀN'}</span></div>
+                        <div className="text-xs text-slate-300 flex items-center gap-3 flex-wrap"><span>Mức giảm: <b className="text-emerald-400 font-mono font-black">{discountLabel}</b></span><span>|</span><span>Số lượt còn: <b className="text-amber-400 font-mono font-bold">{c.quantity}</b></span><span>|</span><span>Giới hạn: <b className="text-cyan-300 font-mono font-bold">{c.max_uses_per_user || 1} lần/user</b></span><span>|</span><span>Tool: <b className="text-slate-400 font-mono uppercase">{c.tool_code || 'ALL'}</b></span></div>
                       </div>
                       <button onClick={() => handleDeleteCoupon(c.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-xl cursor-pointer transition"><Trash2 className="w-4 h-4" /></button>
                     </div>
@@ -1198,7 +1248,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 6: DỰ ÁN SHOP */}
+        {/* TAB 5: DỰ ÁN SHOP */}
         {activeTab === 'projects' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveProject} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
@@ -1223,7 +1273,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 7: LỊCH SỬ SEPAY */}
+        {/* TAB 6: LỊCH SỬ SEPAY */}
         {activeTab === 'sepay' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
             <h2 className="text-sm font-bold text-white border-b border-slate-800/80 pb-3 uppercase flex items-center gap-2"><CreditCard className="w-4 h-4 text-cyan-400" /> LỊCH SỬ BIẾN ĐỘNG SEPAY AUTO</h2>
@@ -1245,7 +1295,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 8: ĐÓNG GÓP Ý KIẾN */}
+        {/* TAB 7: ĐÓNG GÓP Ý KIẾN */}
         {activeTab === 'feedback' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
             <h2 className="text-sm font-bold text-white border-b border-slate-800/80 pb-3 uppercase flex items-center gap-2"><MessageSquare className="w-4 h-4 text-cyan-400" /> Ý KIẾN ĐÓNG GÓP TỪ KHÁCH HÀNG</h2>
@@ -1260,7 +1310,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 9: THÔNG BÁO CHUNG */}
+        {/* TAB 8: THÔNG BÁO CHUNG */}
         {activeTab === 'settings' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
@@ -1279,7 +1329,7 @@ export default function AdminPage() {
                   />
                 </div>
                 <div className="flex items-center justify-between bg-[#05080E] border border-slate-800 p-4 rounded-xl">
-                  <label className="text-xs font-bold text-slate-300">Trạng thái bật/tắt hiển thị:</label>
+                  <label className="block text-xs font-bold text-slate-300">Trạng thái bật/tắt hiển thị:</label>
                   <button 
                     onClick={() => setNoticeForm({ ...noticeForm, active: !noticeForm.active })}
                     className={`px-4 py-2 rounded-xl text-xs font-black border transition cursor-pointer flex items-center gap-2 ${noticeForm.active ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
