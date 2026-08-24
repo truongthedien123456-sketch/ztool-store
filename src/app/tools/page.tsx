@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag, Eye, Shield, Check, ZoomIn, Layers, Activity, AlertTriangle, Clock, Percent, Video
+  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag, Eye, Shield, Check, ZoomIn, Layers, Activity, AlertTriangle, Clock, Percent, Video, Image as ImageIcon, Play
 } from 'lucide-react';
 
 export default function ToolsPage() {
@@ -22,6 +22,8 @@ export default function ToolsPage() {
   const [couponMsg, setCouponMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [selectedToolForDetail, setSelectedToolForDetail] = useState<any | null>(null);
+  const [detailMediaTab, setDetailMediaTab] = useState<'image' | 'video'>('video');
+  const [buyMediaTab, setBuyMediaTab] = useState<'image' | 'video'>('image');
   const [zoomImage, setZoomImage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,6 +35,7 @@ export default function ToolsPage() {
         const found = tools.find(t => (t.toolCode || t.tool_code || '').trim().toLowerCase() === toolCodeToBuy.trim().toLowerCase());
         if (found) {
           setSelectedToolForBuy(found);
+          setBuyMediaTab(found.videoLink ? 'video' : 'image');
           setPurchaseMsg(null);
           setCouponInput('');
           setAppliedCoupon(null);
@@ -75,6 +78,7 @@ export default function ToolsPage() {
 
   const handleOpenDetail = async (tool: any) => {
     setSelectedToolForDetail(tool);
+    setDetailMediaTab(tool.videoLink ? 'video' : 'image');
     try {
       const newViews = (tool.views || 0) + 1;
       await supabase.from('tools').update({ views: newViews }).eq('id', tool.id);
@@ -196,7 +200,6 @@ export default function ToolsPage() {
     } catch (err: any) { setLoadingBuy(false); setPurchaseMsg({ type: 'error', text: `Lỗi kết nối: ${err.message}` }); }
   };
 
-  // Chuyển link YouTube bất kỳ thành dạng embed chuẩn
   const getYouTubeEmbedUrl = (url: string) => {
     if (!url) return null;
     try {
@@ -209,7 +212,7 @@ export default function ToolsPage() {
       } else if (url.includes('youtube.com/embed/')) { 
         videoId = url.split('embed/')[1].split('?')[0]; 
       }
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+      return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=0` : null;
     } catch (e) { return null; }
   };
 
@@ -222,6 +225,7 @@ export default function ToolsPage() {
       ) : (
         <div className="max-w-7xl mx-auto px-4 py-8 space-y-10">
           
+          {/* HEADER TRANG */}
           <div className="text-center space-y-4 border-b border-slate-800/80 pb-8 bg-[#0B1019]/95 p-6 sm:p-8 rounded-3xl border border-cyan-500/30 shadow-[0_0_25px_rgba(6,182,212,0.15)]">
             <div className="inline-flex items-center gap-2 bg-[#05080E] border border-cyan-400/50 px-4 py-1.5 rounded-full text-xs font-bold text-cyan-300">
               <Sparkles className="w-4 h-4 text-cyan-400" /> BẢNG HÃNG TOOL AUTO HIGH-QUALITY
@@ -240,6 +244,7 @@ export default function ToolsPage() {
             </div>
           </div>
 
+          {/* DANH SÁCH TOOL ĐANG HOẠT ĐỘNG */}
           {(activeTab === 'all' || activeTab === 'active') && (
             <div className="space-y-6">
               <div className="flex items-center justify-between border-b border-emerald-500/20 pb-3">
@@ -287,6 +292,7 @@ export default function ToolsPage() {
             </div>
           )}
 
+          {/* DANH SÁCH TOOL TẠM NGƯNG */}
           {(activeTab === 'all' || activeTab === 'inactive') && inactiveTools.length > 0 && (
             <div className="space-y-6 pt-4">
               <div className="flex items-center justify-between border-b border-rose-500/20 pb-3">
@@ -304,7 +310,7 @@ export default function ToolsPage() {
                       <div className="w-full aspect-square bg-[#05080E] border border-slate-800/90 rounded-2xl overflow-hidden relative">
                         <img src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={tool.name} className="w-full h-full object-cover grayscale-[40%] group-hover:grayscale-0 transition duration-300 ease-out" />
                         <div className="absolute top-3 left-3 bg-[#05080E]/90 border border-slate-800 px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[10px] text-slate-400 font-bold shadow-md"><Eye className="w-3.5 h-3.5 text-slate-500" /> {tool.views || 0}</div>
-                        <span className="absolute top-3 right-3 text-[10px] font-black px-2.5 py-1 rounded-xl border shadow-md bg-rose-500/20 border-rose-500/40 text-rose-400 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> TẠM NGƯNG</span>
+                        <span className="absolute top-3 right-3 text-[10px] font-black px-2.5 py-1 rounded-xl border shadow-md bg-rose-500/20 border-rose-500/40 text-rose-400 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> TẠM NGƯNG</span>
                         <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent p-3.5 text-center"><p className="text-[11px] font-black text-rose-300 flex items-center justify-center gap-1.5 tracking-wide"><Clock className="w-3.5 h-3.5 text-rose-400 animate-spin" /> Đang tối ưu thuật toán</p></div>
                       </div>
 
@@ -331,44 +337,63 @@ export default function ToolsPage() {
             </div>
           )}
 
-          {/* ================= MODAL CHI TIẾT SẢN PHẨM ================= */}
+          {/* ================= MODAL CHI TIẾT SẢN PHẨM (THIẾT KẾ MỚI GỌN GÀNG VỚI TAB MEDIA) ================= */}
           <AnimatePresence>
             {selectedToolForDetail && (
               <motion.div 
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}
                 onClick={() => setSelectedToolForDetail(null)}
-                className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center px-4 py-8 cursor-pointer"
+                className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 cursor-pointer"
               >
                 <motion.div 
-                  initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }}
+                  initial={{ opacity: 0, scale: 0.95, y: 15 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 15 }} transition={{ duration: 0.2 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-[#0D121D] border-2 border-[#1A2332] w-full max-w-xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_50px_rgba(0,0,0,0.8)] max-h-full overflow-y-auto cursor-default custom-scrollbar"
+                  className="bg-[#0B1019] border-2 border-cyan-500/40 w-full max-w-2xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.25)] max-h-[90vh] overflow-y-auto cursor-default custom-scrollbar"
                 >
-                  <button onClick={() => setSelectedToolForDetail(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#080B10] border border-[#1A2332] transition hover:bg-slate-800/80"><X className="w-5 h-5" /></button>
+                  <button onClick={() => setSelectedToolForDetail(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 transition hover:border-cyan-400 z-10"><X className="w-5 h-5" /></button>
                   
-                  <div className="flex items-center gap-3 border-b border-[#1A2332] pb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0"><Info className="w-6 h-6" /></div>
-                    <div><span className="text-[10px] text-cyan-400 font-extrabold uppercase tracking-wider block">THÔNG TIN CHI TIẾT SẢN PHẨM</span><h2 className="text-xl font-black text-white leading-tight">{selectedToolForDetail.name}</h2></div>
+                  {/* Header */}
+                  <div className="flex items-center gap-3 border-b border-slate-800/80 pb-4">
+                    <div className="w-11 h-11 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0"><Info className="w-5 h-5" /></div>
+                    <div>
+                      <span className="text-[10px] text-cyan-400 font-extrabold uppercase tracking-wider block">THÔNG TIN CHI TIẾT SẢN PHẨM</span>
+                      <h2 className="text-xl font-black text-white leading-tight">{selectedToolForDetail.name}</h2>
+                    </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <div 
-                      onClick={() => setZoomImage(selectedToolForDetail.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg')}
-                      className="w-full max-w-sm mx-auto aspect-square bg-[#080B10] border-2 border-slate-800 hover:border-cyan-400/80 rounded-2xl overflow-hidden relative group cursor-zoom-in transition-all duration-300 shadow-md"
-                      title="Bấm để xem ảnh phóng to đầy đủ"
-                    >
-                      <img src={selectedToolForDetail.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForDetail.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity duration-300 backdrop-blur-[2px]">
-                        <span className="bg-cyan-500 text-slate-950 px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-lg"><ZoomIn className="w-4 h-4" /> BẤM ĐỂ PHÓNG TO</span>
-                      </div>
-                    </div>
-
+                  {/* TAB CHUYỂN ĐỔI XEM ẢNH / VIDEO (GIÚP GIAO DIỆN GỌN GÀNG, KHÔNG BỊ TRÀN TRANG) */}
+                  <div className="space-y-3">
                     {selectedToolForDetail.videoLink && getYouTubeEmbedUrl(selectedToolForDetail.videoLink) && (
-                      <div className="bg-[#05080E] border border-[#1A2332] p-4 rounded-2xl space-y-3">
-                        <h4 className="text-xs font-black text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
-                          <Video className="w-4 h-4 text-rose-500" /> VIDEO DEMO HOẠT ĐỘNG
-                        </h4>
-                        <div className="w-full aspect-video rounded-xl overflow-hidden border border-slate-800 shadow-inner">
+                      <div className="flex items-center justify-center gap-2 bg-[#05080E] p-1 rounded-2xl border border-slate-800 max-w-xs mx-auto">
+                        <button
+                          type="button"
+                          onClick={() => setDetailMediaTab('video')}
+                          className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                            detailMediaTab === 'video' 
+                              ? 'bg-rose-500 text-white shadow-md' 
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          <Video className="w-3.5 h-3.5" /> Video Demo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDetailMediaTab('image')}
+                          className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                            detailMediaTab === 'image' 
+                              ? 'bg-cyan-500 text-slate-950 shadow-md' 
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          <ImageIcon className="w-3.5 h-3.5" /> Ảnh Chi Tiết
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Khung Media Display */}
+                    <div className="relative rounded-2xl overflow-hidden border-2 border-slate-800 bg-[#05080E] shadow-inner">
+                      {detailMediaTab === 'video' && selectedToolForDetail.videoLink && getYouTubeEmbedUrl(selectedToolForDetail.videoLink) ? (
+                        <div className="w-full aspect-video">
                           <iframe 
                             width="100%" height="100%" 
                             src={getYouTubeEmbedUrl(selectedToolForDetail.videoLink)!} 
@@ -378,29 +403,45 @@ export default function ToolsPage() {
                             allowFullScreen>
                           </iframe>
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <div 
+                          onClick={() => setZoomImage(selectedToolForDetail.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg')}
+                          className="w-full aspect-video max-h-[340px] relative group cursor-zoom-in overflow-hidden flex items-center justify-center bg-[#05080E]"
+                          title="Bấm để xem ảnh phóng to đầy đủ"
+                        >
+                          <img src={selectedToolForDetail.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForDetail.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity duration-300 backdrop-blur-[2px]">
+                            <span className="bg-cyan-500 text-slate-950 px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-lg"><ZoomIn className="w-4 h-4" /> BẤM PHÓNG TO ẢNH</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
+                  {/* Mô tả tính năng */}
                   <div className="space-y-2">
                     <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Mô tả tính năng đầy đủ:</h4>
-                    <p className="text-xs text-slate-300 bg-[#080B10] border border-[#1A2332] p-4 rounded-2xl leading-relaxed whitespace-pre-line">{selectedToolForDetail.description || 'Chưa có nội dung mô tả chi tiết cho sản phẩm này.'}</p>
+                    <p className="text-xs text-slate-300 bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl leading-relaxed whitespace-pre-line max-h-36 overflow-y-auto custom-scrollbar font-medium">
+                      {selectedToolForDetail.description || 'Chưa có nội dung mô tả chi tiết cho sản phẩm này.'}
+                    </p>
                   </div>
                   
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center"><span className="text-[10px] text-slate-400 block">Ngày</span><b className="text-xs text-emerald-400">{formatPrice(selectedToolForDetail.priceDay)}đ</b></div>
-                    <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center"><span className="text-[10px] text-slate-400 block">Tuần</span><b className="text-xs text-emerald-400">{formatPrice(selectedToolForDetail.priceWeek)}đ</b></div>
-                    <div className="bg-[#080B10] border border-[#1A2332] p-3 rounded-2xl text-center"><span className="text-[10px] text-slate-400 block">Tháng</span><b className="text-xs text-emerald-400">{formatPrice(selectedToolForDetail.priceMonth)}đ</b></div>
-                    <div className="bg-[#080B10] border border-cyan-500/30 p-3 rounded-2xl text-center"><span className="text-[10px] text-cyan-400 block">Vĩnh Viễn</span><b className="text-xs text-cyan-300">{formatPrice(selectedToolForDetail.priceLifetime)}đ</b></div>
+                  {/* Bảng giá */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <div className="bg-[#05080E] border border-slate-800 p-2.5 rounded-2xl text-center"><span className="text-[10px] text-slate-500 block font-bold">Ngày</span><b className="text-xs text-emerald-400 font-mono">{formatPrice(selectedToolForDetail.priceDay)}đ</b></div>
+                    <div className="bg-[#05080E] border border-slate-800 p-2.5 rounded-2xl text-center"><span className="text-[10px] text-slate-500 block font-bold">Tuần</span><b className="text-xs text-emerald-400 font-mono">{formatPrice(selectedToolForDetail.priceWeek)}đ</b></div>
+                    <div className="bg-[#05080E] border border-slate-800 p-2.5 rounded-2xl text-center"><span className="text-[10px] text-slate-500 block font-bold">Tháng</span><b className="text-xs text-emerald-400 font-mono">{formatPrice(selectedToolForDetail.priceMonth)}đ</b></div>
+                    <div className="bg-[#05080E] border border-cyan-500/40 p-2.5 rounded-2xl text-center"><span className="text-[10px] text-cyan-400 block font-bold">Vĩnh Viễn</span><b className="text-xs text-cyan-300 font-mono font-black">{formatPrice(selectedToolForDetail.priceLifetime)}đ</b></div>
                   </div>
                   
+                  {/* Nút hành động */}
                   <div className="flex gap-3 pt-2">
                     <button
                       disabled={selectedToolForDetail.status === 'Tạm ngưng'}
                       onClick={() => { const tool = selectedToolForDetail; setSelectedToolForDetail(null); setSelectedToolForBuy(tool); }}
-                      className={`w-full font-black py-4 rounded-2xl text-xs flex items-center justify-center gap-2 cursor-pointer transition shadow-lg ${selectedToolForDetail.status === 'Tạm ngưng' ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : 'bg-cyan-500 text-slate-950 hover:bg-cyan-400'}`}
+                      className={`w-full font-black py-4 rounded-2xl text-xs flex items-center justify-center gap-2 cursor-pointer transition shadow-lg ${selectedToolForDetail.status === 'Tạm ngưng' ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : 'bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 hover:brightness-110 shadow-[0_0_20px_rgba(6,182,212,0.35)]'}`}
                     >
-                      <ShoppingBag className="w-4 h-4" /> {selectedToolForDetail.status === 'Tạm ngưng' ? 'SẢN PHẨM ĐANG BẢO TRÌ' : 'MUA SẢN PHẨM NÀY NGAY'}
+                      <ShoppingBag className="w-4 h-4 stroke-[2.5]" /> {selectedToolForDetail.status === 'Tạm ngưng' ? 'SẢN PHẨM ĐANG BẢO TRÌ' : 'MUA SẢN PHẨM NÀY NGAY'}
                     </button>
                   </div>
                 </motion.div>
@@ -414,12 +455,12 @@ export default function ToolsPage() {
               <motion.div 
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}
                 onClick={() => setSelectedToolForBuy(null)}
-                className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center px-4 py-8 cursor-pointer"
+                className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 cursor-pointer"
               >
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-5xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-2xl max-h-full overflow-y-auto cursor-default custom-scrollbar"
+                  className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-4xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-2xl max-h-[92vh] overflow-y-auto cursor-default custom-scrollbar"
                 >
                   <button onClick={() => setSelectedToolForBuy(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400 z-10"><X className="w-5 h-5" /></button>
                   
@@ -428,25 +469,36 @@ export default function ToolsPage() {
                     <h2 className="text-2xl font-black text-white tracking-wide">{selectedToolForBuy.name}</h2>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-                    <div className="md:col-span-6 flex flex-col items-center group space-y-4">
-                      <div 
-                        onClick={() => setZoomImage(selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg')}
-                        className="w-full aspect-square rounded-3xl overflow-hidden border-2 border-cyan-500/50 hover:border-cyan-400 shadow-md bg-[#05080E] relative cursor-zoom-in transition-all duration-300"
-                        title="Bấm để xem ảnh phóng to đầy đủ"
-                      >
-                        <img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity duration-300 backdrop-blur-[2px]">
-                          <span className="bg-cyan-500 text-slate-950 px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-xl"><ZoomIn className="w-4 h-4" /> PHÓNG TO ẢNH</span>
-                        </div>
-                      </div>
-
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                    
+                    {/* CỘT TRÁI: TAB MEDIA (VIDEO / ẢNH) */}
+                    <div className="md:col-span-6 space-y-3">
                       {selectedToolForBuy.videoLink && getYouTubeEmbedUrl(selectedToolForBuy.videoLink) && (
-                        <div className="w-full bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl shadow-inner">
-                          <h4 className="text-[11px] font-black text-rose-400 uppercase tracking-wider flex items-center gap-1.5 mb-2.5">
-                            <Video className="w-4 h-4 text-rose-500" /> Video Giới Thiệu
-                          </h4>
-                          <div className="w-full aspect-video rounded-xl overflow-hidden border border-slate-800">
+                        <div className="flex items-center justify-center gap-2 bg-[#05080E] p-1 rounded-2xl border border-slate-800">
+                          <button
+                            type="button"
+                            onClick={() => setBuyMediaTab('image')}
+                            className={`flex-1 py-1 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                              buyMediaTab === 'image' ? 'bg-cyan-500 text-slate-950 font-black shadow-md' : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            <ImageIcon className="w-3.5 h-3.5" /> Hình Ảnh
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setBuyMediaTab('video')}
+                            className={`flex-1 py-1 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                              buyMediaTab === 'video' ? 'bg-rose-500 text-white font-black shadow-md' : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            <Video className="w-3.5 h-3.5" /> Video Demo
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="w-full aspect-square rounded-2xl overflow-hidden border-2 border-cyan-500/40 bg-[#05080E] relative shadow-md">
+                        {buyMediaTab === 'video' && selectedToolForBuy.videoLink && getYouTubeEmbedUrl(selectedToolForBuy.videoLink) ? (
+                          <div className="w-full h-full">
                             <iframe 
                               width="100%" height="100%" 
                               src={getYouTubeEmbedUrl(selectedToolForBuy.videoLink)!} 
@@ -454,30 +506,44 @@ export default function ToolsPage() {
                               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen>
                             </iframe>
                           </div>
-                        </div>
-                      )}
+                        ) : (
+                          <div 
+                            onClick={() => setZoomImage(selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg')}
+                            className="w-full h-full relative group cursor-zoom-in"
+                            title="Bấm để xem ảnh phóng to đầy đủ"
+                          >
+                            <img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity duration-300 backdrop-blur-[2px]">
+                              <span className="bg-cyan-500 text-slate-950 px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-xl"><ZoomIn className="w-4 h-4" /> PHÓNG TO ẢNH</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="md:col-span-6 space-y-5 text-left">
-                      <div className="bg-[#05080E] border border-slate-800/90 p-4.5 rounded-2xl space-y-1.5 shadow-inner">
-                        <span className="text-[10px] font-extrabold text-cyan-400 uppercase tracking-wider block">Mô tả tính năng:</span>
-                        <p className="text-xs text-slate-200 leading-relaxed max-h-36 overflow-y-auto pr-1 whitespace-pre-line font-medium custom-scrollbar">
+                    {/* CỘT PHẢI: CHỌN GÓI & ÁP MÃ */}
+                    <div className="md:col-span-6 space-y-4 text-left">
+                      <div className="bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl space-y-1 shadow-inner">
+                        <span className="text-[10px] font-extrabold text-cyan-400 uppercase tracking-wider block">Mô tả tóm tắt:</span>
+                        <p className="text-xs text-slate-200 leading-relaxed max-h-24 overflow-y-auto pr-1 whitespace-pre-line font-medium custom-scrollbar">
                           {selectedToolForBuy.description || 'Chưa có nội dung mô tả cho sản phẩm này.'}
                         </p>
                       </div>
 
-                      <div className="space-y-2 bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl">
-                        <label className="block text-xs font-bold text-slate-300 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-cyan-400" /> Mã giảm giá (nếu có):</label>
+                      {/* Mã giảm giá */}
+                      <div className="space-y-1.5 bg-[#05080E] border border-slate-800/90 p-3.5 rounded-2xl">
+                        <label className="block text-[11px] font-bold text-slate-300 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-cyan-400" /> Mã giảm giá (nếu có):</label>
                         <div className="flex gap-2">
-                          <input type="text" placeholder="Nhập mã giảm giá..." value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="flex-1 bg-[#0B1019] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 uppercase font-mono transition" />
-                          <button onClick={handleApplyCoupon} className="bg-cyan-500/20 border border-cyan-500/40 hover:bg-cyan-400 hover:text-slate-950 text-cyan-300 font-black px-4 py-2.5 rounded-xl text-xs transition cursor-pointer">Áp dụng</button>
+                          <input type="text" placeholder="Nhập mã..." value={couponInput} onChange={(e) => setCouponInput(e.target.value)} className="flex-1 bg-[#0B1019] border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 uppercase font-mono transition" />
+                          <button onClick={handleApplyCoupon} className="bg-cyan-500/20 border border-cyan-500/40 hover:bg-cyan-400 hover:text-slate-950 text-cyan-300 font-black px-3.5 py-2 rounded-xl text-xs transition cursor-pointer">Áp dụng</button>
                         </div>
-                        {couponMsg && <p className={`text-[11px] font-bold ${couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>{couponMsg.text}</p>}
+                        {couponMsg && <p className={`text-[10px] font-bold ${couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>{couponMsg.text}</p>}
                       </div>
 
-                      <div className="space-y-2.5">
-                        <label className="block text-xs font-bold text-slate-300">Chọn gói thời hạn sử dụng:</label>
-                        <div className="grid grid-cols-2 gap-3">
+                      {/* Gói thời hạn */}
+                      <div className="space-y-2">
+                        <label className="block text-[11px] font-bold text-slate-300">Chọn gói thời hạn:</label>
+                        <div className="grid grid-cols-2 gap-2.5">
                           {[ { key: 'day', name: 'Gói 1 Ngày', price: selectedToolForBuy.priceDay }, { key: 'week', name: 'Gói 7 Ngày', price: selectedToolForBuy.priceWeek }, { key: 'month', name: 'Gói 30 Ngày', price: selectedToolForBuy.priceMonth }, { key: 'lifetime', name: 'Gói Vĩnh Viễn', price: selectedToolForBuy.priceLifetime }, ].map((pkg) => {
                             const originalPrice = Number(String(pkg.price || '0').replace(/[^0-9]/g, '')) || 0;
                             const discountAmt = calculateDiscount(originalPrice, appliedCoupon);
@@ -488,15 +554,15 @@ export default function ToolsPage() {
                               <button 
                                 key={pkg.key} 
                                 onClick={() => setSelectedDuration(pkg.key as any)} 
-                                className={`p-3.5 rounded-2xl border text-left text-xs space-y-1 relative transition cursor-pointer ${isSelected ? 'bg-[#121E2E] border-cyan-400 text-cyan-300 font-black' : 'bg-[#05080E] border-slate-800 text-slate-400 hover:border-slate-700'}`}
+                                className={`p-3 rounded-2xl border text-left text-xs space-y-0.5 relative transition cursor-pointer ${isSelected ? 'bg-[#121E2E] border-cyan-400 text-cyan-300 font-black shadow-md' : 'bg-[#05080E] border-slate-800 text-slate-400 hover:border-slate-700'}`}
                               >
-                                {isSelected && <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-cyan-400 flex items-center justify-center text-slate-950"><Check className="w-2.5 h-2.5 stroke-[3]" /></div>}
-                                <div className="font-extrabold text-slate-200">{pkg.name}</div>
+                                {isSelected && <div className="absolute top-2 right-2 w-3.5 h-3.5 rounded-full bg-cyan-400 flex items-center justify-center text-slate-950"><Check className="w-2 h-2 stroke-[3]" /></div>}
+                                <div className="font-extrabold text-slate-200 text-[11px]">{pkg.name}</div>
                                 <div>
                                   {appliedCoupon && discountAmt > 0 && originalPrice > 0 ? (
-                                    <div className="flex items-center gap-1.5 flex-wrap"><span className="line-through text-slate-500 text-[10px]">{formatPrice(originalPrice)}đ</span><span className="text-emerald-400 font-extrabold font-mono">{finalPkgPrice === 0 ? '0 VNĐ' : `${formatPrice(finalPkgPrice)} VNĐ`}</span></div>
+                                    <div className="flex items-center gap-1.5 flex-wrap"><span className="line-through text-slate-500 text-[9px]">{formatPrice(originalPrice)}đ</span><span className="text-emerald-400 font-extrabold font-mono text-xs">{finalPkgPrice === 0 ? '0 VNĐ' : `${formatPrice(finalPkgPrice)} VNĐ`}</span></div>
                                   ) : (
-                                    <span className="text-emerald-400 font-extrabold font-mono">{originalPrice === 0 ? '0 VNĐ' : `${formatPrice(originalPrice)} VNĐ`}</span>
+                                    <span className="text-emerald-400 font-extrabold font-mono text-xs">{originalPrice === 0 ? '0 VNĐ' : `${formatPrice(originalPrice)} VNĐ`}</span>
                                   )}
                                 </div>
                               </button>
@@ -508,14 +574,14 @@ export default function ToolsPage() {
                   </div>
 
                   {purchaseMsg && (
-                    <div className={`p-4 rounded-xl text-xs font-bold flex items-start gap-2.5 ${purchaseMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'}`}>
+                    <div className={`p-4 rounded-2xl text-xs font-bold flex items-start gap-2.5 ${purchaseMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'}`}>
                       {purchaseMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />}
                       <span className="leading-relaxed">{purchaseMsg.text}</span>
                     </div>
                   )}
 
-                  <button disabled={loadingBuy} onClick={handleBuyTool} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black py-4 rounded-2xl text-xs shadow-lg transition cursor-pointer flex items-center justify-center gap-2">
-                    {loadingBuy ? <><Loader2 className="w-4 h-4 animate-spin text-slate-950" /><span>ĐANG KHỞI TẠO TÀI KHOẢN...</span></> : <><Shield className="w-4 h-4" /> XÁC THỰC THANH TOÁN TỪ VÍ</>}
+                  <button disabled={loadingBuy} onClick={handleBuyTool} className="w-full bg-gradient-to-r from-cyan-500 to-teal-400 hover:brightness-110 text-slate-950 font-black py-4 rounded-2xl text-xs shadow-lg transition cursor-pointer flex items-center justify-center gap-2">
+                    {loadingBuy ? <><Loader2 className="w-4 h-4 animate-spin text-slate-950" /><span>ĐANG KHỞI TẠO TÀI KHOẢN...</span></> : <><Shield className="w-4 h-4" /> XÁC NHẬN THANH TOÁN TỪ VÍ</>}
                   </button>
                 </motion.div>
               </motion.div>
