@@ -46,7 +46,6 @@ export default function AdminPage() {
   const [userSearch, setUserSearch] = useState('');
   const [newUserForm, setNewUserForm] = useState({ username: '', email: '', password: '', balance: 0 });
   
-  // Modals Quản lý người dùng
   const [editUserPass, setEditUserPass] = useState<{ username: string; newPass: string } | null>(null);
   const [adjustBal, setAdjustBal] = useState<{ username: string; amount: number; isAdd: boolean } | null>(null);
   const [showPasswords, setShowPasswords] = useState<{ [key: string]: boolean }>({});
@@ -69,23 +68,16 @@ export default function AdminPage() {
   const [projectPreviewUrl, setProjectPreviewUrl] = useState<string>('');
   const [isUploadingProject, setIsUploadingProject] = useState(false);
 
-  // Form Mã giảm giá nâng cấp
   const [couponForm, setCouponForm] = useState({ 
-    code: '', 
-    toolCode: 'ALL', 
-    discountType: 'FIXED' as 'FIXED' | 'PERCENT', 
-    discountAmount: 5000, 
-    discountPercent: 10, 
-    quantity: 50, 
-    maxUsesPerUser: 1 
+    code: '', toolCode: 'ALL', discountType: 'FIXED' as 'FIXED' | 'PERCENT', 
+    discountAmount: 5000, discountPercent: 10, quantity: 50, maxUsesPerUser: 1 
   });
 
-  // Đồng bộ ref của user đang chat để realtime nhận diện chính xác
   useEffect(() => {
     selectedChatUserRef.current = selectedChatUser;
   }, [selectedChatUser]);
 
-  // Hàm phát âm thanh thông báo chuông Realtime
+  // Âm thanh thông báo chuông
   const playNotificationSound = () => {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -97,8 +89,8 @@ export default function AdminPage() {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // Nốt D5
-      osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.08); // Nốt A5
+      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.08); // A5
       gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
       osc.connect(gain);
@@ -116,9 +108,9 @@ export default function AdminPage() {
       loadChatUsers();
     }
 
-    // Đăng ký kênh Realtime độc nhất, duy trì kết nối liên tục
+    // 1. Lắng nghe Realtime qua WebSocket Supabase
     const channel = supabase
-      .channel(`admin_global_rt_${Date.now()}`)
+      .channel(`admin_chat_rt_${Date.now()}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => loadAllSyncData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => loadAllSyncData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'feedbacks' }, () => loadAllSyncData())
@@ -147,10 +139,34 @@ export default function AdminPage() {
       })
       .subscribe();
 
+    // 2. Cơ chế Polling tự động kiểm tra mỗi 1.5s đảm bảo không bao giờ trễ tin
+    const pollInterval = setInterval(() => {
+      const activeUser = selectedChatUserRef.current;
+      if (activeUser) {
+        supabase
+          .from('messages')
+          .select('*')
+          .or(`sender_username.eq.${activeUser},receiver_username.eq.${activeUser}`)
+          .order('id', { ascending: true })
+          .then(({ data }) => {
+            if (data) {
+              setChatMessages((prev) => {
+                if (data.length !== prev.length) {
+                  return data;
+                }
+                return prev;
+              });
+            }
+          });
+      }
+      loadChatUsers();
+    }, 1500);
+
     const timer = setInterval(() => { setNowTime(Date.now()); }, 1000);
 
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(pollInterval);
       clearInterval(timer);
     };
   }, []);
@@ -165,8 +181,8 @@ export default function AdminPage() {
       const unique = Array.from(
         new Set(
           data
-            .map(m => m.sender_username === 'admin' ? m.receiver_username : m.sender_username)
-            .filter(u => u && u !== 'admin')
+            .map((m) => m.sender_username === 'admin' ? m.receiver_username : m.sender_username)
+            .filter((u) => u && u !== 'admin')
         )
       );
       setChatUsers(unique);
@@ -232,48 +248,13 @@ export default function AdminPage() {
     }
   };
 
-  // Hàm tính toán cấp bậc VIP theo số tiền nạp tích lũy
   const getVipBadge = (amount: number) => {
-    if (amount >= 5000000) {
-      return (
-        <span className="text-[10px] font-black bg-gradient-to-r from-rose-600/30 via-pink-600/30 to-amber-500/30 border border-rose-400 text-rose-200 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-pulse w-full">
-          <Flame className="w-3 h-3 text-rose-400" /> VIP 5
-        </span>
-      );
-    }
-    if (amount >= 3000000) {
-      return (
-        <span className="text-[10px] font-black bg-gradient-to-r from-purple-500/30 to-indigo-500/30 border border-purple-400 text-purple-200 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_10px_rgba(168,85,247,0.5)] animate-pulse w-full">
-          <Gem className="w-3 h-3 text-purple-300" /> VIP 4
-        </span>
-      );
-    }
-    if (amount >= 2000000) {
-      return (
-        <span className="text-[10px] font-black bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/60 text-amber-300 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(251,191,36,0.3)] w-full">
-          <Crown className="w-3 h-3 text-amber-400" /> VIP 3
-        </span>
-      );
-    }
-    if (amount >= 1000000) {
-      return (
-        <span className="text-[10px] font-black bg-gradient-to-r from-slate-400/20 to-cyan-500/20 border border-cyan-400/50 text-cyan-300 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(6,182,212,0.3)] w-full">
-          <Star className="w-3 h-3 text-cyan-300" /> VIP 2
-        </span>
-      );
-    }
-    if (amount >= 500000) {
-      return (
-        <span className="text-[10px] font-black bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/50 text-orange-300 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(249,115,22,0.3)] w-full">
-          <Award className="w-3 h-3 text-orange-400" /> VIP 1
-        </span>
-      );
-    }
-    return (
-      <span className="text-[10px] font-bold bg-slate-800/80 border border-slate-700 text-slate-400 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 w-full">
-        <User className="w-3 h-3 text-slate-500" /> Thành viên
-      </span>
-    );
+    if (amount >= 5000000) return <span className="text-[10px] font-black bg-gradient-to-r from-rose-600/30 via-pink-600/30 to-amber-500/30 border border-rose-400 text-rose-200 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-pulse w-full"><Flame className="w-3 h-3 text-rose-400" /> VIP 5</span>;
+    if (amount >= 3000000) return <span className="text-[10px] font-black bg-gradient-to-r from-purple-500/30 to-indigo-500/30 border border-purple-400 text-purple-200 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_10px_rgba(168,85,247,0.5)] animate-pulse w-full"><Gem className="w-3 h-3 text-purple-300" /> VIP 4</span>;
+    if (amount >= 2000000) return <span className="text-[10px] font-black bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/60 text-amber-300 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(251,191,36,0.3)] w-full"><Crown className="w-3 h-3 text-amber-400" /> VIP 3</span>;
+    if (amount >= 1000000) return <span className="text-[10px] font-black bg-gradient-to-r from-slate-400/20 to-cyan-500/20 border border-cyan-400/50 text-cyan-300 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(6,182,212,0.3)] w-full"><Star className="w-3 h-3 text-cyan-300" /> VIP 2</span>;
+    if (amount >= 500000) return <span className="text-[10px] font-black bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/50 text-orange-300 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 shadow-[0_0_8px_rgba(249,115,22,0.3)] w-full"><Award className="w-3 h-3 text-orange-400" /> VIP 1</span>;
+    return <span className="text-[10px] font-bold bg-slate-800/80 border border-slate-700 text-slate-400 px-2.5 py-1 rounded-xl flex items-center justify-center gap-1 w-full"><User className="w-3 h-3 text-slate-500" /> Thành viên</span>;
   };
 
   const fetchGistAccountsData = async () => {
@@ -298,12 +279,8 @@ export default function AdminPage() {
       const res = await fetch('/api/gist-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          accountKey: accountName,
-          action: 'RESET_DEVICE'
-        })
+        body: JSON.stringify({ accountKey: accountName, action: 'RESET_DEVICE' })
       });
-
       const data = await res.json();
       if (data.success) {
         alert(`Đã xóa Mã thiết bị thành công cho tài khoản ${accountName}!`);
@@ -311,11 +288,8 @@ export default function AdminPage() {
       } else {
         alert(`Lỗi reset thiết bị: ${data.message || 'Không thể cập nhật Gist'}`);
       }
-    } catch (err: any) {
-      alert(`Lỗi kết nối máy chủ: ${err.message}`);
-    } finally {
-      setResettingHwid(null);
-    }
+    } catch (err: any) { alert(`Lỗi kết nối máy chủ: ${err.message}`); } 
+    finally { setResettingHwid(null); }
   };
 
   const handleDeleteGistAccount = async (accountName: string) => {
@@ -334,11 +308,8 @@ export default function AdminPage() {
       } else {
         alert(`Lỗi xóa tài khoản Gist: ${data.message}`);
       }
-    } catch (err: any) {
-      alert(`Lỗi kết nối máy chủ: ${err.message}`);
-    } finally {
-      setDeletingGistKey(null);
-    }
+    } catch (err: any) { alert(`Lỗi kết nối máy chủ: ${err.message}`); } 
+    finally { setDeletingGistKey(null); }
   };
 
   const loadAllSyncData = async () => {
@@ -346,25 +317,16 @@ export default function AdminPage() {
       const { data: userData } = await supabase.from('users').select('*').order('id', { ascending: false });
       if (userData) {
         setUsers(userData);
-
         const usernames = userData.map((u: any) => u.username).filter(Boolean);
         if (usernames.length > 0) {
-          const { data: transData } = await supabase
-            .from('transactions')
-            .select('username, amount, type')
-            .in('username', usernames)
-            .in('type', ['RECHARGE', 'ADMIN_ADD', 'ADMIN_SUB']);
-
+          const { data: transData } = await supabase.from('transactions').select('username, amount, type').in('username', usernames).in('type', ['RECHARGE', 'ADMIN_ADD', 'ADMIN_SUB']);
           if (transData) {
             const map: { [key: string]: number } = {};
             transData.forEach((t: any) => {
               const u = t.username;
               if (!map[u]) map[u] = 0;
-              if (t.type === 'ADMIN_SUB') {
-                map[u] -= Math.abs(Number(t.amount) || 0);
-              } else {
-                map[u] += (Number(t.amount) || 0);
-              }
+              if (t.type === 'ADMIN_SUB') map[u] -= Math.abs(Number(t.amount) || 0);
+              else map[u] += (Number(t.amount) || 0);
             });
             setUserVipMap(map);
           }
@@ -1054,7 +1016,7 @@ export default function AdminPage() {
                     <div key={c.id} className="bg-[#05080E] border border-slate-800 p-4 rounded-2xl flex items-center justify-between gap-4 hover:border-cyan-500/40 transition">
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-2"><span className="font-mono font-black text-cyan-300 text-sm bg-cyan-500/10 px-3 py-0.5 rounded-lg border border-cyan-500/30">{c.code}</span><span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${isPercent ? 'bg-purple-500/10 border-purple-500/30 text-purple-300' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>{isPercent ? 'GIẢM %' : 'GIẢM SỐ TIỀN'}</span></div>
-                        <div className="text-xs text-slate-300 flex items-center gap-3 flex-wrap"><span>Mức giảm: <b className="text-emerald-400 font-mono font-black">{discountLabel}</b></span><span>|</span><span>Số lượt còn: <b className="text-amber-400 font-mono font-bold">{c.quantity}</b></span><span>|</span><span>Giới hạn: <b className="text-cyan-300 font-mono font-bold">{c.max_uses_per_user || 1} lần/user</b></span><span>|</span><span>Tool: <b className="text-slate-400 font-mono uppercase">{c.tool_code || 'ALL'}</b></span></div>
+                        <div className="text-xs text-slate-300 flex items-center gap-3 flex-wrap"><span>Mức giảm: <b className="text-emerald-400 font-mono font-black">{discountLabel}</b></span><span>|</span><span>Còn lại: <b className="text-amber-400 font-mono font-bold">{c.quantity}</b></span><span>|</span><span>Tool: <b className="text-slate-400 font-mono uppercase">{c.tool_code || 'ALL'}</b></span></div>
                       </div>
                       <button onClick={() => handleDeleteCoupon(c.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-xl cursor-pointer transition"><Trash2 className="w-4 h-4" /></button>
                     </div>
