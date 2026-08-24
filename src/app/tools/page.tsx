@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag, Eye, Shield, Check, ZoomIn, Layers, Activity, AlertTriangle, Clock, Percent, Video, Image as ImageIcon, Flame, Gift
+  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag, Eye, Shield, Check, ZoomIn, Layers, Activity, AlertTriangle, Clock, Percent, Video, Image as ImageIcon, Gift
 } from 'lucide-react';
 
 export default function ToolsPage() {
@@ -396,9 +396,9 @@ export default function ToolsPage() {
                             setTrialTool(tool);
                             setTrialMsg(null);
                           }} 
-                          className="w-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-yellow-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 border border-amber-500/60 hover:border-amber-400 text-amber-300 font-black py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.2)] hover:scale-[1.02]"
+                          className="w-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-yellow-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 border border-amber-500/60 hover:border-amber-400 text-amber-300 font-black py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.2)]"
                         >
-                          <Gift className="w-4 h-4 text-amber-400 animate-bounce" /> Trải Nghiệm 3 Ngày (Miễn Phí)
+                          <Gift className="w-4 h-4 text-amber-400" /> Trải Nghiệm 3 Ngày (Miễn Phí)
                         </button>
 
                         <div className="grid grid-cols-2 gap-2">
@@ -458,7 +458,7 @@ export default function ToolsPage() {
             </div>
           )}
 
-          {/* ================= MODAL TRẢI NGHIỆM DÙNG THỬ 3 NGÀY ================= */}
+          {/* ================= MODAL TRẢI NGHIỆM DÙNG THỬ 3 NGÀY (ĐÃ ẨN MÃ GIST & BỎ HIỆU ỨNG NẨY) ================= */}
           <AnimatePresence>
             {trialTool && (
               <motion.div 
@@ -475,7 +475,7 @@ export default function ToolsPage() {
 
                   <div className="text-center space-y-2">
                     <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto shadow-[0_0_20px_rgba(245,158,11,0.3)]">
-                      <Gift className="w-7 h-7 animate-bounce" />
+                      <Gift className="w-7 h-7" />
                     </div>
                     <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest block">CHƯƠNG TRÌNH DÙNG THỬ MIỄN PHÍ</span>
                     <h2 className="text-xl font-black text-white">{trialTool.name}</h2>
@@ -487,13 +487,9 @@ export default function ToolsPage() {
                       <span className="text-slate-400">Thời hạn dùng thử:</span>
                       <b className="text-amber-400 font-mono font-black">3 Ngày (72 Giờ)</b>
                     </div>
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <div className="flex items-center justify-between">
                       <span className="text-slate-400">Chi phí kích hoạt:</span>
                       <b className="text-emerald-400 font-mono font-black">0 VNĐ (Miễn Phí)</b>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Mã Tool Gist:</span>
-                      <b className="text-cyan-300 font-mono uppercase">{trialTool.toolCode || trialTool.tool_code}</b>
                     </div>
                   </div>
 
@@ -616,7 +612,7 @@ export default function ToolsPage() {
                         setTrialTool(tool);
                         setTrialMsg(null);
                       }}
-                      className="w-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-yellow-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 border border-amber-500/60 text-amber-300 font-black py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 cursor-pointer transition shadow-md hover:scale-[1.01]"
+                      className="w-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-yellow-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 border border-amber-500/60 text-amber-300 font-black py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 cursor-pointer transition shadow-md"
                     >
                       <Gift className="w-4 h-4 text-amber-400" /> TRẢI NGHIỆM DÙNG THỬ 3 NGÀY MIỄN PHÍ
                     </button>
@@ -656,6 +652,7 @@ export default function ToolsPage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
                     
+                    {/* CỘT TRÁI: TAB MEDIA */}
                     <div className="md:col-span-6 space-y-3">
                       {selectedToolForBuy.videoLink && getYouTubeEmbedUrl(selectedToolForBuy.videoLink) && (
                         <div className="flex items-center justify-center gap-2 bg-[#05080E] p-1 rounded-2xl border border-slate-800">
@@ -705,6 +702,7 @@ export default function ToolsPage() {
                       </div>
                     </div>
 
+                    {/* CỘT PHẢI: CHỌN GÓI & ÁP MÃ */}
                     <div className="md:col-span-6 space-y-4 text-left">
                       <div className="bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl space-y-1 shadow-inner">
                         <span className="text-[10px] font-extrabold text-cyan-400 uppercase tracking-wider block">Mô tả tóm tắt:</span>
@@ -713,6 +711,7 @@ export default function ToolsPage() {
                         </p>
                       </div>
 
+                      {/* Mã giảm giá */}
                       <div className="space-y-1.5 bg-[#05080E] border border-slate-800/90 p-3.5 rounded-2xl">
                         <label className="block text-[11px] font-bold text-slate-300 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-cyan-400" /> Mã giảm giá (nếu có):</label>
                         <div className="flex gap-2">
@@ -722,6 +721,7 @@ export default function ToolsPage() {
                         {couponMsg && <p className={`text-[10px] font-bold ${couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>{couponMsg.text}</p>}
                       </div>
 
+                      {/* Gói thời hạn */}
                       <div className="space-y-2">
                         <label className="block text-[11px] font-bold text-slate-300">Chọn gói thời hạn:</label>
                         <div className="grid grid-cols-2 gap-2.5">
