@@ -58,10 +58,10 @@ export default function ActivationGuidePage() {
             03
           </div>
           <h3 className="text-base font-black text-white group-hover:text-amber-300 transition">
-            Tải Tool & Mở Với Quyền Admin
+            Tải Tool Về Máy Tính
           </h3>
           <p className="text-xs text-slate-300 leading-relaxed">
-            Tải phần mềm về máy tính, giải nén và nhấp chuột phải chọn <b>Run as administrator</b> (Chạy với quyền Quản trị viên) để phần mềm tương tác chuẩn xác với game.
+            Tải phần mềm về máy tính, giải nén thư mục và mở file ứng dụng Tool để bắt đầu sử dụng.
           </p>
         </div>
 
@@ -71,28 +71,28 @@ export default function ActivationGuidePage() {
             04
           </div>
           <h3 className="text-base font-black text-white group-hover:text-purple-300 transition">
-            Đăng Nhập Khóa Mã Máy (HWID)
+            Đăng Nhập Tool
           </h3>
           <p className="text-xs text-slate-300 leading-relaxed">
-            Nhập chính xác <b>Username</b> và <b>Mật khẩu</b> web vào bảng đăng nhập của Tool. Tool sẽ tự động nhận diện thời hạn và khóa theo mã máy của bạn.
+            Nhập chính xác <b>Username</b> và <b>Mật khẩu TOOL</b> ở bảng <b>"Tool đã mua"</b> vào bảng đăng nhập của Tool là bạn đã đăng nhập thành công.
           </p>
         </div>
 
       </div>
 
       {/* Lưu Ý Quan Trọng */}
-      <div className="bg-[#0B1019] border border-amber-500/40 p-6 rounded-3xl space-y-4">
+      <div className="bg-[#0B1019] border border-amber-500/40 p-6 rounded-3xl space-y-4 text-left">
         <h3 className="text-sm font-black text-amber-400 uppercase tracking-wider flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 text-amber-400" /> Lưu ý về đổi máy tính (Reset HWID)
+          <AlertTriangle className="w-4 h-4 text-amber-400" /> Lưu ý về tài khoản TOOL
         </h3>
-        <ul className="text-xs text-slate-300 space-y-2 leading-relaxed">
+        <ul className="text-xs text-slate-300 space-y-2.5 leading-relaxed">
           <li className="flex items-start gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-            <span>Mỗi tài khoản Tool chỉ được đăng nhập đồng thời trên <b>01 thiết bị máy tính</b> tại một thời điểm.</span>
+            <span>Mỗi tài khoản tool chỉ được đăng nhập đồng thời trên <b>01 thiết bị máy tính</b> tại một thời điểm.</span>
           </li>
           <li className="flex items-start gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-            <span>Khi đổi máy mới hoặc cài lại Win, vui lòng liên hệ Admin qua nút <b>Live Chat</b> hoặc <b>Zalo</b> góc phải màn hình để được hỗ trợ Reset HWID.</span>
+            <span>Khi bị lỗi về tài khoản đã đăng nhập tại máy khác thì vui lòng liên hệ admin để được hỗ trợ.</span>
           </li>
         </ul>
       </div>
