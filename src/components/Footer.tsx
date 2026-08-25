@@ -19,7 +19,6 @@ export default function Footer() {
 
             {/* Logo ZTOOL */}
             <Link href="/" className="group inline-flex items-center gap-3.5">
-
               <div
                 className="
                   relative flex h-12 w-12 items-center justify-center
@@ -50,9 +49,7 @@ export default function Footer() {
                   Chuyên Cung Cấp Tool FiveM
                 </div>
               </div>
-
             </Link>
-
 
             {/* Mô tả */}
             <p className="mt-4 text-xs leading-relaxed font-medium text-slate-300">
@@ -65,7 +62,6 @@ export default function Footer() {
               Các sản phẩm của ZTOOL được phát triển độc lập và cung cấp nhằm
               hỗ trợ người dùng trong quá trình sử dụng.
             </p>
-
 
             {/* ================= SOCIAL ================= */}
             <div className="mt-6 flex items-center gap-3 pt-1">
@@ -97,8 +93,7 @@ export default function Footer() {
                 </svg>
               </a>
 
-
-              {/* Facebook (Đã cập nhật link Fanpage) */}
+              {/* Facebook */}
               <a
                 href="https://www.facebook.com/profile.php?id=61592809269339"
                 target="_blank"
@@ -126,7 +121,6 @@ export default function Footer() {
                   <path d="M14 8h3V4h-3c-3.31 0-5 1.69-5 5v3H6v4h3v4h4v-4h3l1-4h-4V9c0-.55.45-1 1-1Z" />
                 </svg>
               </a>
-
 
               {/* TikTok */}
               <a
@@ -158,7 +152,6 @@ export default function Footer() {
             </div>
           </div>
 
-
           {/* ================= SẢN PHẨM ================= */}
           <div>
             <h3 className="mb-5 text-xs font-black tracking-widest text-white uppercase flex items-center gap-2">
@@ -171,7 +164,6 @@ export default function Footer() {
             </div>
           </div>
 
-
           {/* ================= HỖ TRỢ ================= */}
           <div>
             <h3 className="mb-5 text-xs font-black tracking-widest text-white uppercase flex items-center gap-2">
@@ -179,7 +171,7 @@ export default function Footer() {
             </h3>
 
             <div className="space-y-3.5">
-              <FooterLink href="#" text="Hướng dẫn kích hoạt" />
+              <FooterLink href="/huong-dan-kich-hoat" text="Hướng dẫn kích hoạt" />
               
               {/* Nút bấm Liên hệ kích hoạt Popup Zalo */}
               <button
@@ -205,7 +197,6 @@ export default function Footer() {
             </div>
           </div>
 
-
           {/* ================= CHÍNH SÁCH ================= */}
           <div>
             <h3 className="mb-5 text-xs font-black tracking-widest text-white uppercase flex items-center gap-2">
@@ -213,13 +204,12 @@ export default function Footer() {
             </h3>
 
             <div className="space-y-3.5">
-              <FooterLink href="#" text="Chính sách bảo mật" />
-              <FooterLink href="#" text="Điều khoản sử dụng" />
+              <FooterLink href="/chinh-sach-bao-mat" text="Chính sách bảo mật" />
+              <FooterLink href="/dieu-khoan-su-dung" text="Điều khoản sử dụng" />
             </div>
           </div>
 
         </div>
-
 
         {/* ================= FOOTER BOTTOM ================= */}
         <div className="flex flex-col gap-3 border-t border-slate-800/80 py-6 text-xs text-slate-500 font-medium sm:flex-row sm:items-center sm:justify-between">
@@ -245,7 +235,6 @@ export default function Footer() {
     </footer>
   );
 }
-
 
 /* =========================
    FOOTER LINK
