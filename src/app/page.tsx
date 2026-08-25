@@ -430,7 +430,7 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* 2. HERO BANNER THIẾT KẾ NHỎ GỌN, NỊNH MẮT */}
+          {/* 2. HERO BANNER THIẾT KẾ NHỎ GỌN, ẢNH KHÔNG BỊ CẮT */}
           <div className="relative rounded-3xl bg-[#0B1019]/95 border-2 border-cyan-500/30 p-6 sm:p-7 overflow-hidden shadow-[0_0_35px_rgba(6,182,212,0.12)] backdrop-blur-xl">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center relative z-10">
               
@@ -473,12 +473,12 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Cột phải: Tool nổi bật Top 1 */}
+              {/* Cột phải: Tool nổi bật Top 1 (Khung ảnh tỷ lệ vuông không bị che) */}
               {featuredTool && (
                 <div className="lg:col-span-5">
                   <div 
                     onClick={() => handleOpenDetail(featuredTool)}
-                    className="group bg-[#0D131F] border-2 border-amber-500/50 hover:border-amber-400 rounded-3xl p-4 space-y-3 shadow-lg transition-all duration-300 cursor-pointer relative"
+                    className="group bg-[#0D131F] border-2 border-amber-500/50 hover:border-amber-400 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-lg transition-all duration-300 cursor-pointer relative"
                   >
                     <div className="flex justify-between items-center border-b border-slate-800/80 pb-2.5">
                       <span className="text-[11px] font-black text-amber-400 flex items-center gap-1.5 uppercase tracking-wider">
@@ -490,20 +490,21 @@ export default function HomePage() {
                       </span>
                     </div>
 
-                    <div className="w-full aspect-[16/10] bg-[#05080E] border border-slate-800 rounded-2xl overflow-hidden relative">
+                    {/* KHUNG ẢNH CHUẨN TỶ LỆ VUÔNG ASPECT-SQUARE ĐẦY ĐỦ THÔNG TIN */}
+                    <div className="w-full aspect-square bg-[#05080E] border border-slate-800 rounded-2xl overflow-hidden relative">
                       <img 
                         src={featuredTool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
                         alt={featuredTool.name} 
                         className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
                       />
                       
-                      <div className="absolute top-2 left-2 bg-[#05080E]/90 border border-slate-700/60 px-2.5 py-0.5 rounded-lg flex items-center gap-1 text-[10px] text-slate-200 font-bold">
+                      <div className="absolute top-2.5 left-2.5 bg-[#05080E]/90 border border-slate-700/60 px-2.5 py-1 rounded-lg flex items-center gap-1 text-[10px] text-slate-200 font-bold shadow-md">
                         <Eye className="w-3 h-3 text-cyan-400" /> {featuredTool.views || 0}
                       </div>
                     </div>
 
                     <div className="space-y-0.5">
-                      <h3 className="font-black text-white text-sm group-hover:text-amber-400 transition truncate">
+                      <h3 className="font-black text-white text-sm sm:text-base group-hover:text-amber-400 transition truncate">
                         {featuredTool.name}
                       </h3>
                       <p className="text-[11px] text-slate-400 line-clamp-1">
@@ -511,14 +512,14 @@ export default function HomePage() {
                       </p>
                     </div>
 
-                    <div className="space-y-1.5 pt-1.5 border-t border-slate-800/80">
+                    <div className="space-y-2 pt-1.5 border-t border-slate-800/80">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setTrialTool(featuredTool);
                           setTrialMsg(null);
                         }}
-                        className="w-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-yellow-500/20 hover:from-amber-500/30 text-amber-300 border border-amber-500/50 font-black py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition"
+                        className="w-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-yellow-500/20 hover:from-amber-500/30 text-amber-300 border border-amber-500/50 font-black py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition"
                       >
                         <Gift className="w-3.5 h-3.5 text-amber-400" /> Trải Nghiệm 3 Ngày (Miễn Phí)
                       </button>
@@ -533,7 +534,7 @@ export default function HomePage() {
                             e.stopPropagation();
                             handleOpenBuyModal(featuredTool);
                           }}
-                          className="text-xs font-black text-slate-950 bg-gradient-to-r from-cyan-500 to-teal-400 hover:brightness-110 flex items-center gap-1.5 transition px-3.5 py-1.5 rounded-xl shadow-md"
+                          className="text-xs font-black text-slate-950 bg-gradient-to-r from-cyan-500 to-teal-400 hover:brightness-110 flex items-center gap-1.5 transition px-4 py-2 rounded-xl shadow-md"
                         >
                           <ShoppingBag className="w-3.5 h-3.5 stroke-[2.5]" /> Mua ngay
                         </button>
@@ -546,7 +547,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* 3. TRUST METRICS STRIP (ĐÃ CẬP NHẬT CHUẨN NỘI DUNG) */}
+          {/* 3. TRUST METRICS STRIP */}
           <section className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
             {[
               { label: 'KÍCH HOẠT TÀI KHOẢN', val: 'Tức Thì 0s', icon: Zap, color: 'text-cyan-400' },
@@ -647,7 +648,7 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* 5. TẠI SAO NÊN CHỌN ZTOOL? (ĐÃ CẬP NHẬT CHUẨN NỘI DUNG) */}
+          {/* 5. TẠI SAO NÊN CHỌN ZTOOL? */}
           <section className="space-y-3.5 pt-2">
             <div className="text-left space-y-0.5">
               <span className="text-[10px] font-black text-cyan-400 uppercase tracking-wider block">ƯU ĐIỂM VƯỢT TRỘI</span>
