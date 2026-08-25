@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { 
   User, Lock, LogIn, UserPlus, LogOut, Wallet, X, AlertCircle, CheckCircle2,
-  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift, Bell, Home, FolderKanban, Sparkles, Eye, EyeOff, ShieldCheck, Zap, ShoppingBag, Mail, Send, ShieldAlert, Shield, Award, ChevronRight, Gem, Flame, Star
+  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift, Bell, Home, FolderKanban, Sparkles, Eye, EyeOff, ShieldCheck, Zap, ShoppingBag, Mail, Send, ShieldAlert, Shield, Award, ChevronRight, Gem, Flame, Star, HelpCircle
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -792,12 +792,13 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* MENU ĐIỀU HƯỚNG */}
+          {/* MENU ĐIỀU HƯỚNG (ĐÃ THÊM MỤC HƯỚNG DẪN) */}
           <div className="hidden md:flex items-center gap-1.5 bg-[#0D131F] border border-slate-800/80 p-1.5 rounded-2xl shadow-inner">
             {[
               { name: 'Trang chủ', path: '/', icon: Home },
               { name: 'TOOL AUTO', path: '/tools', icon: Wrench },
-              { name: 'Dự án', path: '/projects', icon: FolderKanban }
+              { name: 'Dự án', path: '/projects', icon: FolderKanban },
+              { name: 'Hướng dẫn', path: '/huong-dan-kich-hoat', icon: HelpCircle }
             ].map((item) => {
               const isActive = currentPath === item.path;
               const IconComp = item.icon;
@@ -823,7 +824,7 @@ export default function Navbar() {
             {currentUser ? (
               <div className="flex items-center gap-3">
                 
-                {/* NÚT ĐIỂM DANH (LUÔN BẤM MỞ ĐƯỢC POPUP BẤT KỂ ĐÃ ĐIỂM DANH HAY CHƯA) */}
+                {/* NÚT ĐIỂM DANH */}
                 <button
                   onClick={() => { setCheckInModalShow(true); setCheckInMsg(null); }}
                   className={`relative group overflow-hidden border px-3.5 py-2.5 rounded-xl text-xs flex items-center gap-2 transition-all duration-300 cursor-pointer ${
@@ -869,7 +870,6 @@ export default function Navbar() {
                           {currentUser.username}
                         </span>
                         
-                        {/* Badge VIP bên trong */}
                         {vipInfo.level > 0 && (
                           <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${vipInfo.badgeBg}`}>
                             V{vipInfo.level}
@@ -948,7 +948,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* ================= MODAL NẠP TIỀN SIÊU BẮT MẮT ================= */}
+      {/* ================= MODAL NẠP TIỀN ================= */}
       {showRechargeModal && currentUser && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
           <div className="bg-[#0A0F18] border-2 border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_60px_rgba(6,182,212,0.35)] max-h-[92vh] overflow-y-auto">
@@ -1054,20 +1054,19 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* ================= MODAL THÔNG TIN CÁ NHÂN & VIP (ĐÃ FIX KHÔNG BỊ CHE BADGE) ================= */}
+      {/* ================= MODAL THÔNG TIN CÁ NHÂN & VIP ================= */}
       {showAccountInfoModal && currentUser && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
           <div className={`bg-[#0A0F18] ${vipInfo.border} w-full max-w-lg rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_60px_rgba(6,182,212,0.3)] text-slate-200 max-h-[92vh] overflow-y-auto`}>
             
             <button onClick={() => { setShowAccountInfoModal(false); setEmailActionMsg(null); setIsOtpSent(false); setPassMsg(null); }} className="absolute top-5 right-5 text-slate-400 hover:text-white p-2 rounded-2xl bg-[#05080E] border border-slate-800 cursor-pointer hover:border-cyan-400 transition"><X className="w-5 h-5" /></button>
             
-            {/* Header Avatar & Badge VIP Tách Rời Chuẩn Flexbox */}
+            {/* Header Avatar & Badge VIP */}
             <div className="text-center flex flex-col items-center gap-3 pt-2">
               <div className={`w-20 h-20 rounded-3xl p-1 flex items-center justify-center text-3xl font-black ${vipInfo.avatarBg}`}>
                 {currentUser.username.substring(0, 1).toUpperCase()}
               </div>
               
-              {/* Badge VIP Nằm Ngay Ngắn Bên Dưới Avatar */}
               <div className="pt-0.5">
                 <span className={`text-[11px] font-black px-3.5 py-1 rounded-full border flex items-center gap-1.5 shadow-lg whitespace-nowrap ${vipInfo.badgeBg}`}>
                   <VipIcon className={`w-3.5 h-3.5 ${vipInfo.color}`} />
@@ -1114,8 +1113,6 @@ export default function Navbar() {
             {/* TAB 1: TỔNG QUAN VÍ & TIẾN TRÌNH VIP */}
             {profileTab === 'info' && (
               <div className="space-y-4">
-                
-                {/* Số dư ví */}
                 <div className="bg-[#05080E] border border-slate-800/90 p-4.5 rounded-2xl flex items-center justify-between shadow-inner">
                   <div>
                     <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Số dư hiện tại</span>
@@ -1129,7 +1126,6 @@ export default function Navbar() {
                   </button>
                 </div>
 
-                {/* Khung Tiến Trình VIP */}
                 <div className="bg-[#05080E] border border-slate-800/90 p-4.5 rounded-2xl space-y-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-400 font-bold flex items-center gap-1.5">
@@ -1138,7 +1134,6 @@ export default function Navbar() {
                     <b className="text-cyan-300 font-mono font-black">{totalDeposited.toLocaleString('vi-VN')} VNĐ</b>
                   </div>
 
-                  {/* Thanh Progress */}
                   <div className="space-y-1.5">
                     <div className="w-full bg-[#0A0F18] border border-slate-800 h-3 rounded-full overflow-hidden p-0.5">
                       <div 
@@ -1163,7 +1158,6 @@ export default function Navbar() {
                   )}
                 </div>
 
-                {/* Trạng thái xác thực */}
                 <div className="bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl space-y-2 text-xs">
                   <div className="flex justify-between items-center border-b border-slate-800/80 pb-2.5">
                     <span className="text-slate-400">Gmail liên kết:</span>
@@ -1511,7 +1505,7 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* ================= MODAL ĐIỂM DANH (ĐÃ FIX KHÔNG BỊ KHÓA NÚT MỞ) ================= */}
+      {/* ================= MODAL ĐIỂM DANH ================= */}
       {checkInModalShow && currentUser && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
           <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-md rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)]">

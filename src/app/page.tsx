@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Sparkles, Wrench, ShieldCheck, Zap, ArrowRight, ShoppingBag, FolderKanban, Bell, Flame, Eye, Info, X, Tag, CheckCircle2, AlertCircle, Loader2, Shield, Check, ZoomIn, Gift, Laptop, Star, Activity, Video, Image as ImageIcon
+  Sparkles, Wrench, ShieldCheck, Zap, ArrowRight, ShoppingBag, FolderKanban, Bell, Flame, Eye, Info, X, Tag, CheckCircle2, AlertCircle, Loader2, Shield, Check, ZoomIn, Gift, Laptop, Star, Activity, Video, Image as ImageIcon, HelpCircle, Cpu
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -411,7 +411,7 @@ export default function HomePage() {
           <div className="w-10 h-10 border-4 border-cyan-500/20 border-t-cyan-400 rounded-full animate-spin"></div>
         </div>
       ) : (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-8">
 
           {/* 1. KHUNG THÔNG BÁO ADMIN GỌN GÀNG TINH TẾ */}
           {systemNotice?.active && systemNotice?.text && (
@@ -430,45 +430,68 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* 2. HERO BANNER THIẾT KẾ NHỎ GỌN, ẢNH KHÔNG BỊ CẮT */}
-          <div className="relative rounded-3xl bg-[#0B1019]/95 border-2 border-cyan-500/30 p-6 sm:p-7 overflow-hidden shadow-[0_0_35px_rgba(6,182,212,0.12)] backdrop-blur-xl">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center relative z-10">
+          {/* 2. HERO BANNER THIẾT KẾ ĐẦY ĐẶN, THOÁNG & HIỆN ĐẠI */}
+          <div className="relative rounded-3xl bg-[#0B1019]/95 border-2 border-cyan-500/30 p-6 sm:p-8 overflow-hidden shadow-[0_0_35px_rgba(6,182,212,0.12)] backdrop-blur-xl">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
               
-              {/* Cột trái: Tự động hóa trải nghiệm game */}
-              <div className="lg:col-span-7 space-y-4 text-left">
-                <div className="inline-flex items-center gap-2 bg-[#05080E] border border-cyan-400/50 px-3 py-1 rounded-full text-[11px] font-bold text-cyan-300">
-                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> HỆ THỐNG AUTOMATION FIVEM HIGH-QUALITY
+              {/* Cột trái: Tự động hóa trải nghiệm game (Bố cục nâng cấp) */}
+              <div className="lg:col-span-7 space-y-5 text-left">
+                <div className="inline-flex items-center gap-2 bg-[#05080E] border border-cyan-400/50 px-3.5 py-1.5 rounded-full text-xs font-bold text-cyan-300 shadow-sm">
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> HỆ THỐNG AUTOMATION FIVEM HÀNG ĐẦU
                 </div>
                 
-                <h1 className="text-2xl sm:text-4xl font-black text-white leading-tight tracking-tight">
+                <h1 className="text-3xl sm:text-5xl font-black text-white leading-tight tracking-tight">
                   TỰ ĐỘNG HÓA <br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400">
                     TRẢI NGHIỆM GAME
                   </span>
                 </h1>
                 
-                <p className="text-xs sm:text-[13px] text-slate-300 max-w-lg leading-relaxed font-normal">
-                  Chuyên cung cấp các bản Tool Auto Farm chuẩn xác, tích hợp bypass hiện đại cho mọi Server FiveM / GTA V Launcher. Kích hoạt tài khoản tự động 24/7 tức thì.
+                <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed font-normal">
+                  Chuyên cung cấp các giải pháp Tool Auto Farm chuẩn xác, tích hợp bypass hiện đại cho mọi Server FiveM / GTA V Launcher. Kích hoạt tài khoản tự động 24/7 tức thì.
                 </p>
 
-                <div className="flex flex-wrap gap-2 text-xs font-bold text-slate-200 pt-0.5">
-                  <span className="bg-[#05080E] border border-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-[11px]">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Hoạt động ổn định
-                  </span>
-                  <span className="bg-[#05080E] border border-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-[11px]">
-                    <Zap className="w-3.5 h-3.5 text-amber-400" /> Update liên tục
-                  </span>
-                  <span className="bg-[#05080E] border border-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-[11px]">
-                    <Wrench className="w-3.5 h-3.5 text-cyan-400" /> Key tự động 24/7
-                  </span>
+                {/* 3 Thẻ Mini Highlights lấp đầy khoảng trống cực kỳ sang trọng */}
+                <div className="grid grid-cols-3 gap-2.5 pt-1">
+                  <div className="bg-[#05080E]/90 border border-slate-800 hover:border-cyan-500/40 p-3 rounded-2xl space-y-1 transition group">
+                    <div className="flex items-center gap-1.5 text-cyan-400 font-bold text-[11px]">
+                      <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                      <span>Bypass An Toàn</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 leading-tight">100% không chứa virus</p>
+                  </div>
+
+                  <div className="bg-[#05080E]/90 border border-slate-800 hover:border-amber-500/40 p-3 rounded-2xl space-y-1 transition group">
+                    <div className="flex items-center gap-1.5 text-amber-400 font-bold text-[11px]">
+                      <Zap className="w-3.5 h-3.5 shrink-0" />
+                      <span>Tự Động 24/7</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 leading-tight">Cấp quyền tức thì 0s</p>
+                  </div>
+
+                  <div className="bg-[#05080E]/90 border border-slate-800 hover:border-emerald-500/40 p-3 rounded-2xl space-y-1 transition group">
+                    <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px]">
+                      <Cpu className="w-3.5 h-3.5 shrink-0" />
+                      <span>Tối Ưu Phần Cứng</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 leading-tight">Mượt mà, không giật lag</p>
+                  </div>
                 </div>
 
-                <div className="pt-1">
+                {/* Cụm nút bấm kép */}
+                <div className="flex items-center gap-3 pt-2 flex-wrap">
                   <Link
                     href="/tools"
-                    className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-300 text-slate-950 font-black px-6 py-3 rounded-2xl text-xs shadow-[0_0_15px_rgba(6,182,212,0.35)] transition-all duration-200 hover:scale-[1.03]"
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-300 text-slate-950 font-black px-6 py-3.5 rounded-2xl text-xs shadow-[0_0_20px_rgba(6,182,212,0.35)] transition-all duration-200 hover:scale-[1.03]"
                   >
                     <ShoppingBag className="w-4 h-4 text-slate-950 stroke-[2.5]" /> TRUY CẬP CỬA HÀNG TOOL
+                  </Link>
+
+                  <Link
+                    href="/huong-dan-kich-hoat"
+                    className="inline-flex items-center gap-2 bg-[#05080E] border border-slate-800 hover:border-cyan-400/60 text-slate-300 hover:text-white font-bold px-5 py-3.5 rounded-2xl text-xs transition"
+                  >
+                    <HelpCircle className="w-4 h-4 text-cyan-400" /> Hướng Dẫn Kích Hoạt
                   </Link>
                 </div>
               </div>
@@ -478,7 +501,7 @@ export default function HomePage() {
                 <div className="lg:col-span-5">
                   <div 
                     onClick={() => handleOpenDetail(featuredTool)}
-                    className="group bg-[#0D131F] border-2 border-amber-500/50 hover:border-amber-400 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-lg transition-all duration-300 cursor-pointer relative"
+                    className="group bg-[#0D131F] border-2 border-amber-500/50 hover:border-amber-400 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-xl transition-all duration-300 cursor-pointer relative"
                   >
                     <div className="flex justify-between items-center border-b border-slate-800/80 pb-2.5">
                       <span className="text-[11px] font-black text-amber-400 flex items-center gap-1.5 uppercase tracking-wider">
@@ -490,7 +513,6 @@ export default function HomePage() {
                       </span>
                     </div>
 
-                    {/* KHUNG ẢNH CHUẨN TỶ LỆ VUÔNG ASPECT-SQUARE ĐẦY ĐỦ THÔNG TIN */}
                     <div className="w-full aspect-square bg-[#05080E] border border-slate-800 rounded-2xl overflow-hidden relative">
                       <img 
                         src={featuredTool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
@@ -499,7 +521,7 @@ export default function HomePage() {
                       />
                       
                       <div className="absolute top-2.5 left-2.5 bg-[#05080E]/90 border border-slate-700/60 px-2.5 py-1 rounded-lg flex items-center gap-1 text-[10px] text-slate-200 font-bold shadow-md">
-                        <Eye className="w-3 h-3 text-cyan-400" /> {featuredTool.views || 0}
+                        <Eye className="w-3 h-3 text-cyan-400" /> {featuredTool.views || 0} lượt xem
                       </div>
                     </div>
 
@@ -547,25 +569,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* 3. TRUST METRICS STRIP */}
-          <section className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-            {[
-              { label: 'KÍCH HOẠT TÀI KHOẢN', val: 'Tức Thì 0s', icon: Zap, color: 'text-cyan-400' },
-              { label: 'TỶ LỆ AN TOÀN / BYPASS', val: '100% không chứa virus', icon: Shield, color: 'text-emerald-400' },
-              { label: 'HỆ THỐNG TÀI KHOẢN', val: '24/7 Realtime', icon: Activity, color: 'text-amber-400' },
-              { label: 'HỖ TRỢ KỸ THUẬT', val: 'Tận Tâm 24/7', icon: Star, color: 'text-purple-400' },
-            ].map((item, idx) => (
-              <div key={idx} className="bg-[#0B1019] border border-slate-800/80 p-3.5 rounded-2xl space-y-1 hover:border-cyan-500/30 transition">
-                <div className="flex items-center gap-2">
-                  <item.icon className={`w-3.5 h-3.5 ${item.color}`} />
-                  <span className="text-[10px] text-slate-400 font-extrabold uppercase">{item.label}</span>
-                </div>
-                <p className="text-sm font-black text-white font-mono">{item.val}</p>
-              </div>
-            ))}
-          </section>
-
-          {/* 4. SECTION DANH SÁCH TOOL ĐANG HOẠT ĐỘNG */}
+          {/* 3. SECTION DANH SÁCH TOOL ĐANG HOẠT ĐỘNG */}
           <div className="space-y-4 pt-2">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
               <div>
@@ -600,7 +604,7 @@ export default function HomePage() {
                         />
                         
                         <div className="absolute top-2.5 left-2.5 bg-[#05080E]/90 border border-slate-700/60 px-2 py-0.5 rounded-lg flex items-center gap-1 text-[10px] text-slate-200 font-bold">
-                          <Eye className="w-3 h-3 text-cyan-400" /> {tool.views || 0}
+                          <Eye className="w-3.5 h-3.5 text-cyan-400" /> {tool.views || 0}
                         </div>
 
                         <span className="absolute top-2.5 right-2.5 text-[9px] font-extrabold px-2 py-0.5 rounded-md border bg-emerald-500/20 text-emerald-400 border-emerald-500/40">
@@ -648,7 +652,7 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* 5. TẠI SAO NÊN CHỌN ZTOOL? */}
+          {/* 4. TẠI SAO NÊN CHỌN ZTOOL? */}
           <section className="space-y-3.5 pt-2">
             <div className="text-left space-y-0.5">
               <span className="text-[10px] font-black text-cyan-400 uppercase tracking-wider block">ƯU ĐIỂM VƯỢT TRỘI</span>
@@ -688,7 +692,7 @@ export default function HomePage() {
             </div>
           </section>
 
-          {/* 6. DỰ ÁN NỔI BẬT */}
+          {/* 5. DỰ ÁN NỔI BẬT */}
           {projects.length > 0 && (
             <div className="space-y-4 pt-2">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
@@ -789,7 +793,7 @@ export default function HomePage() {
               >
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95, y: 15 }}
                   transition={{ duration: 0.2 }}
                   onClick={(e) => e.stopPropagation()}
