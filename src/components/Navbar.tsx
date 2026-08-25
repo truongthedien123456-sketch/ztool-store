@@ -567,7 +567,6 @@ export default function Navbar() {
     }
   };
 
-  // Đổi Mật Khẩu Cá Nhân
   const handleChangePassword = async () => {
     setPassMsg(null);
     if (!oldPass || !newPass || !confirmPass) {
@@ -611,7 +610,6 @@ export default function Navbar() {
     }
   };
 
-  // Gửi mã OTP xác thực Gmail
   const handleSendEmailOTP = async () => {
     setEmailActionMsg(null);
     const targetEmail = accountEmailInput.trim().toLowerCase();
@@ -657,7 +655,6 @@ export default function Navbar() {
     }
   };
 
-  // Xác nhận mã OTP
   const handleVerifyEmailOTP = async () => {
     setEmailActionMsg(null);
     if (!otpInput.trim() || otpInput.trim().length !== 6) {
@@ -775,12 +772,12 @@ export default function Navbar() {
 
   return (
     <>
-      {/* NAVBAR CHÍNH GLASSMORPHISM CYBERPUNK */}
-      <nav className="bg-[#080D15]/90 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-40 px-4 lg:px-8 py-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.6)] transition-all">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      {/* NAVBAR RỘNG RÃI, THOÁNG ĐÃNG VÀ CHUYÊN NGHIỆP */}
+      <nav className="bg-[#080D15]/95 backdrop-blur-2xl border-b border-slate-800/80 sticky top-0 z-40 px-4 sm:px-8 lg:px-12 py-4 sm:py-4.5 shadow-[0_10px_35px_rgba(0,0,0,0.7)] transition-all">
+        <div className="max-w-[1550px] mx-auto flex items-center justify-between gap-6">
           
           {/* LOGO ZTOOL GLOW */}
-          <Link href="/" className="flex items-center gap-3.5 group">
+          <Link href="/" className="flex items-center gap-3.5 group shrink-0">
             <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#05080E] p-1 border-2 border-cyan-400/80 shadow-[0_0_20px_rgba(6,182,212,0.4)] group-hover:shadow-[0_0_30px_rgba(6,182,212,0.7)] group-hover:scale-105 transition duration-300 overflow-hidden shrink-0">
               <img src="/logo.jpg" alt="ZTool Logo" className="w-full h-full object-cover rounded-xl" />
             </div>
@@ -792,8 +789,8 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* MENU ĐIỀU HƯỚNG (ĐÃ THÊM MỤC HƯỚNG DẪN) */}
-          <div className="hidden md:flex items-center gap-1.5 bg-[#0D131F] border border-slate-800/80 p-1.5 rounded-2xl shadow-inner">
+          {/* MENU ĐIỀU HƯỚNG RỘNG VÀ THOÁNG */}
+          <div className="hidden md:flex items-center gap-2 bg-[#0D131F]/90 border border-slate-800/90 p-1.5 rounded-2xl shadow-inner">
             {[
               { name: 'Trang chủ', path: '/', icon: Home },
               { name: 'TOOL AUTO', path: '/tools', icon: Wrench },
@@ -806,10 +803,10 @@ export default function Navbar() {
                 <Link 
                   key={item.path}
                   href={item.path} 
-                  className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition duration-200 cursor-pointer ${
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition duration-200 cursor-pointer ${
                     isActive 
-                      ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.4)] font-black' 
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                      ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 shadow-[0_0_18px_rgba(6,182,212,0.45)] font-black' 
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
                   }`}
                 >
                   <IconComp className="w-3.5 h-3.5" />
@@ -819,8 +816,8 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* CỤM ĐIỂM DANH, NẠP TIỀN & USER CARD KÈM KHUNG VIP */}
-          <div className="flex items-center gap-3">
+          {/* CỤM ĐIỂM DANH, NẠP TIỀN & USER CARD */}
+          <div className="flex items-center gap-3.5 shrink-0">
             {currentUser ? (
               <div className="flex items-center gap-3">
                 
@@ -935,7 +932,7 @@ export default function Navbar() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <button onClick={() => { setAuthModalMode('login'); resetForm(); setShowAuthModal(true); }} className="bg-[#0D121D] border border-cyan-500/40 hover:border-cyan-400 text-slate-100 text-xs font-black px-4 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-sm">
                   <LogIn className="w-3.5 h-3.5 text-cyan-400" /> ĐĂNG NHẬP
                 </button>
