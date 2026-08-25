@@ -411,119 +411,121 @@ export default function HomePage() {
           <div className="w-10 h-10 border-4 border-cyan-500/20 border-t-cyan-400 rounded-full animate-spin"></div>
         </div>
       ) : (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-6">
 
-          {/* 1. KHUNG THÔNG BÁO ADMIN */}
+          {/* 1. KHUNG THÔNG BÁO ADMIN GỌN GÀNG TINH TẾ */}
           {systemNotice?.active && systemNotice?.text && (
-            <div className="bg-[#0B1019]/90 border border-amber-500/40 rounded-2xl p-4 flex items-center gap-4 shadow-lg backdrop-blur-md">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0">
-                <Bell className="w-5 h-5 text-amber-400 animate-pulse" />
+            <div className="bg-[#0B1019]/90 border border-amber-500/40 rounded-2xl px-4 py-2.5 flex items-center gap-3 shadow-md backdrop-blur-md">
+              <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0">
+                <Bell className="w-3.5 h-3.5 text-amber-400" />
               </div>
-              <div className="flex-1 min-w-0">
-                <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest block mb-0.5">
-                  THÔNG BÁO TỪ HỆ THỐNG
+              <div className="flex-1 min-w-0 flex items-center gap-2">
+                <span className="text-[9px] font-black text-amber-400 uppercase tracking-wider bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30 shrink-0">
+                  THÔNG BÁO
                 </span>
-                <p className="text-xs sm:text-sm font-bold text-slate-200 leading-relaxed truncate">
+                <p className="text-xs font-semibold text-slate-200 leading-relaxed truncate">
                   {systemNotice.text}
                 </p>
               </div>
             </div>
           )}
 
-          {/* 2. HERO BANNER CAO CẤP */}
-          <div className="relative rounded-3xl bg-[#0B1019]/95 border-2 border-cyan-500/30 p-6 sm:p-10 overflow-hidden shadow-[0_0_40px_rgba(6,182,212,0.15)] backdrop-blur-xl">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
-              <div className="lg:col-span-7 space-y-6 text-left">
-                <div className="inline-flex items-center gap-2 bg-[#05080E] border border-cyan-400/50 px-4 py-1.5 rounded-full text-xs font-bold text-cyan-300">
-                  <Sparkles className="w-4 h-4 text-cyan-400" /> HỆ THỐNG AUTOMATION FIVEM HIGH-QUALITY
+          {/* 2. HERO BANNER THIẾT KẾ NHỎ GỌN, NỊNH MẮT */}
+          <div className="relative rounded-3xl bg-[#0B1019]/95 border-2 border-cyan-500/30 p-6 sm:p-7 overflow-hidden shadow-[0_0_35px_rgba(6,182,212,0.12)] backdrop-blur-xl">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center relative z-10">
+              
+              {/* Cột trái: Tự động hóa trải nghiệm game */}
+              <div className="lg:col-span-7 space-y-4 text-left">
+                <div className="inline-flex items-center gap-2 bg-[#05080E] border border-cyan-400/50 px-3 py-1 rounded-full text-[11px] font-bold text-cyan-300">
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> HỆ THỐNG AUTOMATION FIVEM HIGH-QUALITY
                 </div>
                 
-                <h1 className="text-3xl sm:text-5xl font-black text-white leading-[1.15] tracking-tight">
+                <h1 className="text-2xl sm:text-4xl font-black text-white leading-tight tracking-tight">
                   TỰ ĐỘNG HÓA <br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400">
                     TRẢI NGHIỆM GAME
                   </span>
                 </h1>
                 
-                <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed font-normal">
+                <p className="text-xs sm:text-[13px] text-slate-300 max-w-lg leading-relaxed font-normal">
                   Chuyên cung cấp các bản Tool Auto Farm chuẩn xác, tích hợp bypass hiện đại cho mọi Server FiveM / GTA V Launcher. Kích hoạt tài khoản tự động 24/7 tức thì.
                 </p>
 
-                <div className="flex flex-wrap gap-2.5 text-xs font-bold text-slate-200 pt-1">
-                  <span className="bg-[#05080E] border border-slate-800 px-3.5 py-2 rounded-xl flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" /> Hoạt động ổn định
+                <div className="flex flex-wrap gap-2 text-xs font-bold text-slate-200 pt-0.5">
+                  <span className="bg-[#05080E] border border-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-[11px]">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Hoạt động ổn định
                   </span>
-                  <span className="bg-[#05080E] border border-slate-800 px-3.5 py-2 rounded-xl flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-amber-400" /> Update liên tục
+                  <span className="bg-[#05080E] border border-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-[11px]">
+                    <Zap className="w-3.5 h-3.5 text-amber-400" /> Update liên tục
                   </span>
-                  <span className="bg-[#05080E] border border-slate-800 px-3.5 py-2 rounded-xl flex items-center gap-2">
-                    <Wrench className="w-4 h-4 text-cyan-400" /> Key tự động 24/7
+                  <span className="bg-[#05080E] border border-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-[11px]">
+                    <Wrench className="w-3.5 h-3.5 text-cyan-400" /> Key tự động 24/7
                   </span>
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-1">
                   <Link
                     href="/tools"
-                    className="inline-flex items-center gap-2.5 bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-300 text-slate-950 font-black px-8 py-4 rounded-2xl text-xs shadow-[0_0_20px_rgba(6,182,212,0.35)] transition-all duration-200 hover:scale-105"
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-300 text-slate-950 font-black px-6 py-3 rounded-2xl text-xs shadow-[0_0_15px_rgba(6,182,212,0.35)] transition-all duration-200 hover:scale-[1.03]"
                   >
                     <ShoppingBag className="w-4 h-4 text-slate-950 stroke-[2.5]" /> TRUY CẬP CỬA HÀNG TOOL
                   </Link>
                 </div>
               </div>
 
-              {/* TOOL NỔI BẬT TOP 1 */}
+              {/* Cột phải: Tool nổi bật Top 1 */}
               {featuredTool && (
                 <div className="lg:col-span-5">
                   <div 
                     onClick={() => handleOpenDetail(featuredTool)}
-                    className="group bg-[#0D131F] border-2 border-amber-500/50 hover:border-amber-400 rounded-3xl p-5 space-y-4 shadow-xl transition-all duration-300 cursor-pointer relative"
+                    className="group bg-[#0D131F] border-2 border-amber-500/50 hover:border-amber-400 rounded-3xl p-4 space-y-3 shadow-lg transition-all duration-300 cursor-pointer relative"
                   >
-                    <div className="flex justify-between items-center border-b border-slate-800/80 pb-3">
-                      <span className="text-xs font-black text-amber-400 flex items-center gap-1.5 uppercase tracking-wider">
-                        <Flame className="w-4 h-4 fill-amber-400" /> TOOL NỔI BẬT TOP 1
+                    <div className="flex justify-between items-center border-b border-slate-800/80 pb-2.5">
+                      <span className="text-[11px] font-black text-amber-400 flex items-center gap-1.5 uppercase tracking-wider">
+                        <Flame className="w-3.5 h-3.5 fill-amber-400" /> TOOL NỔI BẬT TOP 1
                       </span>
                       
-                      <span className="text-[10px] font-black px-2.5 py-0.5 rounded-lg border text-emerald-400 bg-emerald-500/10 border-emerald-500/30">
+                      <span className="text-[9px] font-black px-2 py-0.5 rounded-md border text-emerald-400 bg-emerald-500/10 border-emerald-500/30">
                         {featuredTool.status ? featuredTool.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
                       </span>
                     </div>
 
-                    <div className="w-full aspect-square bg-[#05080E] border border-slate-800 rounded-2xl overflow-hidden relative">
+                    <div className="w-full aspect-[16/10] bg-[#05080E] border border-slate-800 rounded-2xl overflow-hidden relative">
                       <img 
                         src={featuredTool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
                         alt={featuredTool.name} 
                         className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
                       />
                       
-                      <div className="absolute top-3 left-3 bg-[#05080E]/90 border border-slate-700/60 px-3 py-1 rounded-xl flex items-center gap-1.5 text-[11px] text-slate-200 font-extrabold">
-                        <Eye className="w-3.5 h-3.5 text-cyan-400" /> {featuredTool.views || 0} lượt xem
+                      <div className="absolute top-2 left-2 bg-[#05080E]/90 border border-slate-700/60 px-2.5 py-0.5 rounded-lg flex items-center gap-1 text-[10px] text-slate-200 font-bold">
+                        <Eye className="w-3 h-3 text-cyan-400" /> {featuredTool.views || 0}
                       </div>
                     </div>
 
-                    <div className="space-y-1">
-                      <h3 className="font-black text-white text-base group-hover:text-amber-400 transition">
+                    <div className="space-y-0.5">
+                      <h3 className="font-black text-white text-sm group-hover:text-amber-400 transition truncate">
                         {featuredTool.name}
                       </h3>
-                      <p className="text-xs text-slate-400 line-clamp-1">
+                      <p className="text-[11px] text-slate-400 line-clamp-1">
                         {featuredTool.description}
                       </p>
                     </div>
 
-                    <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                    <div className="space-y-1.5 pt-1.5 border-t border-slate-800/80">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setTrialTool(featuredTool);
                           setTrialMsg(null);
                         }}
-                        className="w-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-yellow-500/20 hover:from-amber-500/30 text-amber-300 border border-amber-500/50 font-black py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition"
+                        className="w-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-yellow-500/20 hover:from-amber-500/30 text-amber-300 border border-amber-500/50 font-black py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition"
                       >
-                        <Gift className="w-4 h-4 text-amber-400" /> Trải Nghiệm 3 Ngày (Miễn Phí)
+                        <Gift className="w-3.5 h-3.5 text-amber-400" /> Trải Nghiệm 3 Ngày (Miễn Phí)
                       </button>
 
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between pt-0.5">
                         <div>
-                          <span className="text-[10px] text-slate-500 font-bold block uppercase tracking-wider">Giá khởi điểm</span>
+                          <span className="text-[9px] text-slate-500 font-bold block uppercase tracking-wider">Giá khởi điểm</span>
                           <span className="text-xs text-emerald-400 font-black">{formatPrice(featuredTool.priceDay)} VNĐ</span>
                         </div>
                         <button 
@@ -531,7 +533,7 @@ export default function HomePage() {
                             e.stopPropagation();
                             handleOpenBuyModal(featuredTool);
                           }}
-                          className="text-xs font-bold text-slate-950 bg-gradient-to-r from-cyan-500 to-teal-400 hover:brightness-110 flex items-center gap-1.5 transition px-4 py-2 rounded-xl shadow-md font-black"
+                          className="text-xs font-black text-slate-950 bg-gradient-to-r from-cyan-500 to-teal-400 hover:brightness-110 flex items-center gap-1.5 transition px-3.5 py-1.5 rounded-xl shadow-md"
                         >
                           <ShoppingBag className="w-3.5 h-3.5 stroke-[2.5]" /> Mua ngay
                         </button>
@@ -544,32 +546,32 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* 3. TRUST METRICS STRIP (CHỈ SỐ UY TÍN) */}
-          <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* 3. TRUST METRICS STRIP (ĐÃ CẬP NHẬT CHUẨN NỘI DUNG) */}
+          <section className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
             {[
               { label: 'KÍCH HOẠT TÀI KHOẢN', val: 'Tức Thì 0s', icon: Zap, color: 'text-cyan-400' },
-              { label: 'TỶ LỆ AN TOÀN / BYPASS', val: '100% Anticheat', icon: Shield, color: 'text-emerald-400' },
-              { label: 'HỆ THỐNG CLOUD GIST', val: '24/7 Realtime', icon: Activity, color: 'text-amber-400' },
+              { label: 'TỶ LỆ AN TOÀN / BYPASS', val: '100% không chứa virus', icon: Shield, color: 'text-emerald-400' },
+              { label: 'HỆ THỐNG TÀI KHOẢN', val: '24/7 Realtime', icon: Activity, color: 'text-amber-400' },
               { label: 'HỖ TRỢ KỸ THUẬT', val: 'Tận Tâm 24/7', icon: Star, color: 'text-purple-400' },
             ].map((item, idx) => (
-              <div key={idx} className="bg-[#0B1019] border border-slate-800/80 p-4 rounded-2xl space-y-1 hover:border-cyan-500/30 transition">
+              <div key={idx} className="bg-[#0B1019] border border-slate-800/80 p-3.5 rounded-2xl space-y-1 hover:border-cyan-500/30 transition">
                 <div className="flex items-center gap-2">
-                  <item.icon className={`w-4 h-4 ${item.color}`} />
+                  <item.icon className={`w-3.5 h-3.5 ${item.color}`} />
                   <span className="text-[10px] text-slate-400 font-extrabold uppercase">{item.label}</span>
                 </div>
-                <p className="text-base font-black text-white font-mono">{item.val}</p>
+                <p className="text-sm font-black text-white font-mono">{item.val}</p>
               </div>
             ))}
           </section>
 
           {/* 4. SECTION DANH SÁCH TOOL ĐANG HOẠT ĐỘNG */}
-          <div className="space-y-6 pt-2">
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
               <div>
-                <h2 className="text-xl font-black text-white flex items-center gap-2.5 tracking-wide uppercase">
-                  <Wrench className="w-5 h-5 text-cyan-400" /> DANH SÁCH TOOL AUTO NỔI BẬT
+                <h2 className="text-lg font-black text-white flex items-center gap-2 tracking-wide uppercase">
+                  <Wrench className="w-4 h-4 text-cyan-400" /> DANH SÁCH TOOL AUTO NỔI BẬT
                 </h2>
-                <p className="text-xs text-slate-400 mt-1">Các bản tool đang hoạt động và cập nhật liên tục</p>
+                <p className="text-xs text-slate-400">Các bản tool đang hoạt động và cập nhật liên tục</p>
               </div>
               <Link href="/tools" className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition">
                 Xem tất cả <ArrowRight className="w-3.5 h-3.5" />
@@ -577,18 +579,18 @@ export default function HomePage() {
             </div>
 
             {activeTools.length === 0 ? (
-              <div className="text-center py-10 bg-[#0D121D]/50 rounded-2xl border border-slate-800 text-slate-400 text-xs">
+              <div className="text-center py-8 bg-[#0D121D]/50 rounded-2xl border border-slate-800 text-slate-400 text-xs">
                 Hiện tại chưa có tool nào ở trạng thái hoạt động.
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {activeTools.slice(0, 3).map((tool) => (
                   <div 
                     key={tool.id} 
                     onClick={() => handleOpenDetail(tool)}
-                    className="bg-[#0D121D]/95 border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-lg hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:-translate-y-1.5 transition-all duration-200 cursor-pointer group relative"
+                    className="bg-[#0D121D]/95 border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-4.5 flex flex-col justify-between space-y-3.5 shadow-lg hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative"
                   >
-                    <div className="space-y-3">
+                    <div className="space-y-2.5">
                       <div className="w-full aspect-square bg-[#05080E] border border-slate-800/80 rounded-2xl overflow-hidden relative">
                         <img 
                           src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} 
@@ -596,18 +598,18 @@ export default function HomePage() {
                           className="w-full h-full object-cover group-hover:scale-105 transition duration-300" 
                         />
                         
-                        <div className="absolute top-3 left-3 bg-[#05080E]/90 border border-slate-700/60 px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[10px] text-slate-200 font-bold">
-                          <Eye className="w-3.5 h-3.5 text-cyan-400" /> {tool.views || 0}
+                        <div className="absolute top-2.5 left-2.5 bg-[#05080E]/90 border border-slate-700/60 px-2 py-0.5 rounded-lg flex items-center gap-1 text-[10px] text-slate-200 font-bold">
+                          <Eye className="w-3 h-3 text-cyan-400" /> {tool.views || 0}
                         </div>
 
-                        <span className="absolute top-3 right-3 text-[10px] font-extrabold px-2.5 py-1 rounded-lg border bg-emerald-500/20 text-emerald-400 border-emerald-500/40">
+                        <span className="absolute top-2.5 right-2.5 text-[9px] font-extrabold px-2 py-0.5 rounded-md border bg-emerald-500/20 text-emerald-400 border-emerald-500/40">
                           {tool.status ? tool.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
                         </span>
                       </div>
 
                       <div>
-                        <h3 className="font-bold text-white text-base group-hover:text-cyan-300 transition">{tool.name}</h3>
-                        <p className="text-xs text-slate-400 mt-1 line-clamp-1">{tool.description}</p>
+                        <h3 className="font-bold text-white text-sm group-hover:text-cyan-300 transition truncate">{tool.name}</h3>
+                        <p className="text-[11px] text-slate-400 line-clamp-1">{tool.description}</p>
                       </div>
                     </div>
 
@@ -625,7 +627,7 @@ export default function HomePage() {
 
                       <div className="flex items-center justify-between">
                         <div className="leading-none">
-                          <span className="text-[10px] text-slate-500 block mb-1 uppercase font-bold">Gói ngày</span>
+                          <span className="text-[9px] text-slate-500 block mb-0.5 uppercase font-bold">Gói ngày</span>
                           <span className="text-xs text-emerald-400 font-black">{tool.priceDay ? `${formatPrice(tool.priceDay)} VNĐ` : '---'}</span>
                         </div>
                         <button 
@@ -633,7 +635,7 @@ export default function HomePage() {
                             e.stopPropagation();
                             handleOpenBuyModal(tool);
                           }} 
-                          className="font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer flex items-center gap-1.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500 hover:text-slate-950"
+                          className="font-bold px-3.5 py-1.5 rounded-xl text-xs transition cursor-pointer flex items-center gap-1 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500 hover:text-slate-950"
                         >
                           <ShoppingBag className="w-3.5 h-3.5" /> Mua Ngay
                         </button>
@@ -645,17 +647,17 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* 5. TẠI SAO NÊN CHỌN ZTOOL? */}
-          <section className="space-y-4 pt-4">
-            <div className="text-left space-y-1">
+          {/* 5. TẠI SAO NÊN CHỌN ZTOOL? (ĐÃ CẬP NHẬT CHUẨN NỘI DUNG) */}
+          <section className="space-y-3.5 pt-2">
+            <div className="text-left space-y-0.5">
               <span className="text-[10px] font-black text-cyan-400 uppercase tracking-wider block">ƯU ĐIỂM VƯỢT TRỘI</span>
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-wide">TẠI SAO NÊN CHỌN ZTOOL.STORE?</h2>
+              <h2 className="text-lg sm:text-xl font-black text-white tracking-wide">TẠI SAO NÊN CHỌN ZTOOL.STORE?</h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-[#0B1019] border border-slate-800 hover:border-cyan-500/40 p-6 rounded-3xl space-y-3 transition group">
-                <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition">
-                  <Laptop className="w-6 h-6" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="bg-[#0B1019] border border-slate-800 hover:border-cyan-500/40 p-5 rounded-3xl space-y-2.5 transition group">
+                <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:scale-105 transition">
+                  <Laptop className="w-5 h-5" />
                 </div>
                 <h3 className="text-sm font-black text-white group-hover:text-cyan-300 transition">Tối Ưu Phần Cứng Nhẹ Nhàng</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
@@ -663,19 +665,19 @@ export default function HomePage() {
                 </p>
               </div>
 
-              <div className="bg-[#0B1019] border border-slate-800 hover:border-emerald-500/40 p-6 rounded-3xl space-y-3 transition group">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition">
-                  <ShieldCheck className="w-6 h-6" />
+              <div className="bg-[#0B1019] border border-slate-800 hover:border-emerald-500/40 p-5 rounded-3xl space-y-2.5 transition group">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition">
+                  <ShieldCheck className="w-5 h-5" />
                 </div>
                 <h3 className="text-sm font-black text-white group-hover:text-emerald-300 transition">Hệ Thống Phân Quyền Độc Quyền</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Quản lý tài khoản và khóa mã thiết bị (HWID) tự động qua GitHub Gist API, bảo mật bản quyền và không bị lộ key.
+                  Quản lý tài khoản thông minh, bảo vệ bản quyền, thông tin và không lo bị lộ key.
                 </p>
               </div>
 
-              <div className="bg-[#0B1019] border border-slate-800 hover:border-amber-500/40 p-6 rounded-3xl space-y-3 transition group">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-110 transition">
-                  <Gift className="w-6 h-6" />
+              <div className="bg-[#0B1019] border border-slate-800 hover:border-amber-500/40 p-5 rounded-3xl space-y-2.5 transition group">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-105 transition">
+                  <Gift className="w-5 h-5" />
                 </div>
                 <h3 className="text-sm font-black text-white group-hover:text-amber-300 transition">Trải Nghiệm Miễn Phí 3 Ngày</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
@@ -687,22 +689,22 @@ export default function HomePage() {
 
           {/* 6. DỰ ÁN NỔI BẬT */}
           {projects.length > 0 && (
-            <div className="space-y-6 pt-4">
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <div>
-                  <h2 className="text-xl font-black text-white flex items-center gap-2.5 tracking-wide uppercase">
-                    <FolderKanban className="w-5 h-5 text-cyan-400" /> DỰ ÁN ĐANG PHÁT TRIỂN
+                  <h2 className="text-lg font-black text-white flex items-center gap-2 tracking-wide uppercase">
+                    <FolderKanban className="w-4 h-4 text-cyan-400" /> DỰ ÁN ĐANG PHÁT TRIỂN
                   </h2>
-                  <p className="text-xs text-slate-400 mt-1">Các dự án, tool được cộng đồng quan tâm</p>
+                  <p className="text-xs text-slate-400">Các dự án, tool được cộng đồng quan tâm</p>
                 </div>
                 <Link href="/projects" className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition">
                   Xem tất cả dự án <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {projects.slice(0, 3).map((p) => (
-                  <div key={p.id} className="bg-[#0D121D]/95 border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-5 space-y-3 shadow-md">
+                  <div key={p.id} className="bg-[#0D121D]/95 border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-4.5 space-y-2.5 shadow-md">
                     {p.image && (
                       <div className="w-full aspect-square bg-[#05080E] border border-slate-800/80 rounded-2xl overflow-hidden">
                         <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
@@ -773,7 +775,7 @@ export default function HomePage() {
             )}
           </AnimatePresence>
 
-          {/* ================= MODAL CHI TIẾT TOOL (TAB MEDIA ẢNH / VIDEO) ================= */}
+          {/* ================= MODAL CHI TIẾT TOOL ================= */}
           <AnimatePresence>
             {selectedToolForDetail && (
               <motion.div 
