@@ -48,7 +48,7 @@ export default function ActivationGuidePage() {
             Nhận Dùng Thử Hoặc Mua Bản Quyền
           </h3>
           <p className="text-xs text-slate-300 leading-relaxed">
-            Tại trang <b>Cửa Hàng Tool</b>, chọn gói thời hạn phù hợp hoặc bấm nút <b>Trải Nghiệm 3 Ngày (Miễn Phí)</b>. Hệ thống tự động cấp thời hạn lên máy chủ Gist ngay tức thì.
+            Tại trang <b>Cửa Hàng Tool</b>, chọn gói thời hạn phù hợp hoặc bấm nút <b>Trải Nghiệm 3 Ngày (Miễn Phí)</b>. Hệ thống tự động cấp thời hạn lên máy chủ ngay tức thì.
           </p>
         </div>
 
