@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag, Eye, Shield, Check, ZoomIn, Layers, Activity, AlertTriangle, Clock, Percent, Video, Image as ImageIcon, Gift, History, FileText
+  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag, Eye, Shield, Check, ZoomIn, Layers, Activity, AlertTriangle, Clock, Percent, Video, Image as ImageIcon, Gift, History
 } from 'lucide-react';
 
 export default function ToolsPage() {
@@ -17,7 +17,6 @@ export default function ToolsPage() {
   const [purchaseMsg, setPurchaseMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [loadingBuy, setLoadingBuy] = useState(false);
 
-  // State Trải Nghiệm Dùng Thử 3 Ngày
   const [trialTool, setTrialTool] = useState<any | null>(null);
   const [loadingTrial, setLoadingTrial] = useState(false);
   const [trialMsg, setTrialMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -144,7 +143,6 @@ export default function ToolsPage() {
     setCouponMsg({ type: 'success', text: successText });
   };
 
-  // Kích hoạt dùng thử 3 ngày miễn phí
   const handleActivateTrial = async () => {
     setTrialMsg(null);
     if (!trialTool) return;
@@ -233,7 +231,6 @@ export default function ToolsPage() {
     }
   };
 
-  // Mua bản quyền Tool
   const handleBuyTool = async () => {
     setPurchaseMsg(null);
     if (!selectedToolForBuy) return;
@@ -406,9 +403,7 @@ export default function ToolsPage() {
                         </div>
                       </div>
 
-                      {/* CỤM NÚT THAO TÁC */}
                       <div className="space-y-2 pt-1">
-                        {/* NÚT TRẢI NGHIỆM 3 NGÀY */}
                         <button 
                           onClick={(e) => { 
                             e.stopPropagation(); 
@@ -545,7 +540,7 @@ export default function ToolsPage() {
             )}
           </AnimatePresence>
 
-          {/* ================= MODAL CHI TIẾT SẢN PHẨM ================= */}
+          {/* ================= MODAL CHI TIẾT SẢN PHẨM (TỐI GIẢN & DỄ NHÌN) ================= */}
           <AnimatePresence>
             {selectedToolForDetail && (
               <motion.div 
@@ -554,20 +549,21 @@ export default function ToolsPage() {
                 className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 cursor-pointer"
               >
                 <motion.div 
-                  initial={{ opacity: 0, scale: 0.95, y: 15 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 15 }} transition={{ duration: 0.2 }}
+                  initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.2 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-[#0D121D] border-2 border-cyan-500/40 w-full max-w-2xl rounded-3xl p-6 sm:p-8 space-y-5 relative shadow-[0_0_50px_rgba(6,182,212,0.25)] max-h-[90vh] overflow-y-auto cursor-default custom-scrollbar"
+                  className="bg-[#0B1019] border border-slate-800 w-full max-w-xl rounded-3xl p-5 sm:p-7 space-y-5 relative shadow-[0_10px_40px_rgba(0,0,0,0.8)] max-h-[90vh] overflow-y-auto cursor-default custom-scrollbar"
                 >
-                  <button onClick={() => setSelectedToolForDetail(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#080B10] border border-slate-800 transition hover:border-cyan-400 z-10"><X className="w-5 h-5" /></button>
+                  <button onClick={() => setSelectedToolForDetail(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 transition hover:border-cyan-400 z-10"><X className="w-4 h-4" /></button>
                   
-                  <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-                    <div className="w-11 h-11 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0"><Info className="w-5 h-5" /></div>
+                  {/* HEADER */}
+                  <div className="flex items-center gap-3 border-b border-slate-800/80 pb-3">
+                    <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0"><Info className="w-4 h-4" /></div>
                     <div>
-                      <span className="text-[10px] text-cyan-400 font-extrabold uppercase tracking-wider block">THÔNG TIN CHI TIẾT SẢN PHẨM</span>
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-xl font-black text-white leading-tight">{selectedToolForDetail.name}</h2>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">THÔNG TIN SẢN PHẨM</span>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <h2 className="text-base font-black text-white leading-tight">{selectedToolForDetail.name}</h2>
                         {selectedToolForDetail.version && (
-                          <span className="text-[10px] font-mono font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2.5 py-0.5 rounded-lg shadow-sm">
+                          <span className="text-[10px] font-mono font-black bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 px-2 py-0.2 rounded-md">
                             {selectedToolForDetail.version}
                           </span>
                         )}
@@ -575,16 +571,16 @@ export default function ToolsPage() {
                     </div>
                   </div>
 
-                  {/* 3 NÚT CHUYỂN ĐỔI TAB TRỰC TIẾP: VIDEO DEMO - ẢNH CHI TIẾT - BẢN CẬP NHẬT */}
+                  {/* TAB CHUYỂN ĐỔI GỌN GÀNG */}
                   <div className="space-y-3">
-                    <div className="flex items-center justify-center gap-2 bg-[#05080E] p-1.5 rounded-2xl border border-slate-800 max-w-md mx-auto">
+                    <div className="flex items-center justify-center gap-1.5 bg-[#05080E] p-1 rounded-xl border border-slate-800/80">
                       {selectedToolForDetail.videoLink && getYouTubeEmbedUrl(selectedToolForDetail.videoLink) && (
                         <button
                           type="button"
                           onClick={() => setDetailMediaTab('video')}
-                          className={`flex-1 py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                          className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
                             detailMediaTab === 'video' 
-                              ? 'bg-rose-500 text-white shadow-md' 
+                              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 font-black' 
                               : 'text-slate-400 hover:text-white'
                           }`}
                         >
@@ -595,9 +591,9 @@ export default function ToolsPage() {
                       <button
                         type="button"
                         onClick={() => setDetailMediaTab('image')}
-                        className={`flex-1 py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                        className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
                           detailMediaTab === 'image' 
-                            ? 'bg-cyan-500 text-slate-950 shadow-md' 
+                            ? 'bg-cyan-500 text-slate-950 font-black' 
                             : 'text-slate-400 hover:text-white'
                         }`}
                       >
@@ -607,20 +603,20 @@ export default function ToolsPage() {
                       <button
                         type="button"
                         onClick={() => setDetailMediaTab('changelog')}
-                        className={`flex-1 py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                        className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
                           detailMediaTab === 'changelog' 
-                            ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md' 
+                            ? 'bg-amber-500 text-slate-950 font-black' 
                             : 'text-slate-400 hover:text-white'
                         }`}
                       >
-                        <Sparkles className="w-3.5 h-3.5" /> Bản Cập Nhật
+                        <History className="w-3.5 h-3.5" /> Bản Cập Nhật
                       </button>
                     </div>
 
-                    {/* KHUNG HIỂN THỊ NỘI DUNG THEO TAB */}
-                    <div className="relative rounded-2xl overflow-hidden border-2 border-slate-800 bg-[#05080E] shadow-inner">
+                    {/* KHUNG HIỂN THỊ NỘI DUNG CHÍNH (ĐÃ THU GỌN CHIỀU CAO & BỎ RỐI MẮT) */}
+                    <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-[#05080E]">
                       {detailMediaTab === 'video' && selectedToolForDetail.videoLink && getYouTubeEmbedUrl(selectedToolForDetail.videoLink) ? (
-                        <div className="w-full aspect-video">
+                        <div className="w-full aspect-video max-h-[260px]">
                           <iframe 
                             width="100%" height="100%" 
                             src={getYouTubeEmbedUrl(selectedToolForDetail.videoLink)!} 
@@ -631,36 +627,30 @@ export default function ToolsPage() {
                           </iframe>
                         </div>
                       ) : detailMediaTab === 'changelog' ? (
-                        /* GIAO DIỆN BẢN CẬP NHẬT TERMINAL CAO CẤP */
-                        <div className="w-full aspect-video max-h-[340px] p-5 sm:p-6 flex flex-col justify-start overflow-y-auto custom-scrollbar bg-gradient-to-b from-[#0B101D] to-[#05080E]">
-                          <div className="flex items-center justify-between border-b border-slate-800/90 pb-3 mb-4">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 shadow-sm">
-                                <History className="w-4 h-4" />
-                              </div>
-                              <div>
-                                <h4 className="text-xs font-black text-white uppercase tracking-wider">NHẬT KÝ NÂNG CẤP & FIX LỖI</h4>
-                                <span className="text-[10px] text-slate-400 font-medium">Toàn bộ thay đổi qua các phiên bản</span>
-                              </div>
-                            </div>
+                        /* GIAO DIỆN BẢN CẬP NHẬT TỐI GIẢN & ĐẸP MẮT */
+                        <div className="w-full h-[240px] p-4 flex flex-col justify-start overflow-y-auto custom-scrollbar bg-[#05080E]">
+                          <div className="flex items-center justify-between border-b border-slate-800/80 pb-2 mb-3">
+                            <span className="text-[11px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                              <History className="w-3.5 h-3.5" /> Nhật ký cập nhật
+                            </span>
                             {selectedToolForDetail.version && (
-                              <span className="text-[11px] font-mono font-black bg-amber-500/20 text-amber-300 border border-amber-400/50 px-3 py-1 rounded-xl shadow-[0_0_12px_rgba(245,158,11,0.25)]">
-                                {selectedToolForDetail.version}
+                              <span className="text-[10px] font-mono font-bold text-slate-400">
+                                Phiên bản {selectedToolForDetail.version}
                               </span>
                             )}
                           </div>
 
-                          <div className="space-y-2.5 text-left font-mono">
+                          <div className="space-y-2 text-left">
                             {selectedToolForDetail.changelog ? (
                               selectedToolForDetail.changelog.split('\n').filter((l: string) => l.trim() !== '').map((line: string, i: number) => (
-                                <div key={i} className="flex items-start gap-2.5 text-xs text-slate-300 leading-relaxed bg-[#05080E]/70 p-2.5 rounded-xl border border-slate-800/70">
-                                  <span className="w-2 h-2 rounded-full bg-cyan-400 mt-1.5 shrink-0 shadow-[0_0_8px_#22d3ee]"></span>
-                                  <span className="font-sans">{line.replace(/^-\s*/, '')}</span>
+                                <div key={i} className="flex items-start gap-2 text-xs text-slate-300 leading-relaxed pl-1">
+                                  <span className="text-cyan-400 font-bold select-none">•</span>
+                                  <span>{line.replace(/^-\s*/, '')}</span>
                                 </div>
                               ))
                             ) : (
-                              <div className="py-12 text-center text-xs text-slate-500 italic">
-                                Bản cập nhật hiện tại đang hoạt động ổn định và chưa có nhật ký mới.
+                              <div className="py-10 text-center text-xs text-slate-500 italic">
+                                Bản cập nhật hiện tại đang hoạt động ổn định.
                               </div>
                             )}
                           </div>
@@ -668,12 +658,12 @@ export default function ToolsPage() {
                       ) : (
                         <div 
                           onClick={() => setZoomImage(selectedToolForDetail.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg')}
-                          className="w-full aspect-video max-h-[340px] relative group cursor-zoom-in overflow-hidden flex items-center justify-center bg-[#05080E]"
+                          className="w-full h-[240px] relative group cursor-zoom-in overflow-hidden flex items-center justify-center bg-[#05080E]"
                           title="Bấm để xem ảnh phóng to đầy đủ"
                         >
-                          <img src={selectedToolForDetail.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForDetail.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out" />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity duration-300 backdrop-blur-[2px]">
-                            <span className="bg-cyan-500 text-slate-950 px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-lg"><ZoomIn className="w-4 h-4" /> BẤM PHÓNG TO ẢNH</span>
+                          <img src={selectedToolForDetail.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForDetail.name} className="w-full h-full object-contain" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity duration-200">
+                            <span className="bg-cyan-500 text-slate-950 px-3 py-1 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md"><ZoomIn className="w-3.5 h-3.5" /> Phóng to ảnh</span>
                           </div>
                         </div>
                       )}
@@ -681,21 +671,23 @@ export default function ToolsPage() {
                   </div>
 
                   {/* KHUNG MÔ TẢ TÍNH NĂNG */}
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Mô tả tính năng đầy đủ:</h4>
-                    <p className="text-xs text-slate-300 bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl leading-relaxed whitespace-pre-line max-h-36 overflow-y-auto custom-scrollbar font-medium">
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Tính năng chính:</span>
+                    <p className="text-xs text-slate-300 bg-[#05080E] border border-slate-800/80 p-3.5 rounded-xl leading-relaxed whitespace-pre-line max-h-24 overflow-y-auto custom-scrollbar font-medium">
                       {selectedToolForDetail.description || 'Chưa có nội dung mô tả chi tiết cho sản phẩm này.'}
                     </p>
                   </div>
                   
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                    <div className="bg-[#05080E] border border-slate-800 p-2.5 rounded-2xl text-center"><span className="text-[10px] text-slate-500 block font-bold">Ngày</span><b className="text-xs text-emerald-400 font-mono">{formatPrice(selectedToolForDetail.priceDay)}đ</b></div>
-                    <div className="bg-[#05080E] border border-slate-800 p-2.5 rounded-2xl text-center"><span className="text-[10px] text-slate-500 block font-bold">Tuần</span><b className="text-xs text-emerald-400 font-mono">{formatPrice(selectedToolForDetail.priceWeek)}đ</b></div>
-                    <div className="bg-[#05080E] border border-slate-800 p-2.5 rounded-2xl text-center"><span className="text-[10px] text-slate-500 block font-bold">Tháng</span><b className="text-xs text-emerald-400 font-mono">{formatPrice(selectedToolForDetail.priceMonth)}đ</b></div>
-                    <div className="bg-[#05080E] border border-cyan-500/40 p-2.5 rounded-2xl text-center"><span className="text-[10px] text-cyan-400 block font-bold">Vĩnh Viễn</span><b className="text-xs text-cyan-300 font-mono font-black">{formatPrice(selectedToolForDetail.priceLifetime)}đ</b></div>
+                  {/* BẢNG GIÁ */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="bg-[#05080E] border border-slate-800/80 p-2 rounded-xl text-center"><span className="text-[9px] text-slate-500 block font-bold">Ngày</span><b className="text-[11px] text-emerald-400 font-mono">{formatPrice(selectedToolForDetail.priceDay)}đ</b></div>
+                    <div className="bg-[#05080E] border border-slate-800/80 p-2 rounded-xl text-center"><span className="text-[9px] text-slate-500 block font-bold">Tuần</span><b className="text-[11px] text-emerald-400 font-mono">{formatPrice(selectedToolForDetail.priceWeek)}đ</b></div>
+                    <div className="bg-[#05080E] border border-slate-800/80 p-2 rounded-xl text-center"><span className="text-[9px] text-slate-500 block font-bold">Tháng</span><b className="text-[11px] text-emerald-400 font-mono">{formatPrice(selectedToolForDetail.priceMonth)}đ</b></div>
+                    <div className="bg-[#05080E] border border-cyan-500/30 p-2 rounded-xl text-center"><span className="text-[9px] text-cyan-400 block font-bold">Vĩnh Viễn</span><b className="text-[11px] text-cyan-300 font-mono font-black">{formatPrice(selectedToolForDetail.priceLifetime)}đ</b></div>
                   </div>
                   
-                  <div className="space-y-2 pt-2">
+                  {/* NÚT HÀNH ĐỘNG */}
+                  <div className="space-y-2 pt-1">
                     <button
                       onClick={() => {
                         const tool = selectedToolForDetail;
@@ -703,17 +695,17 @@ export default function ToolsPage() {
                         setTrialTool(tool);
                         setTrialMsg(null);
                       }}
-                      className="w-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-yellow-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 border border-amber-500/60 text-amber-300 font-black py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 cursor-pointer transition shadow-md"
+                      className="w-full bg-amber-500/10 border border-amber-500/40 text-amber-300 font-black py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:bg-amber-500/20 transition"
                     >
-                      <Gift className="w-4 h-4 text-amber-400" /> TRẢI NGHIỆM DÙNG THỬ 3 NGÀY MIỄN PHÍ
+                      <Gift className="w-3.5 h-3.5 text-amber-400" /> Trải Nghiệm Dùng Thử 3 Ngày Miễn Phí
                     </button>
 
                     <button
                       disabled={selectedToolForDetail.status === 'Tạm ngưng'}
                       onClick={() => { const tool = selectedToolForDetail; setSelectedToolForDetail(null); setSelectedToolForBuy(tool); }}
-                      className={`w-full font-black py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 cursor-pointer transition shadow-lg ${selectedToolForDetail.status === 'Tạm ngưng' ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : 'bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 hover:brightness-110 shadow-[0_0_20px_rgba(6,182,212,0.35)]'}`}
+                      className={`w-full font-black py-3 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer transition shadow-md ${selectedToolForDetail.status === 'Tạm ngưng' ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : 'bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 hover:brightness-110'}`}
                     >
-                      <ShoppingBag className="w-4 h-4 stroke-[2.5]" /> {selectedToolForDetail.status === 'Tạm ngưng' ? 'SẢN PHẨM ĐANG BẢO TRÌ' : 'MUA SẢN PHẨM NÀY NGAY'}
+                      <ShoppingBag className="w-3.5 h-3.5 stroke-[2.5]" /> {selectedToolForDetail.status === 'Tạm ngưng' ? 'SẢN PHẨM ĐANG BẢO TRÌ' : 'MUA SẢN PHẨM NÀY NGAY'}
                     </button>
                   </div>
                 </motion.div>
@@ -749,8 +741,6 @@ export default function ToolsPage() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-                    
-                    {/* CỘT TRÁI: TAB MEDIA */}
                     <div className="md:col-span-6 space-y-3">
                       {selectedToolForBuy.videoLink && getYouTubeEmbedUrl(selectedToolForBuy.videoLink) && (
                         <div className="flex items-center justify-center gap-2 bg-[#05080E] p-1 rounded-2xl border border-slate-800">
@@ -800,7 +790,6 @@ export default function ToolsPage() {
                       </div>
                     </div>
 
-                    {/* CỘT PHẢI: CHỌN GÓI & ÁP MÃ */}
                     <div className="md:col-span-6 space-y-4 text-left">
                       <div className="bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl space-y-1 shadow-inner">
                         <span className="text-[10px] font-extrabold text-cyan-400 uppercase tracking-wider block">Mô tả tóm tắt:</span>
@@ -809,7 +798,6 @@ export default function ToolsPage() {
                         </p>
                       </div>
 
-                      {/* Mã giảm giá */}
                       <div className="space-y-1.5 bg-[#05080E] border border-slate-800/90 p-3.5 rounded-2xl">
                         <label className="block text-[11px] font-bold text-slate-300 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-cyan-400" /> Mã giảm giá (nếu có):</label>
                         <div className="flex gap-2">
@@ -819,7 +807,6 @@ export default function ToolsPage() {
                         {couponMsg && <p className={`text-[10px] font-bold ${couponMsg.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>{couponMsg.text}</p>}
                       </div>
 
-                      {/* Gói thời hạn */}
                       <div className="space-y-2">
                         <label className="block text-[11px] font-bold text-slate-300">Chọn gói thời hạn:</label>
                         <div className="grid grid-cols-2 gap-2.5">
