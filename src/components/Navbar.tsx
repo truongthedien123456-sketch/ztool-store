@@ -304,7 +304,7 @@ export default function Navbar() {
   const vipInfo = getVipInfo(totalDeposited);
   const VipIcon = vipInfo.icon;
 
-  // Dữ liệu bảng đặc quyền VIP chi tiết
+  // Dữ liệu bảng đặc quyền VIP chuẩn theo yêu cầu
   const VIP_TIERS_DATA = [
     {
       level: 0,
@@ -315,8 +315,9 @@ export default function Navbar() {
       badgeBg: 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400',
       cardBg: 'bg-[#080E18] border-slate-800',
       benefits: [
-        'Điểm danh hàng ngày nhận +1.000đ vào ví',
-        'Mua và kích hoạt key tự động 24/7',
+        'Đặc quyền Khung viền & Avatar Thành viên cơ bản',
+        'Điểm danh nhận +1.000đ/ngày vào ví',
+        'Mua và kích hoạt key tool tự động 24/7',
         'Hỗ trợ qua kênh Ticket / Live chat cơ bản'
       ]
     },
@@ -329,9 +330,10 @@ export default function Navbar() {
       badgeBg: 'bg-orange-500/20 border-orange-500/50 text-orange-300',
       cardBg: 'bg-[#0C0E14] border-orange-500/40 shadow-[0_0_20px_rgba(249,115,22,0.1)]',
       benefits: [
-        'Bao gồm toàn bộ quyền lợi Thành viên',
-        'Huy hiệu Chiến Binh Đồng Neon phát sáng',
-        'Ưu tiên duyệt tiền nạp SePay tự động tốc độ cao'
+        'Đặc quyền Khung viền & Avatar Đồng Neon phát sáng',
+        'Đặc quyền ưu tiên nạp tiền tự động tốc độ cao',
+        'Tăng thưởng điểm danh hàng ngày lên +1.500đ/ngày',
+        'Bao gồm toàn bộ quyền lợi của cấp Thành viên'
       ]
     },
     {
@@ -343,10 +345,10 @@ export default function Navbar() {
       badgeBg: 'bg-slate-400/20 border-cyan-400/50 text-cyan-300',
       cardBg: 'bg-[#060F1A] border-cyan-400/40 shadow-[0_0_20px_rgba(6,182,212,0.15)]',
       benefits: [
-        'Bao gồm toàn bộ quyền lợi VIP 1',
-        'Huy hiệu Tinh Anh Hiệp Sĩ Bạc',
-        'Được hỗ trợ cài đặt Tool trực tiếp qua Ultraviewer',
-        'Tham gia kênh thông báo bản cập nhật Tool sớm nhất'
+        'Đặc quyền Khung viền & Avatar Hiệp Sĩ Bạc Tinh Anh',
+        'Đặc quyền ưu tiên hỗ trợ các vấn đề về tool',
+        'Hỗ trợ cài đặt và fix lỗi trực tiếp qua Ultraviewer 1-1',
+        'Tăng thưởng điểm danh hàng ngày lên +2.000đ/ngày'
       ]
     },
     {
@@ -358,10 +360,10 @@ export default function Navbar() {
       badgeBg: 'bg-amber-500/20 border-amber-500/60 text-amber-300',
       cardBg: 'bg-[#121008] border-amber-400/50 shadow-[0_0_25px_rgba(251,191,36,0.18)]',
       benefits: [
-        'Bao gồm toàn bộ quyền lợi VIP 2',
-        'Huy hiệu Hoàng Gia Thương Gia Cao Cấp',
+        'Đặc quyền Khung viền & Avatar Hoàng Gia Hoàng Kim',
+        'Đặc quyền được trải nghiệm các bản Beta Tool sớm nhất',
         'Hỗ trợ Reset HWID (đổi máy) không giới hạn qua Admin',
-        'Tặng Voucher giảm giá độc quyền mỗi tháng'
+        'Tăng thưởng điểm danh hàng ngày lên +3.000đ/ngày'
       ]
     },
     {
@@ -373,10 +375,10 @@ export default function Navbar() {
       badgeBg: 'bg-purple-500/30 border-purple-400 text-purple-200 shadow-[0_0_12px_rgba(168,85,247,0.7)]',
       cardBg: 'bg-[#110B1C] border-purple-500/60 shadow-[0_0_30px_rgba(168,85,247,0.22)]',
       benefits: [
-        'Bao gồm toàn bộ quyền lợi VIP 3',
-        'Huy hiệu Bạch Kim Hoàng Tộc phát sáng',
-        'Kênh Live Chat hỗ trợ riêng biệt trực tiếp với Admin',
-        'Ưu tiên xử lý lỗi kỹ thuật trong vòng 5 phút'
+        'Đặc quyền Khung viền & Avatar Bạch Kim Tối Cao phát sáng',
+        'Đặc quyền kênh chat support riêng biệt 1-1 trực tiếp với Admin',
+        'Tặng Key dùng thử 3 ngày miễn phí cho tất cả Tool mới',
+        'Tăng thưởng điểm danh hàng ngày lên +5.000đ/ngày'
       ]
     },
     {
@@ -388,10 +390,10 @@ export default function Navbar() {
       badgeBg: 'bg-gradient-to-r from-rose-600/40 to-amber-500/40 border-rose-400 text-rose-100 shadow-[0_0_15px_rgba(244,63,94,0.7)]',
       cardBg: 'bg-gradient-to-b from-[#180A10] to-[#0A060A] border-rose-500/80 shadow-[0_0_40px_rgba(244,63,94,0.3)]',
       benefits: [
-        'ĐẶC QUYỀN CAO CẤP NHẤT TOÀN HỆ THỐNG',
-        'Huy hiệu Kim Cương Đỏ Huyền Thoại Tối Thượng',
-        'Được quyền yêu cầu code tính năng Auto FiveM riêng',
-        'Bảo hành 1 đổi 1 và hỗ trợ kỹ thuật VIP 24/7'
+        'Đặc quyền Khung viền & Avatar Kim Cương Đỏ Huyền Thoại Tối Thượng',
+        'ĐẶC QUYỀN TỐI THƯỢNG TOÀN SHOP',
+        'Quyền yêu cầu tính năng Tool riêng theo yêu cầu',
+        'Điểm danh +10.000đ/ngày & Bảo hành 1 đổi 1 trọn đời 24/7'
       ]
     }
   ];
@@ -400,6 +402,78 @@ export default function Navbar() {
   const nextTierIndex = Math.min(5, vipInfo.level < 5 ? vipInfo.level + 1 : 5);
   const nextTierData = VIP_TIERS_DATA[nextTierIndex];
   const NextTierIcon = nextTierData.icon;
+
+  // Tính số tiền nhận được khi điểm danh dựa theo cấp VIP
+  const getDailyCheckinReward = (level: number) => {
+    switch (level) {
+      case 5: return 10000;
+      case 4: return 5000;
+      case 3: return 3000;
+      case 2: return 2000;
+      case 1: return 1500;
+      default: return 1000;
+    }
+  };
+
+  const handleDailyCheckIn = async () => {
+    if (!currentUser) return;
+    setCheckInMsg(null);
+    setCheckInLoading(true);
+
+    try {
+      const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+
+      const { data: checkinLogs } = await supabase
+        .from('transactions')
+        .select('created_at')
+        .eq('username', currentUser.username)
+        .eq('type', 'CHECKIN')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (checkinLogs && checkinLogs.length > 0) {
+        const lastCheckInDate = new Date(checkinLogs[0].created_at).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+        if (lastCheckInDate === todayStr) {
+          setHasCheckedInToday(true);
+          localStorage.setItem(`ztool_checkin_${todayStr}`, 'true');
+          setCheckInMsg({ type: 'error', text: 'Bạn đã điểm danh hôm nay rồi. Hãy quay lại vào ngày mai nhé!' });
+          setCheckInLoading(false);
+          return;
+        }
+      }
+
+      const rewardAmount = getDailyCheckinReward(vipInfo.level);
+      const newBalance = Number(currentUser.balance || 0) + rewardAmount;
+      
+      const { error: updateErr } = await supabase
+        .from('users')
+        .update({ balance: newBalance })
+        .eq('username', currentUser.username);
+
+      if (updateErr) throw updateErr;
+
+      await supabase.from('transactions').insert([{ 
+        username: currentUser.username, 
+        type: 'CHECKIN', 
+        title: `Điểm danh ${vipInfo.title} (+${rewardAmount.toLocaleString('vi-VN')}đ)`, 
+        amount: rewardAmount, 
+        status: 'Thành công' 
+      }]);
+
+      const updatedUser = { ...currentUser, balance: newBalance };
+      setCurrentUser(updatedUser);
+      localStorage.setItem('ztool_user_data', JSON.stringify(updatedUser));
+      setHasCheckedInToday(true);
+      localStorage.setItem(`ztool_checkin_${todayStr}`, 'true');
+      setCheckInMsg({ type: 'success', text: `Điểm danh thành công! Bạn nhận được +${rewardAmount.toLocaleString('vi-VN')} VNĐ vào ví.` });
+
+    } catch (err: any) {
+      console.error('Lỗi điểm danh:', err);
+      setCheckInMsg({ type: 'error', text: `Lỗi điểm danh: ${err.message || 'Hệ thống gián đoạn'}` });
+    } finally {
+      setCheckInLoading(false);
+    }
+  };
 
   const loadUserGistData = async (username: string) => {
     setLoadingPurchasedTools(true);
@@ -774,66 +848,6 @@ export default function Navbar() {
     setHasCheckedInToday(false);
   };
 
-  const handleDailyCheckIn = async () => {
-    if (!currentUser) return;
-    setCheckInMsg(null);
-    setCheckInLoading(true);
-
-    try {
-      const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-
-      const { data: checkinLogs } = await supabase
-        .from('transactions')
-        .select('created_at')
-        .eq('username', currentUser.username)
-        .eq('type', 'CHECKIN')
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (checkinLogs && checkinLogs.length > 0) {
-        const lastCheckInDate = new Date(checkinLogs[0].created_at).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-        if (lastCheckInDate === todayStr) {
-          setHasCheckedInToday(true);
-          localStorage.setItem(`ztool_checkin_${todayStr}`, 'true');
-          setCheckInMsg({ type: 'error', text: 'Bạn đã điểm danh hôm nay rồi. Hãy quay lại vào ngày mai nhé!' });
-          setCheckInLoading(false);
-          return;
-        }
-      }
-
-      const rewardAmount = 1000;
-      const newBalance = Number(currentUser.balance || 0) + rewardAmount;
-      
-      const { error: updateErr } = await supabase
-        .from('users')
-        .update({ balance: newBalance })
-        .eq('username', currentUser.username);
-
-      if (updateErr) throw updateErr;
-
-      await supabase.from('transactions').insert([{ 
-        username: currentUser.username, 
-        type: 'CHECKIN', 
-        title: 'Điểm danh hàng ngày (+1.000 VNĐ)', 
-        amount: rewardAmount, 
-        status: 'Thành công' 
-      }]);
-
-      const updatedUser = { ...currentUser, balance: newBalance };
-      setCurrentUser(updatedUser);
-      localStorage.setItem('ztool_user_data', JSON.stringify(updatedUser));
-      setHasCheckedInToday(true);
-      localStorage.setItem(`ztool_checkin_${todayStr}`, 'true');
-      setCheckInMsg({ type: 'success', text: 'Điểm danh thành công! Bạn nhận được +1,000 VNĐ vào ví.' });
-
-    } catch (err: any) {
-      console.error('Lỗi điểm danh:', err);
-      setCheckInMsg({ type: 'error', text: `Lỗi điểm danh: ${err.message || 'Hệ thống gián đoạn'}` });
-    } finally {
-      setCheckInLoading(false);
-    }
-  };
-
   const resetForm = () => {
     setUsernameInput('');
     setEmailInput('');
@@ -1138,20 +1152,11 @@ export default function Navbar() {
                 {currentUser.username.substring(0, 1).toUpperCase()}
               </div>
               
-              <div className="flex flex-col items-center gap-2 pt-0.5">
+              <div className="pt-0.5">
                 <span className={`text-[11px] font-black px-4 py-1.5 rounded-full border flex items-center gap-1.5 shadow-lg whitespace-nowrap ${vipInfo.badgeBg}`}>
                   <VipIcon className={`w-4 h-4 ${vipInfo.color}`} />
                   <span className={vipInfo.color}>{vipInfo.title}</span>
                 </span>
-
-                {/* NÚT XEM TẤT CẢ ĐẶC QUYỀN VIP */}
-                <button
-                  onClick={() => setShowVipBenefitsModal(true)}
-                  className="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 px-3 py-1 rounded-xl transition cursor-pointer flex items-center gap-1 shadow-sm hover:scale-105"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                  Xem tất cả đặc quyền VIP
-                </button>
               </div>
 
               <div className="space-y-0.5">
@@ -1206,6 +1211,7 @@ export default function Navbar() {
                   </button>
                 </div>
 
+                {/* KHUNG TIẾN TRÌNH VIP CÓ NÚT XEM ĐẶC QUYỀN NẰM BÊN TRONG */}
                 <div className="bg-[#05080E] border border-slate-800/90 p-4.5 rounded-2xl space-y-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-400 font-bold flex items-center gap-1.5">
@@ -1227,18 +1233,29 @@ export default function Navbar() {
                     </div>
                   </div>
 
-                  {vipInfo.level < 5 ? (
-                    <p className="text-[11px] text-slate-400 italic">
-                      Cần nạp thêm <b className="text-amber-400 font-mono">{Math.max(0, vipInfo.nextGoal - totalDeposited).toLocaleString('vi-VN')} VNĐ</b> để thăng hạng <b>VIP {vipInfo.level + 1}</b>.
-                    </p>
-                  ) : (
-                    <p className="text-[11px] text-rose-400 font-bold flex items-center gap-1">
-                      <Sparkles className="w-3.5 h-3.5" /> Bạn đã đạt cấp bậc VIP Huyền Thoại cao nhất!
-                    </p>
-                  )}
+                  <div className="flex items-center justify-between pt-1 gap-2">
+                    {vipInfo.level < 5 ? (
+                      <p className="text-[11px] text-slate-400 italic">
+                        Cần nạp thêm <b className="text-amber-400 font-mono">{Math.max(0, vipInfo.nextGoal - totalDeposited).toLocaleString('vi-VN')} VNĐ</b> để thăng hạng <b>VIP {vipInfo.level + 1}</b>.
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-rose-400 font-bold flex items-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5" /> Bạn đã đạt cấp bậc VIP Huyền Thoại cao nhất!
+                      </p>
+                    )}
+
+                    {/* NÚT ĐẶC QUYỀN VIP NẰM BÊN TRONG Ô TIẾN TRÌNH */}
+                    <button
+                      onClick={() => setShowVipBenefitsModal(true)}
+                      className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 shrink-0 whitespace-nowrap shadow-sm hover:scale-105"
+                    >
+                      <Sparkles className="w-3 h-3 text-cyan-400" />
+                      Xem quyền lợi
+                    </button>
+                  </div>
                 </div>
 
-                {/* KHUNG GIỚI THIỆU ĐẶC QUYỀN CỦA CẤP ĐỘ KẾ TIẾP DỰA TRÊN TÀI KHOẢN HIỆN TẠI */}
+                {/* KHUNG GIỚI THIỆU ĐẶC QUYỀN CỦA CẤP ĐỘ TIẾP THEO */}
                 <div className={`p-4 rounded-2xl border transition duration-300 space-y-2.5 ${nextTierData.cardBg}`}>
                   <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
                     <div className="flex items-center gap-2">
@@ -1738,8 +1755,12 @@ export default function Navbar() {
                 <Gift className="w-10 h-10 text-cyan-300" />
               </div>
               <div className="space-y-1">
-                <h4 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Phần thưởng điểm danh hôm nay</h4>
-                <p className="text-3xl font-black text-emerald-400 font-mono tracking-tight">+1.000 VNĐ</p>
+                <h4 className="text-sm font-bold text-slate-300 uppercase tracking-wider">
+                  Thưởng điểm danh {vipInfo.title}
+                </h4>
+                <p className="text-3xl font-black text-emerald-400 font-mono tracking-tight">
+                  +{getDailyCheckinReward(vipInfo.level).toLocaleString('vi-VN')} VNĐ
+                </p>
               </div>
             </div>
 
@@ -1764,7 +1785,7 @@ export default function Navbar() {
               ) : (checkInMsg?.type === 'success' || hasCheckedInToday) ? (
                 <><CheckCircle2 className="w-4 h-4" /> ĐÃ ĐIỂM DANH HÔM NAY</>
               ) : (
-                <><Gift className="w-4 h-4" /> BẤM ĐỂ ĐIỂM DANH NHẬN 1.000đ</>
+                <><Gift className="w-4 h-4" /> BẤM ĐỂ ĐIỂM DANH NHẬN {getDailyCheckinReward(vipInfo.level).toLocaleString('vi-VN')}đ</>
               )}
             </button>
           </div>
