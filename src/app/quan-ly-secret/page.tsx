@@ -121,7 +121,6 @@ export default function AdminPage() {
       }
     });
 
-    // Lắng nghe Realtime tiết kiệm băng thông (không load lại toàn bộ DB khi có 1 sự kiện)
     const channel = supabase
       .channel(`admin_chat_rt_${Date.now()}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
@@ -349,21 +348,22 @@ export default function AdminPage() {
     }
   };
 
-  // Tối ưu hàm load dữ liệu tổng thể (chỉ fetch đúng các trường cần)
   const loadAllSyncData = async () => {
     try {
+      // 1. Tải users
       const { data: userData } = await supabase
         .from('users')
-        .select('id, username, email, password, balance, is_verified, is_exempt, isBanned, total_deposited')
+        .select('*')
         .order('id', { ascending: false });
         
       if (userData) {
         setUsers(userData);
       }
 
+      // 2. Tải tools
       const { data: toolData } = await supabase
         .from('tools')
-        .select('id, name, toolCode, tool_code, image, status, priceDay, price_day, priceWeek, price_week, priceMonth, price_month, priceLifetime, price_lifetime, description, downloadLink, download_link, videoLink, video_link, version, changelog, views, sales')
+        .select('*')
         .order('id', { ascending: false });
         
       if (toolData) {
@@ -375,7 +375,7 @@ export default function AdminPage() {
           status: t.status || 'Đang hoạt động',
           priceDay: t.priceDay || t.price_day || '', 
           priceWeek: t.priceWeek || t.price_week || '', 
-          priceMonth: t.priceMonth || t.price_month || '',
+          priceMonth: t.priceMonth || t.price_month || '', 
           priceLifetime: t.priceLifetime || t.price_lifetime || '', 
           description: t.description, 
           downloadLink: t.downloadLink || t.download_link || '',
@@ -387,31 +387,51 @@ export default function AdminPage() {
         })));
       }
 
-      const { data: projectData } = await supabase.from('projects').select('id, title, image, status, description').order('id', { ascending: false });
+      // 3. Tải projects
+      const { data: projectData } = await supabase
+        .from('projects')
+        .select('*')
+        .order('id', { ascending: false });
       if (projectData) setProjects(projectData);
 
-      const { data: feedbackData } = await supabase.from('feedbacks').select('id, username, content').order('id', { ascending: false });
+      // 4. Tải feedbacks
+      const { data: feedbackData } = await supabase
+        .from('feedbacks')
+        .select('*')
+        .order('id', { ascending: false });
       if (feedbackData) setFeedbacks(feedbackData);
 
+      // 5. Tải SePay logs
       const { data: sepayData } = await supabase
         .from('transactions')
-        .select('id, username, title, content, amount, created_at')
+        .select('*')
         .eq('type', 'RECHARGE')
         .order('id', { ascending: false })
-        .limit(50);
+        .limit(100);
       if (sepayData) setSepayLogs(sepayData);
 
-      const { data: couponData } = await supabase.from('coupons').select('*').order('id', { ascending: false });
+      // 6. Tải coupons
+      const { data: couponData } = await supabase
+        .from('coupons')
+        .select('*')
+        .order('id', { ascending: false });
       if (couponData) setCoupons(couponData);
 
-      const { data: settingsData } = await supabase.from('settings').select('notice_text, is_active').eq('id', 1).single();
+      // 7. Tải settings
+      const { data: settingsData } = await supabase
+        .from('settings')
+        .select('*')
+        .eq('id', 1)
+        .single();
       if (settingsData) {
         setNoticeForm({ text: settingsData.notice_text || '', active: settingsData.is_active });
         setCurrentActiveNotice({ text: settingsData.notice_text || '', active: settingsData.is_active });
       }
 
       fetchGistAccountsData();
-    } catch (e) { console.error('Lỗi đồng bộ dữ liệu Supabase:', e); }
+    } catch (e) { 
+      console.error('Lỗi đồng bộ dữ liệu Supabase:', e); 
+    }
   };
 
   const renderRemainingTime = (expireTimestamp: number) => {
@@ -444,7 +464,7 @@ export default function AdminPage() {
     setSelectedUserHistory({ username, logs: [] });
     const { data, error } = await supabase
       .from('transactions')
-      .select('id, title, amount, created_at')
+      .select('*')
       .eq('username', username)
       .order('id', { ascending: false });
     setLoadingUserHistory(false); 
@@ -546,7 +566,6 @@ export default function AdminPage() {
     }
   };
 
-  // Hàm hỗ trợ chèn mẫu phiên bản vào ô Changelog
   const appendChangelogTemplate = (ver: string) => {
     const template = `[${ver}]\n- Cập nhật tính năng mới\n- Tối ưu hóa hiệu năng & vượt Anticheat\n- Sửa lỗi hoạt động\n`;
     setToolForm(prev => ({
@@ -1128,7 +1147,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 4: SẢN PHẨM TOOL ================= */}
+        {/* ================= TAB 4: SẢN PHẨM TOOL (QUẢN LÝ ĐA PHIÊN BẢN & CẬP NHẬT TOOL CŨ) ================= */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
@@ -1258,7 +1277,7 @@ export default function AdminPage() {
               </button>
             </form>
             
-            {/* DANH SÁCH TOOL VỚI NÚT SỬA NHANH */}
+            {/* DANH SÁCH TOOL VỚI NÚT SỬA NHANH TỪNG SẢN PHẨM */}
             <div className="lg:col-span-2 bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <h3 className="text-xs font-bold text-white uppercase">DANH SÁCH TOOL ĐANG BÁN ({tools.length})</h3>
