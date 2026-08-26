@@ -304,7 +304,7 @@ export default function Navbar() {
   const vipInfo = getVipInfo(totalDeposited);
   const VipIcon = vipInfo.icon;
 
-  // Dữ liệu bảng đặc quyền VIP chuẩn theo yêu cầu
+  // Dữ liệu bảng đặc quyền VIP chuẩn (ĐÃ BỎ THƯỞNG ĐIỂM DANH)
   const VIP_TIERS_DATA = [
     {
       level: 0,
@@ -332,7 +332,6 @@ export default function Navbar() {
       benefits: [
         'Đặc quyền Khung viền & Avatar Đồng Neon phát sáng',
         'Đặc quyền ưu tiên nạp tiền tự động tốc độ cao',
-        'Tăng thưởng điểm danh hàng ngày lên +1.500đ/ngày',
         'Bao gồm toàn bộ quyền lợi của cấp Thành viên'
       ]
     },
@@ -348,7 +347,7 @@ export default function Navbar() {
         'Đặc quyền Khung viền & Avatar Hiệp Sĩ Bạc Tinh Anh',
         'Đặc quyền ưu tiên hỗ trợ các vấn đề về tool',
         'Hỗ trợ cài đặt và fix lỗi trực tiếp qua Ultraviewer 1-1',
-        'Tăng thưởng điểm danh hàng ngày lên +2.000đ/ngày'
+        'Bao gồm toàn bộ quyền lợi của cấp VIP 1'
       ]
     },
     {
@@ -363,7 +362,7 @@ export default function Navbar() {
         'Đặc quyền Khung viền & Avatar Hoàng Gia Hoàng Kim',
         'Đặc quyền được trải nghiệm các bản Beta Tool sớm nhất',
         'Hỗ trợ Reset HWID (đổi máy) không giới hạn qua Admin',
-        'Tăng thưởng điểm danh hàng ngày lên +3.000đ/ngày'
+        'Bao gồm toàn bộ quyền lợi của cấp VIP 2'
       ]
     },
     {
@@ -378,7 +377,7 @@ export default function Navbar() {
         'Đặc quyền Khung viền & Avatar Bạch Kim Tối Cao phát sáng',
         'Đặc quyền kênh chat support riêng biệt 1-1 trực tiếp với Admin',
         'Tặng Key dùng thử 3 ngày miễn phí cho tất cả Tool mới',
-        'Tăng thưởng điểm danh hàng ngày lên +5.000đ/ngày'
+        'Bao gồm toàn bộ quyền lợi của cấp VIP 3'
       ]
     },
     {
@@ -393,7 +392,7 @@ export default function Navbar() {
         'Đặc quyền Khung viền & Avatar Kim Cương Đỏ Huyền Thoại Tối Thượng',
         'ĐẶC QUYỀN TỐI THƯỢNG TOÀN SHOP',
         'Quyền yêu cầu tính năng Tool riêng theo yêu cầu',
-        'Điểm danh +10.000đ/ngày & Bảo hành 1 đổi 1 trọn đời 24/7'
+        'Bảo hành 1 đổi 1 & hỗ trợ kỹ thuật VIP 24/7 trọn đời'
       ]
     }
   ];
@@ -402,18 +401,6 @@ export default function Navbar() {
   const nextTierIndex = Math.min(5, vipInfo.level < 5 ? vipInfo.level + 1 : 5);
   const nextTierData = VIP_TIERS_DATA[nextTierIndex];
   const NextTierIcon = nextTierData.icon;
-
-  // Tính số tiền nhận được khi điểm danh dựa theo cấp VIP
-  const getDailyCheckinReward = (level: number) => {
-    switch (level) {
-      case 5: return 10000;
-      case 4: return 5000;
-      case 3: return 3000;
-      case 2: return 2000;
-      case 1: return 1500;
-      default: return 1000;
-    }
-  };
 
   const handleDailyCheckIn = async () => {
     if (!currentUser) return;
@@ -442,7 +429,7 @@ export default function Navbar() {
         }
       }
 
-      const rewardAmount = getDailyCheckinReward(vipInfo.level);
+      const rewardAmount = 1000;
       const newBalance = Number(currentUser.balance || 0) + rewardAmount;
       
       const { error: updateErr } = await supabase
@@ -455,7 +442,7 @@ export default function Navbar() {
       await supabase.from('transactions').insert([{ 
         username: currentUser.username, 
         type: 'CHECKIN', 
-        title: `Điểm danh ${vipInfo.title} (+${rewardAmount.toLocaleString('vi-VN')}đ)`, 
+        title: `Điểm danh hàng ngày (+1.000 VNĐ)`, 
         amount: rewardAmount, 
         status: 'Thành công' 
       }]);
@@ -465,7 +452,7 @@ export default function Navbar() {
       localStorage.setItem('ztool_user_data', JSON.stringify(updatedUser));
       setHasCheckedInToday(true);
       localStorage.setItem(`ztool_checkin_${todayStr}`, 'true');
-      setCheckInMsg({ type: 'success', text: `Điểm danh thành công! Bạn nhận được +${rewardAmount.toLocaleString('vi-VN')} VNĐ vào ví.` });
+      setCheckInMsg({ type: 'success', text: `Điểm danh thành công! Bạn nhận được +1,000 VNĐ vào ví.` });
 
     } catch (err: any) {
       console.error('Lỗi điểm danh:', err);
@@ -1756,10 +1743,10 @@ export default function Navbar() {
               </div>
               <div className="space-y-1">
                 <h4 className="text-sm font-bold text-slate-300 uppercase tracking-wider">
-                  Thưởng điểm danh {vipInfo.title}
+                  Phần thưởng điểm danh hôm nay
                 </h4>
                 <p className="text-3xl font-black text-emerald-400 font-mono tracking-tight">
-                  +{getDailyCheckinReward(vipInfo.level).toLocaleString('vi-VN')} VNĐ
+                  +1.000 VNĐ
                 </p>
               </div>
             </div>
@@ -1785,7 +1772,7 @@ export default function Navbar() {
               ) : (checkInMsg?.type === 'success' || hasCheckedInToday) ? (
                 <><CheckCircle2 className="w-4 h-4" /> ĐÃ ĐIỂM DANH HÔM NAY</>
               ) : (
-                <><Gift className="w-4 h-4" /> BẤM ĐỂ ĐIỂM DANH NHẬN {getDailyCheckinReward(vipInfo.level).toLocaleString('vi-VN')}đ</>
+                <><Gift className="w-4 h-4" /> BẤM ĐỂ ĐIỂM DANH NHẬN 1.000đ</>
               )}
             </button>
           </div>
