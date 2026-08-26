@@ -46,6 +46,7 @@ export default function AdminPage() {
   const [nowTime, setNowTime] = useState(Date.now());
 
   const [userSearch, setUserSearch] = useState('');
+  const [gistSearch, setGistSearch] = useState('');
   const [newUserForm, setNewUserForm] = useState({ username: '', email: '', password: '', balance: 0 });
   
   const [editUserPass, setEditUserPass] = useState<{ username: string; newPass: string } | null>(null);
@@ -768,107 +769,147 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 2: KHO ACC TOOL (GOM NHÓM THEO TÀI KHOẢN GỐC) ================= */}
+        {/* ================= TAB 2: KHO ACC TOOL (DẠNG CARD NHÓM RÕ RÀNG, DỄ NHÌN) ================= */}
         {activeTab === 'gist_accounts' && (
-          <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+          <div className="space-y-5">
+            {/* Header và Thanh tìm kiếm */}
+            <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
-                <h2 className="text-sm font-bold text-white uppercase flex items-center gap-2">
+                <h2 className="text-sm font-black text-white uppercase flex items-center gap-2 tracking-wide">
                   <KeyRound className="w-4 h-4 text-cyan-400" /> KHO TÀI KHOẢN TOOL (GITHUB GIST ACCOUNTS.JSON)
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">Phân nhóm theo chủ sở hữu và quản lý HWID, thời hạn từng Tool</p>
+                <p className="text-xs text-slate-400 mt-1">Gom nhóm theo từng khách hàng, quản lý bản quyền và HWID trực quan</p>
               </div>
-              <button onClick={fetchGistAccountsData} className="bg-[#05080E] border border-slate-800 hover:border-cyan-400 text-cyan-300 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer transition">
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingGist ? 'animate-spin' : ''}`} /> Tải lại dữ liệu Gist
-              </button>
+
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <div className="relative flex-1 md:w-72">
+                  <Search className="w-4 h-4 text-cyan-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input 
+                    type="text" 
+                    placeholder="Tìm tên khách, tool, HWID..." 
+                    value={gistSearch} 
+                    onChange={e => setGistSearch(e.target.value)} 
+                    className="w-full bg-[#05080E] border border-slate-800 focus:border-cyan-400 rounded-2xl pl-10 pr-10 py-2.5 text-xs text-white focus:outline-none transition shadow-inner font-mono" 
+                  />
+                  {gistSearch && (
+                    <button onClick={() => setGistSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-1">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <button 
+                  onClick={fetchGistAccountsData} 
+                  className="bg-[#05080E] border border-slate-800 hover:border-cyan-400 text-cyan-300 text-xs font-bold px-4 py-2.5 rounded-2xl flex items-center gap-2 cursor-pointer transition shrink-0"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingGist ? 'animate-spin' : ''}`} /> Tải lại Gist
+                </button>
+              </div>
             </div>
 
             {loadingGist ? (
-              <div className="flex items-center justify-center gap-2 py-12 text-xs text-slate-400">
+              <div className="flex items-center justify-center gap-2 py-16 text-xs text-slate-400 bg-[#0B1019] border border-slate-800/80 rounded-3xl">
                 <Loader2 className="w-5 h-5 animate-spin text-cyan-400" /> Đang đồng bộ tài khoản từ GitHub Gist...
               </div>
             ) : (
-              <div className="overflow-x-auto border border-slate-800/60 rounded-2xl bg-[#05080E]/40">
-                <table className="w-full text-left text-xs text-slate-300 border-collapse">
-                  <thead className="bg-[#05080E] text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
-                    <tr>
-                      <th className="p-3.5">Cụm Tài khoản / Key Con</th>
-                      <th className="p-3.5">Mật khẩu</th>
-                      <th className="p-3.5">Tool Code</th>
-                      <th className="p-3.5">Mã thiết bị (HWID)</th>
-                      <th className="p-3.5">Thời gian còn lại</th>
-                      <th className="p-3.5 text-right">Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60">
-                    {gistAccounts.length === 0 ? (
-                      <tr><td colSpan={6} className="p-6 text-center text-slate-500">Chưa có dữ liệu tài khoản trên GitHub Gist.</td></tr>
-                    ) : (
-                      (() => {
-                        // Gom nhóm danh sách theo tên tài khoản gốc (phần trước dấu gạch dưới "_")
-                        const grouped: { [baseUser: string]: any[] } = {};
-                        gistAccounts.forEach((acc) => {
-                          const baseUser = acc.username.split('_')[0];
-                          if (!grouped[baseUser]) grouped[baseUser] = [];
-                          grouped[baseUser].push(acc);
-                        });
+              <div className="space-y-4">
+                {(() => {
+                  // Gom nhóm dữ liệu theo tài khoản gốc
+                  const grouped: { [baseUser: string]: any[] } = {};
+                  gistAccounts.forEach((acc) => {
+                    const baseUser = acc.username.split('_')[0];
+                    if (!grouped[baseUser]) grouped[baseUser] = [];
+                    grouped[baseUser].push(acc);
+                  });
 
-                        return Object.entries(grouped).map(([baseUser, subAccs]) => (
-                          <React.Fragment key={baseUser}>
-                            {/* DÒNG TIÊU ĐỀ TÀI KHOẢN CHÍNH */}
-                            <tr className="bg-[#080E18] border-t-2 border-slate-800/90">
-                              <td colSpan={6} className="px-4 py-2.5">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-lg bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 text-xs font-black">
-                                      <User className="w-3.5 h-3.5" />
-                                    </div>
-                                    <span className="font-mono font-black text-white text-sm tracking-wide">{baseUser}</span>
-                                    <span className="text-[10px] font-extrabold bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 px-2 py-0.5 rounded-md">
-                                      {subAccs.length} Tool đang sở hữu
-                                    </span>
-                                  </div>
-                                </div>
-                              </td>
+                  // Lọc theo từ khóa tìm kiếm
+                  const filteredEntries = Object.entries(grouped).filter(([baseUser, subAccs]) => {
+                    const search = gistSearch.toLowerCase();
+                    if (baseUser.toLowerCase().includes(search)) return true;
+                    return subAccs.some(a => 
+                      a.username.toLowerCase().includes(search) || 
+                      (a.device_id && a.device_id.toLowerCase().includes(search)) ||
+                      (a.tool_code && a.tool_code.toLowerCase().includes(search)) ||
+                      (a.toolCode && a.toolCode.toLowerCase().includes(search))
+                    );
+                  });
+
+                  if (filteredEntries.length === 0) {
+                    return (
+                      <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-10 text-center text-xs text-slate-500">
+                        Không tìm thấy tài khoản nào khớp với từ khóa tìm kiếm.
+                      </div>
+                    );
+                  }
+
+                  return filteredEntries.map(([baseUser, subAccs]) => (
+                    <div key={baseUser} className="bg-[#0B1019] border border-slate-800 hover:border-cyan-500/40 rounded-2xl overflow-hidden shadow-lg transition">
+                      
+                      {/* Tiêu đề Khách Hàng (Thẻ Header Tách Rời) */}
+                      <div className="bg-[#080D16] px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 font-black text-xs">
+                            {baseUser.substring(0, 1).toUpperCase()}
+                          </div>
+                          <div>
+                            <span className="font-mono font-black text-white text-sm tracking-wide">{baseUser}</span>
+                            <span className="text-[10px] text-slate-400 block font-medium">Chủ sở hữu</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-black bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 px-3 py-1 rounded-xl shadow-sm">
+                            {subAccs.length} Bản quyền Tool
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Bảng Chi Tiết Từng Key Con */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead className="bg-[#05080E]/90 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800/80">
+                            <tr>
+                              <th className="py-2.5 px-5">Tên Key Tool (Username Gist)</th>
+                              <th className="py-2.5 px-4">Mật khẩu</th>
+                              <th className="py-2.5 px-4">Mã Tool</th>
+                              <th className="py-2.5 px-4">Mã thiết bị (HWID)</th>
+                              <th className="py-2.5 px-4">Thời gian quyền dùng</th>
+                              <th className="py-2.5 px-5 text-right">Thao tác</th>
                             </tr>
-
-                            {/* CÁC NHÁNH CON THUỘC TÀI KHOẢN */}
-                            {subAccs.map((acc, subIdx) => {
+                          </thead>
+                          <tbody className="divide-y divide-slate-800/40">
+                            {subAccs.map((acc) => {
                               const hasHwid = acc.device_id && acc.device_id.trim() !== '' && acc.device_id.trim().toLowerCase() !== 'chưa liên kết';
-                              const isLast = subIdx === subAccs.length - 1;
 
                               return (
-                                <tr key={acc.username} className="hover:bg-[#060A12]/80 transition">
-                                  <td className="p-3.5 font-mono">
-                                    <div className="flex items-center gap-2 pl-4">
-                                      <span className="text-slate-600 font-mono select-none font-bold text-sm">
-                                        {isLast ? '└──' : '├──'}
-                                      </span>
-                                      <span className="text-cyan-300 font-bold bg-[#0B1019] px-2.5 py-1 rounded-lg border border-slate-800">
-                                        {acc.username}
-                                      </span>
-                                    </div>
+                                <tr key={acc.username} className="hover:bg-[#070C15] transition">
+                                  <td className="py-3 px-5 font-mono">
+                                    <span className="font-bold text-cyan-300 bg-[#05080E] px-2.5 py-1 rounded-lg border border-slate-800 inline-block">
+                                      {acc.username}
+                                    </span>
                                   </td>
-                                  <td className="p-3.5 font-mono text-slate-200 font-bold">{acc.password}</td>
-                                  <td className="p-3.5 font-mono font-black text-emerald-400">{acc.tool_code || acc.toolCode || 'Chung'}</td>
-                                  <td className="p-3.5 font-mono">
+                                  <td className="py-3 px-4 font-mono font-bold text-slate-200">{acc.password}</td>
+                                  <td className="py-3 px-4 font-mono font-black text-emerald-400">
+                                    {acc.tool_code || acc.toolCode || 'Chung'}
+                                  </td>
+                                  <td className="py-3 px-4 font-mono">
                                     {hasHwid ? (
-                                      <span className="text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/30 text-xs font-bold inline-flex items-center gap-1.5">
+                                      <span className="text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/30 text-[11px] font-bold inline-flex items-center gap-1.5">
                                         <Laptop className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                                         <span className="truncate max-w-[140px]">{acc.device_id}</span>
                                       </span>
                                     ) : (
-                                      <span className="text-slate-500 italic">Chưa liên kết</span>
+                                      <span className="text-slate-600 italic">Chưa liên kết</span>
                                     )}
                                   </td>
-                                  <td className="p-3.5">{renderRemainingTime(acc.expire_timestamp)}</td>
-                                  <td className="p-3.5 text-right space-x-2">
+                                  <td className="py-3 px-4">{renderRemainingTime(acc.expire_timestamp)}</td>
+                                  <td className="py-3 px-5 text-right space-x-2 whitespace-nowrap">
                                     {hasHwid && (
                                       <button
                                         disabled={resettingHwid === acc.username}
                                         onClick={() => handleResetHwid(acc.username)}
                                         className="bg-amber-500/10 border border-amber-500/40 hover:bg-amber-500/25 text-amber-300 font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer shadow-sm inline-flex items-center gap-1.5"
-                                        title="Xóa mã thiết bị để đăng nhập máy mới"
+                                        title="Xóa mã thiết bị để đăng nhập máy khác"
                                       >
                                         {resettingHwid === acc.username ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Cpu className="w-3.5 h-3.5 text-amber-400" />}
                                         <span>Reset HWID</span>
@@ -888,12 +929,13 @@ export default function AdminPage() {
                                 </tr>
                               );
                             })}
-                          </React.Fragment>
-                        ));
-                      })()
-                    )}
-                  </tbody>
-                </table>
+                          </tbody>
+                        </table>
+                      </div>
+
+                    </div>
+                  ));
+                })()}
               </div>
             )}
           </div>
