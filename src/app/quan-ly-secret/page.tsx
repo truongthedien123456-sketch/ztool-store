@@ -120,16 +120,30 @@ export default function AdminPage() {
       }
     });
 
-    // Lắng nghe Realtime
+    // Lắng nghe Realtime tiết kiệm băng thông (không dùng polling interval)
     const channel = supabase
       .channel(`admin_chat_rt_${Date.now()}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => loadAllSyncData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => loadAllSyncData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedbacks' }, () => loadAllSyncData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tools' }, () => loadAllSyncData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => loadAllSyncData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'coupons' }, () => loadAllSyncData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => loadAllSyncData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => {
+        if (!document.hidden) loadAllSyncData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
+        if (!document.hidden) loadAllSyncData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedbacks' }, () => {
+        if (!document.hidden) loadAllSyncData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tools' }, () => {
+        if (!document.hidden) loadAllSyncData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => {
+        if (!document.hidden) loadAllSyncData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'coupons' }, () => {
+        if (!document.hidden) loadAllSyncData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => {
+        if (!document.hidden) loadAllSyncData();
+      })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
         const msg = payload.new;
         if (msg.id > lastProcessedMsgIdRef.current) {
@@ -139,29 +153,12 @@ export default function AdminPage() {
       })
       .subscribe();
 
-    // Polling dự phòng kiểm tra tin nhắn mới mỗi 1.5s
-    const pollInterval = setInterval(async () => {
-      const { data } = await supabase
-        .from('messages')
-        .select('*')
-        .gt('id', lastProcessedMsgIdRef.current)
-        .order('id', { ascending: true });
-
-      if (data && data.length > 0) {
-        data.forEach((msg) => {
-          if (msg.id > lastProcessedMsgIdRef.current) {
-            lastProcessedMsgIdRef.current = msg.id;
-            handleIncomingMessage(msg);
-          }
-        });
-      }
-    }, 1500);
-
-    const timer = setInterval(() => { setNowTime(Date.now()); }, 1000);
+    const timer = setInterval(() => { 
+      if (!document.hidden) setNowTime(Date.now()); 
+    }, 1000);
 
     return () => {
       supabase.removeChannel(channel);
-      clearInterval(pollInterval);
       clearInterval(timer);
     };
   }, []);
@@ -221,7 +218,6 @@ export default function AdminPage() {
   };
 
   const loadConversation = async (targetUser: string) => {
-    // Xóa tin nhắn chưa đọc của người này
     setUnreadCounts((prev) => ({
       ...prev,
       [targetUser]: 0
@@ -435,7 +431,7 @@ export default function AdminPage() {
       setLoginError('');
       loadAllSyncData();
       loadChatUsers();
-      playNotificationSound(); // Kích hoạt AudioContext
+      playNotificationSound();
     } else {
       setLoginError('Tài khoản hoặc mật khẩu Quản trị không chính xác!');
     }
@@ -489,7 +485,7 @@ export default function AdminPage() {
     e.preventDefault(); if (!newUserForm.username || !newUserForm.password) return alert('Nhập đủ username/password!');
     const { error } = await supabase.from('users').insert([{ 
       username: newUserForm.username.trim(), email: newUserForm.email ? newUserForm.email.trim().toLowerCase() : null,
-      password: newUserForm.password, balance: Number(newUserForm.balance) || 0, is_verified: false, is_exempt: false, isBanned: false, is_online: false 
+      password: newUserForm.password, balance: Number(newUserForm.balance) || 0, is_verified: false, is_exempt: false, isBanned: false
     }]);
     if (error) alert('Lỗi tạo tài khoản: ' + error.message);
     else {
@@ -576,11 +572,11 @@ export default function AdminPage() {
     e.preventDefault(); 
     if (!couponForm.code.trim()) return alert('Vui lòng nhập mã giảm giá!');
 
-    const payload: any = {
-      code: couponForm.code.trim().toUpperCase(), tool_code: couponForm.toolCode, discount_type: couponForm.discountType,
-      discount_amount: couponForm.discountType === 'FIXED' ? Number(couponForm.discountAmount) : 0,
-      discount_percent: couponForm.discountType === 'PERCENT' ? Number(couponForm.discountPercent) : 0,
-      quantity: Number(couponForm.quantity), max_uses_per_user: Number(couponForm.maxUsesPerUser) || 1
+    const payload: any = { 
+      code: couponForm.code.trim().toUpperCase(), tool_code: couponForm.toolCode, discount_type: couponForm.discountType, 
+      discount_amount: couponForm.discountType === 'FIXED' ? Number(couponForm.discountAmount) : 0, 
+      discount_percent: couponForm.discountType === 'PERCENT' ? Number(couponForm.discountPercent) : 0, 
+      quantity: Number(couponForm.quantity), max_uses_per_user: Number(couponForm.maxUsesPerUser) || 1 
     };
 
     const { error } = await supabase.from('coupons').insert([payload]);
@@ -725,12 +721,10 @@ export default function AdminPage() {
               <div className="overflow-x-auto border border-slate-800/60 rounded-2xl bg-[#05080E]/40">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead className="bg-[#05080E] border-b border-slate-800/80 text-slate-400 uppercase text-[10px] tracking-wider font-black">
-                    <tr><th className="p-4">Tài khoản</th><th className="p-4 text-center">VIP</th><th className="p-4">Gmail</th><th className="p-4">Mật khẩu</th><th className="p-4">Số dư</th><th className="p-4 text-center">Trạng thái Gmail</th><th className="p-4 text-center">Miễn xác thực</th><th className="p-4 text-center">Online</th><th className="p-4 text-center">Khóa</th><th className="p-4 text-right">Hành động</th></tr>
+                    <tr><th className="p-4">Tài khoản</th><th className="p-4 text-center">VIP</th><th className="p-4">Gmail</th><th className="p-4">Mật khẩu</th><th className="p-4">Số dư</th><th className="p-4 text-center">Trạng thái Gmail</th><th className="p-4 text-center">Miễn xác thực</th><th className="p-4 text-center">Khóa</th><th className="p-4 text-right">Hành động</th></tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 font-medium">
                     {users.filter(u => u.username?.toLowerCase().includes(userSearch.toLowerCase()) || (u.email && u.email.toLowerCase().includes(userSearch.toLowerCase()))).map((u, i) => {
-                      const lastSeenMs = u.last_seen ? new Date(u.last_seen).getTime() : 0;
-                      const isUserOnline = u.is_online === true && (nowTime - lastSeenMs < 20000);
                       const isExempt = u.is_exempt === true;
                       const hasValidEmail = u.email && u.email.trim() !== '' && u.email.includes('@');
                       const isVerified = isExempt || (hasValidEmail && u.is_verified === true);
@@ -751,7 +745,6 @@ export default function AdminPage() {
                             {isExempt ? <span className="text-cyan-300 font-black bg-cyan-500/20 px-3 py-1 rounded-xl border border-cyan-400 text-[10px] inline-flex items-center gap-1.5 shadow-[0_0_10px_rgba(6,182,212,0.25)]"><Sparkles className="w-3.5 h-3.5 text-cyan-400" /> MIỄN XÁC THỰC</span> : isVerified ? <span className="text-emerald-400 font-black bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/30 text-[10px] inline-flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> ĐÃ XÁC THỰC</span> : <span className="text-rose-400 font-black bg-rose-500/10 px-3 py-1 rounded-xl border border-rose-500/30 text-[10px] inline-flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5 text-rose-400" /> CHƯA XÁC THỰC</span>}
                           </td>
                           <td className="p-4 text-center whitespace-nowrap"><button disabled={exemptLoadingId === u.id} onClick={() => handleToggleExemptVerification(u)} className={`px-3.5 py-1.5 rounded-xl text-[11px] font-black transition cursor-pointer border inline-flex items-center gap-1.5 ${isExempt ? 'bg-amber-500/10 border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-slate-950' : 'bg-[#05080E] border-slate-700 hover:border-cyan-400 text-slate-300 hover:text-cyan-300'}`}>{exemptLoadingId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : isExempt ? <>Bỏ miễn xác thực</> : <><Shield className="w-3.5 h-3.5 text-cyan-400" /> Miễn xác thực</>}</button></td>
-                          <td className="p-4 text-center whitespace-nowrap">{isUserOnline ? <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 text-[10px] inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Online</span> : <span className="text-slate-500 font-medium bg-slate-500/10 px-2.5 py-1 rounded-full border border-slate-500/20 text-[10px] inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Offline</span>}</td>
                           <td className="p-4 text-center whitespace-nowrap">{u.isBanned ? <span className="text-rose-400 font-bold bg-rose-500/10 px-2.5 py-1 rounded border border-rose-500/20 text-[10px]">Bị BAN</span> : <span className="text-cyan-400 font-bold bg-cyan-500/10 px-2.5 py-1 rounded border border-cyan-500/20 text-[10px]">Hoạt động</span>}</td>
                           <td className="p-4 text-right space-x-1.5 whitespace-nowrap"><button onClick={() => handleViewUserTransactions(u.username)} className="bg-cyan-500/10 text-cyan-400 p-2 rounded-xl border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer transition inline-flex" title="Xem lịch sử giao dịch"><History className="w-3.5 h-3.5" /></button><button onClick={() => setAdjustBal({ username: u.username, amount: 0, isAdd: true })} className="bg-emerald-500/10 text-emerald-400 p-2 rounded-xl border border-emerald-500/20 hover:bg-emerald-500/20 cursor-pointer transition inline-flex" title="Cộng/Trừ tiền ví"><DollarSign className="w-3.5 h-3.5" /></button><button onClick={() => setEditUserPass({ username: u.username, newPass: '' })} className="bg-cyan-500/10 text-cyan-400 p-2 rounded-xl border border-cyan-500/20 hover:bg-cyan-500/20 cursor-pointer transition inline-flex" title="Đổi mật khẩu"><Key className="w-3.5 h-3.5" /></button><button onClick={() => handleToggleBanUser(u)} className={`p-2 rounded-xl border cursor-pointer transition inline-flex ${u.isBanned ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>{u.isBanned ? <CheckCircle className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}</button><button onClick={() => handleDeleteUser(u.id, u.username)} className="bg-rose-500/10 text-rose-400 p-2 rounded-xl border border-rose-500/20 hover:bg-rose-500/20 cursor-pointer transition inline-flex"><Trash2 className="w-3.5 h-3.5" /></button></td>
                         </tr>
@@ -902,7 +895,6 @@ export default function AdminPage() {
                               {unread}
                             </span>
                           )}
-                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                         </div>
                       </button>
                     );

@@ -135,24 +135,6 @@ export default function Navbar() {
     if (data) setToolsList(data);
   };
 
-  useEffect(() => {
-    if (!currentUser?.username) return;
-
-    const updateOnline = async () => {
-      await supabase
-        .from('users')
-        .update({ 
-          is_online: true,
-          last_seen: new Date().toISOString() 
-        })
-        .eq('username', currentUser.username);
-    };
-
-    updateOnline();
-    const interval = setInterval(updateOnline, 10000);
-    return () => clearInterval(interval);
-  }, [currentUser?.username]);
-
   // Tính tổng nạp để xếp hạng VIP
   const fetchUserTotalDeposited = async (username: string) => {
     try {
@@ -499,14 +481,12 @@ export default function Navbar() {
         .from('users')
         .insert([{ 
           username: usernameInput.trim(), 
-          email: emailInput.trim().toLowerCase(),
-          is_verified: false,
-          is_exempt: false,
+          email: emailInput.trim().toLowerCase(), 
+          is_verified: false, 
+          is_exempt: false, 
           password: passwordInput, 
           balance: 0, 
-          isBanned: false, 
-          is_online: true, 
-          last_seen: new Date().toISOString() 
+          isBanned: false
         }])
         .select()
         .single();
@@ -527,8 +507,8 @@ export default function Navbar() {
         setTimeout(() => { 
           setShowAuthModal(false); 
           resetForm(); 
-          checkTodayCheckInStatus(newUser.username);
-          fetchUserTotalDeposited(newUser.username);
+          checkTodayCheckInStatus(newUser.username); 
+          fetchUserTotalDeposited(newUser.username); 
           setShowAccountInfoModal(true);
         }, 500);
       }
@@ -562,7 +542,7 @@ export default function Navbar() {
         setShowAuthModal(false); 
         resetForm(); 
         checkTodayCheckInStatus(user.username); 
-        fetchUserTotalDeposited(user.username);
+        fetchUserTotalDeposited(user.username); 
       }, 500);
     }
   };
@@ -686,10 +666,7 @@ export default function Navbar() {
     }
   };
 
-  const handleLogout = async () => {
-    if (currentUser?.username) {
-      await supabase.from('users').update({ is_online: false }).eq('username', currentUser.username);
-    }
+  const handleLogout = () => {
     const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
     localStorage.removeItem('ztool_current_user');
     localStorage.removeItem('ztool_user_data');
@@ -858,7 +835,6 @@ export default function Navbar() {
                   >
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs uppercase shadow-inner relative ${vipInfo.avatarBg}`}>
                       {currentUser.username.substring(0, 1).toUpperCase()}
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#0D131F] absolute -bottom-0.5 -right-0.5 animate-pulse"></span>
                     </div>
                     
                     <div className="text-left text-xs leading-tight flex flex-col justify-center">
