@@ -18,7 +18,6 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'users' | 'tools' | 'projects' | 'gist_accounts' | 'sepay' | 'feedback' | 'coupons' | 'settings' | 'chat'>('users');
 
   const [users, setUsers] = useState<any[]>([]);
-  const [userVipMap, setUserVipMap] = useState<{ [key: string]: number }>({});
   const [tools, setTools] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
@@ -57,7 +56,7 @@ export default function AdminPage() {
   const [exemptLoadingId, setExemptLoadingId] = useState<number | null>(null);
   const [deleteEmailLoadingId, setDeleteEmailLoadingId] = useState<number | null>(null);
 
-  // Form Tool đã thêm version và changelog
+  // Form Tool hỗ trợ đa phiên bản và lịch sử cập nhật
   const [toolForm, setToolForm] = useState({
     id: 0, name: '', toolCode: '', image: '', status: 'Đang hoạt động',
     priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '', videoLink: '',
@@ -116,42 +115,26 @@ export default function AdminPage() {
       loadChatUsers();
     }
 
-    // Khởi tạo lấy tin nhắn cao nhất
     supabase.from('messages').select('id').order('id', { ascending: false }).limit(1).then(({ data }) => {
       if (data && data.length > 0) {
         lastProcessedMsgIdRef.current = data[0].id;
       }
     });
 
-    // Lắng nghe Realtime tiết kiệm băng thông (không dùng polling interval)
+    // Lắng nghe Realtime tiết kiệm băng thông (không load lại toàn bộ DB khi có 1 sự kiện)
     const channel = supabase
       .channel(`admin_chat_rt_${Date.now()}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => {
-        if (!document.hidden) loadAllSyncData();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
-        if (!document.hidden) loadAllSyncData();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'feedbacks' }, () => {
-        if (!document.hidden) loadAllSyncData();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tools' }, () => {
-        if (!document.hidden) loadAllSyncData();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => {
-        if (!document.hidden) loadAllSyncData();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'coupons' }, () => {
-        if (!document.hidden) loadAllSyncData();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => {
-        if (!document.hidden) loadAllSyncData();
-      })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
         const msg = payload.new;
         if (msg.id > lastProcessedMsgIdRef.current) {
           lastProcessedMsgIdRef.current = msg.id;
           handleIncomingMessage(msg);
+        }
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'transactions' }, (payload) => {
+        const newTx = payload.new;
+        if (newTx.type === 'RECHARGE') {
+          setSepayLogs(prev => [newTx, ...prev]);
         }
       })
       .subscribe();
@@ -366,37 +349,23 @@ export default function AdminPage() {
     }
   };
 
+  // Tối ưu hàm load dữ liệu tổng thể (chỉ fetch đúng các trường cần)
   const loadAllSyncData = async () => {
     try {
-      const { data: userData } = await supabase.from('users').select('*').order('id', { ascending: false });
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id, username, email, password, balance, is_verified, is_exempt, isBanned, total_deposited')
+        .order('id', { ascending: false });
+        
       if (userData) {
         setUsers(userData);
-
-        const usernames = userData.map((u: any) => u.username).filter(Boolean);
-        if (usernames.length > 0) {
-          const { data: transData } = await supabase
-            .from('transactions')
-            .select('username, amount, type')
-            .in('username', usernames)
-            .in('type', ['RECHARGE', 'ADMIN_ADD', 'ADMIN_SUB']);
-
-          if (transData) {
-            const map: { [key: string]: number } = {};
-            transData.forEach((t: any) => {
-              const u = t.username;
-              if (!map[u]) map[u] = 0;
-              if (t.type === 'ADMIN_SUB') {
-                map[u] -= Math.abs(Number(t.amount) || 0);
-              } else {
-                map[u] += (Number(t.amount) || 0);
-              }
-            });
-            setUserVipMap(map);
-          }
-        }
       }
 
-      const { data: toolData } = await supabase.from('tools').select('*').order('id', { ascending: false });
+      const { data: toolData } = await supabase
+        .from('tools')
+        .select('id, name, toolCode, tool_code, image, status, priceDay, price_day, priceWeek, price_week, priceMonth, price_month, priceLifetime, price_lifetime, description, downloadLink, download_link, videoLink, video_link, version, changelog, views, sales')
+        .order('id', { ascending: false });
+        
       if (toolData) {
         setTools(toolData.map((t: any) => ({
           id: t.id, 
@@ -418,19 +387,24 @@ export default function AdminPage() {
         })));
       }
 
-      const { data: projectData } = await supabase.from('projects').select('*').order('id', { ascending: false });
+      const { data: projectData } = await supabase.from('projects').select('id, title, image, status, description').order('id', { ascending: false });
       if (projectData) setProjects(projectData);
 
-      const { data: feedbackData } = await supabase.from('feedbacks').select('*').order('id', { ascending: false });
+      const { data: feedbackData } = await supabase.from('feedbacks').select('id, username, content').order('id', { ascending: false });
       if (feedbackData) setFeedbacks(feedbackData);
 
-      const { data: sepayData } = await supabase.from('transactions').select('*').eq('type', 'RECHARGE').order('id', { ascending: false });
+      const { data: sepayData } = await supabase
+        .from('transactions')
+        .select('id, username, title, content, amount, created_at')
+        .eq('type', 'RECHARGE')
+        .order('id', { ascending: false })
+        .limit(50);
       if (sepayData) setSepayLogs(sepayData);
 
       const { data: couponData } = await supabase.from('coupons').select('*').order('id', { ascending: false });
       if (couponData) setCoupons(couponData);
 
-      const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
+      const { data: settingsData } = await supabase.from('settings').select('notice_text, is_active').eq('id', 1).single();
       if (settingsData) {
         setNoticeForm({ text: settingsData.notice_text || '', active: settingsData.is_active });
         setCurrentActiveNotice({ text: settingsData.notice_text || '', active: settingsData.is_active });
@@ -468,7 +442,11 @@ export default function AdminPage() {
   const handleViewUserTransactions = async (username: string) => {
     setLoadingUserHistory(true); 
     setSelectedUserHistory({ username, logs: [] });
-    const { data, error } = await supabase.from('transactions').select('*').eq('username', username).order('id', { ascending: false });
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('id, title, amount, created_at')
+      .eq('username', username)
+      .order('id', { ascending: false });
     setLoadingUserHistory(false); 
     if (!error && data) setSelectedUserHistory({ username, logs: data });
   };
@@ -510,7 +488,7 @@ export default function AdminPage() {
     e.preventDefault(); if (!newUserForm.username || !newUserForm.password) return alert('Nhập đủ username/password!');
     const { error } = await supabase.from('users').insert([{ 
       username: newUserForm.username.trim(), email: newUserForm.email ? newUserForm.email.trim().toLowerCase() : null,
-      password: newUserForm.password, balance: Number(newUserForm.balance) || 0, is_verified: false, is_exempt: false, isBanned: false
+      password: newUserForm.password, balance: Number(newUserForm.balance) || 0, is_verified: false, is_exempt: false, isBanned: false, total_deposited: 0
     }]);
     if (error) alert('Lỗi tạo tài khoản: ' + error.message);
     else {
@@ -519,14 +497,26 @@ export default function AdminPage() {
     }
   };
 
-  const handleToggleBanUser = async (u: any) => { const { error } = await supabase.from('users').update({ isBanned: !u.isBanned }).eq('id', u.id); if (!error) loadAllSyncData(); };
-  const handleDeleteUser = async (id: number, username: string) => { if (!confirm(`Xóa tài khoản ${username}?`)) return; const { error } = await supabase.from('users').delete().eq('id', id); if (!error) loadAllSyncData(); };
+  const handleToggleBanUser = async (u: any) => { 
+    const { error } = await supabase.from('users').update({ isBanned: !u.isBanned }).eq('id', u.id); 
+    if (!error) setUsers(prev => prev.map(user => user.id === u.id ? { ...user, isBanned: !u.isBanned } : user)); 
+  };
+  
+  const handleDeleteUser = async (id: number, username: string) => { 
+    if (!confirm(`Xóa tài khoản ${username}?`)) return; 
+    const { error } = await supabase.from('users').delete().eq('id', id); 
+    if (!error) setUsers(prev => prev.filter(user => user.id !== id)); 
+  };
   
   const handleSaveUserPassword = async () => { 
     if (!editUserPass || !editUserPass.newPass.trim()) return alert('Vui lòng nhập mật khẩu mới!'); 
     const { error } = await supabase.from('users').update({ password: editUserPass.newPass.trim() }).eq('username', editUserPass.username); 
     if (error) alert('Lỗi đổi mật khẩu: ' + error.message);
-    else { setEditUserPass(null); alert('Đã cập nhật mật khẩu mới!'); loadAllSyncData(); } 
+    else { 
+      setUsers(prev => prev.map(user => user.username === editUserPass.username ? { ...user, password: editUserPass.newPass.trim() } : user));
+      setEditUserPass(null); 
+      alert('Đã cập nhật mật khẩu mới!'); 
+    } 
   };
   
   const handleExecAdjustBalance = async (isAddMode: boolean) => {
@@ -537,12 +527,22 @@ export default function AdminPage() {
     const cur = Number(targetUser.balance) || 0; 
     const changeAmt = Number(adjustBal.amount); 
     const next = isAddMode ? cur + changeAmt : Math.max(0, cur - changeAmt);
+    
+    // Tự động cập nhật trực tiếp cả total_deposited của user
+    const curDeposited = Number(targetUser.total_deposited) || 0;
+    const nextDeposited = isAddMode ? curDeposited + changeAmt : Math.max(0, curDeposited - changeAmt);
 
-    const { error: updateError } = await supabase.from('users').update({ balance: next }).eq('id', targetUser.id);
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ balance: next, total_deposited: nextDeposited })
+      .eq('id', targetUser.id);
+
     if (updateError) alert('Lỗi cập nhật số dư: ' + updateError.message);
     else {
       await supabase.from('transactions').insert([{ username: targetUser.username, type: isAddMode ? 'ADMIN_ADD' : 'ADMIN_SUB', title: isAddMode ? 'Admin cộng tiền vào ví' : 'Admin trừ tiền khỏi ví', amount: isAddMode ? changeAmt : -changeAmt, status: 'Thành công' }]);
-      setAdjustBal(null); alert('Điều chỉnh số dư thành công!'); loadAllSyncData();
+      setUsers(prev => prev.map(u => u.id === targetUser.id ? { ...u, balance: next, total_deposited: nextDeposited } : u));
+      setAdjustBal(null); 
+      alert('Điều chỉnh số dư thành công!');
     }
   };
 
@@ -591,11 +591,17 @@ export default function AdminPage() {
         priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', 
         description: '', downloadLink: '', videoLink: '', version: '', changelog: '' 
       }); 
-      setIsEditingTool(false); alert('Lưu sản phẩm thành công!'); loadAllSyncData(); 
+      setIsEditingTool(false); 
+      alert('Lưu sản phẩm thành công!'); 
+      loadAllSyncData(); 
     }
   };
 
-  const handleDeleteTool = async (id: number) => { if (!confirm('Xóa Tool này khỏi hệ thống?')) return; const { error } = await supabase.from('tools').delete().eq('id', id); if (!error) loadAllSyncData(); };
+  const handleDeleteTool = async (id: number) => { 
+    if (!confirm('Xóa Tool này khỏi hệ thống?')) return; 
+    const { error } = await supabase.from('tools').delete().eq('id', id); 
+    if (!error) setTools(prev => prev.filter(t => t.id !== id)); 
+  };
 
   const handleSaveProject = async (e: React.FormEvent) => {
     e.preventDefault(); if (!projectForm.title) return alert('Nhập tên dự án!');
@@ -613,8 +619,16 @@ export default function AdminPage() {
     else { setProjectImageFile(null); setProjectPreviewUrl(''); setProjectForm({ id: 0, title: '', image: '', description: '', status: 'Hoạt động tốt' }); alert('Thêm dự án mới thành công!'); loadAllSyncData(); }
   };
 
-  const handleDeleteProject = async (id: number) => { if (!confirm('Xóa dự án này?')) return; const { error } = await supabase.from('projects').delete().eq('id', id); if (!error) loadAllSyncData(); };
-  const handleDeleteFeedback = async (id: number) => { const { error } = await supabase.from('feedbacks').delete().eq('id', id); if (!error) loadAllSyncData(); };
+  const handleDeleteProject = async (id: number) => { 
+    if (!confirm('Xóa dự án này?')) return; 
+    const { error } = await supabase.from('projects').delete().eq('id', id); 
+    if (!error) setProjects(prev => prev.filter(p => p.id !== id)); 
+  };
+  
+  const handleDeleteFeedback = async (id: number) => { 
+    const { error } = await supabase.from('feedbacks').delete().eq('id', id); 
+    if (!error) setFeedbacks(prev => prev.filter(f => f.id !== id)); 
+  };
 
   const handleCreateCoupon = async (e: React.FormEvent) => {
     e.preventDefault(); 
@@ -632,7 +646,11 @@ export default function AdminPage() {
     else { alert('Tạo mã giảm giá thành công!'); setCouponForm({ code: '', toolCode: 'ALL', discountType: 'FIXED', discountAmount: 5000, discountPercent: 10, quantity: 50, maxUsesPerUser: 1 }); loadAllSyncData(); }
   };
 
-  const handleDeleteCoupon = async (id: number) => { if (!confirm('Xóa mã giảm giá này khỏi hệ thống?')) return; const { error } = await supabase.from('coupons').delete().eq('id', id); if (!error) loadAllSyncData(); };
+  const handleDeleteCoupon = async (id: number) => { 
+    if (!confirm('Xóa mã giảm giá này khỏi hệ thống?')) return; 
+    const { error } = await supabase.from('coupons').delete().eq('id', id); 
+    if (!error) setCoupons(prev => prev.filter(c => c.id !== id)); 
+  };
 
   const handleSaveNotice = async () => {
     const { error } = await supabase.from('settings').upsert({ id: 1, notice_text: noticeForm.text, is_active: noticeForm.active });
@@ -776,7 +794,7 @@ export default function AdminPage() {
                       const isExempt = u.is_exempt === true;
                       const hasValidEmail = u.email && u.email.trim() !== '' && u.email.includes('@');
                       const isVerified = isExempt || (hasValidEmail && u.is_verified === true);
-                      const depositedAmount = userVipMap[u.username] || 0;
+                      const depositedAmount = Number(u.total_deposited) || 0;
 
                       return (
                         <tr key={i} className="hover:bg-[#080D17]/80 transition">
@@ -1110,7 +1128,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 4: SẢN PHẨM TOOL (QUẢN LÝ ĐA PHIÊN BẢN & CẬP NHẬT TOOL CŨ) ================= */}
+        {/* ================= TAB 4: SẢN PHẨM TOOL ================= */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
@@ -1240,7 +1258,7 @@ export default function AdminPage() {
               </button>
             </form>
             
-            {/* DANH SÁCH TOOL VỚI NÚT SỬA NHANH TỪNG SẢN PHẨM */}
+            {/* DANH SÁCH TOOL VỚI NÚT SỬA NHANH */}
             <div className="lg:col-span-2 bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <h3 className="text-xs font-bold text-white uppercase">DANH SÁCH TOOL ĐANG BÁN ({tools.length})</h3>

@@ -67,8 +67,19 @@ export default function Navbar() {
   const [passMsg, setPassMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [passLoading, setPassLoading] = useState(false);
 
-  // Tổng tiền nạp tích lũy tính VIP (RECHARGE + ADMIN_ADD - ADMIN_SUB)
-  const [totalDeposited, setTotalDeposited] = useState(0);
+  // Tổng tiền nạp tích lũy tính VIP
+  const [totalDeposited, setTotalDeposited] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const savedUserStr = localStorage.getItem('ztool_user_data');
+      if (savedUserStr) {
+        try {
+          const parsed = JSON.parse(savedUserStr);
+          return Number(parsed.total_deposited) || 0;
+        } catch (e) {}
+      }
+    }
+    return 0;
+  });
 
   // Trạng thái Xác thực Email trong Modal Account Info
   const [accountEmailInput, setAccountEmailInput] = useState('');
@@ -132,33 +143,8 @@ export default function Navbar() {
   }, []);
 
   const loadAllToolsMeta = async () => {
-    const { data } = await supabase.from('tools').select('*');
+    const { data } = await supabase.from('tools').select('id, name, toolCode, tool_code, downloadLink, download_link');
     if (data) setToolsList(data);
-  };
-
-  // Tính tổng nạp để xếp hạng VIP
-  const fetchUserTotalDeposited = async (username: string) => {
-    try {
-      const { data } = await supabase
-        .from('transactions')
-        .select('amount, type')
-        .eq('username', username)
-        .in('type', ['RECHARGE', 'ADMIN_ADD', 'ADMIN_SUB']);
-
-      if (data && data.length > 0) {
-        const total = data.reduce((sum, item) => {
-          if (item.type === 'ADMIN_SUB') {
-            return sum - Math.abs(Number(item.amount) || 0);
-          }
-          return sum + (Number(item.amount) || 0);
-        }, 0);
-        setTotalDeposited(Math.max(0, total));
-      } else {
-        setTotalDeposited(0);
-      }
-    } catch (e) {
-      console.error('Lỗi tính tổng nạp:', e);
-    }
   };
 
   const checkTodayCheckInStatus = async (username: string) => {
@@ -190,10 +176,16 @@ export default function Navbar() {
     }
   };
 
+  // Tối ưu hoá truy vấn tài khoản & đọc trực tiếp total_deposited (Tiết kiệm 99% Egress)
   const checkLoggedInUser = async () => {
     const savedUser = localStorage.getItem('ztool_current_user');
     if (savedUser) {
-      const { data } = await supabase.from('users').select('*').eq('username', savedUser).single();
+      const { data } = await supabase
+        .from('users')
+        .select('id, username, email, password, balance, is_verified, is_exempt, isBanned, total_deposited')
+        .eq('username', savedUser)
+        .single();
+
       if (data) {
         if (data.isBanned) {
           alert('Tài khoản của bạn đã bị khóa!');
@@ -202,13 +194,11 @@ export default function Navbar() {
         }
         setCurrentUser(data);
         setAccountEmailInput(data.email || '');
+        setTotalDeposited(Number(data.total_deposited) || 0);
         localStorage.setItem('ztool_user_data', JSON.stringify(data));
         checkTodayCheckInStatus(data.username);
-        fetchUserTotalDeposited(data.username);
       } else {
-        localStorage.removeItem('ztool_current_user');
-        localStorage.removeItem('ztool_user_data');
-        setCurrentUser(null);
+        handleLogout();
       }
     } else {
       setCurrentUser(null);
@@ -304,7 +294,6 @@ export default function Navbar() {
   const vipInfo = getVipInfo(totalDeposited);
   const VipIcon = vipInfo.icon;
 
-  // Dữ liệu bảng đặc quyền VIP chuẩn (ĐÃ BỎ THƯỞNG ĐIỂM DANH)
   const VIP_TIERS_DATA = [
     {
       level: 0,
@@ -359,7 +348,7 @@ export default function Navbar() {
       badgeBg: 'bg-amber-500/20 border-amber-500/60 text-amber-300',
       cardBg: 'bg-[#121008] border-amber-400/50 shadow-[0_0_25px_rgba(251,191,36,0.18)]',
       benefits: [
-        'Đặc quyền Khung viền & Avatar Hoàng Gia Hoàng Kim',
+        'Đặc quyền Khung viền & Avatar Hoàng Kim',
         'Đặc quyền được trải nghiệm các bản Beta Tool sớm nhất',
         'Hỗ trợ Reset HWID (đổi máy) không giới hạn qua Admin',
         'Bao gồm toàn bộ quyền lợi của cấp VIP 2'
@@ -397,7 +386,6 @@ export default function Navbar() {
     }
   ];
 
-  // Lấy dữ liệu cấp VIP tiếp theo (hoặc VIP 5 nếu đã đạt tối đa)
   const nextTierIndex = Math.min(5, vipInfo.level < 5 ? vipInfo.level + 1 : 5);
   const nextTierData = VIP_TIERS_DATA[nextTierIndex];
   const NextTierIcon = nextTierData.icon;
@@ -518,7 +506,7 @@ export default function Navbar() {
     setLoadingHistory(true);
     const { data, error } = await supabase
       .from('transactions')
-      .select('*')
+      .select('id, username, title, amount, type, status, created_at')
       .eq('username', username)
       .order('id', { ascending: false });
 
@@ -645,7 +633,8 @@ export default function Navbar() {
           is_exempt: false, 
           password: passwordInput, 
           balance: 0, 
-          isBanned: false
+          isBanned: false,
+          total_deposited: 0
         }])
         .select()
         .single();
@@ -658,6 +647,7 @@ export default function Navbar() {
         localStorage.setItem('ztool_current_user', newUser.username);
         localStorage.setItem('ztool_user_data', JSON.stringify(newUser));
         setCurrentUser(newUser);
+        setTotalDeposited(0);
         setAccountEmailInput(newUser.email || '');
 
         await supabase.from('transactions').insert([{ username: newUser.username, type: 'INIT', title: 'Khởi tạo tài khoản thành công', amount: 0, status: 'Thành công' }]);
@@ -667,14 +657,13 @@ export default function Navbar() {
           setShowAuthModal(false); 
           resetForm(); 
           checkTodayCheckInStatus(newUser.username); 
-          fetchUserTotalDeposited(newUser.username); 
           setShowAccountInfoModal(true);
         }, 500);
       }
     } else {
       const { data: user, error } = await supabase
         .from('users')
-        .select('*')
+        .select('id, username, email, password, balance, is_verified, is_exempt, isBanned, total_deposited')
         .eq('username', usernameInput.trim())
         .eq('password', passwordInput)
         .single();
@@ -694,6 +683,7 @@ export default function Navbar() {
       localStorage.setItem('ztool_current_user', user.username);
       localStorage.setItem('ztool_user_data', JSON.stringify(user));
       setCurrentUser(user);
+      setTotalDeposited(Number(user.total_deposited) || 0);
       setAccountEmailInput(user.email || '');
 
       setAuthMsg({ type: 'success', text: 'Đăng nhập thành công!' });
@@ -701,7 +691,6 @@ export default function Navbar() {
         setShowAuthModal(false); 
         resetForm(); 
         checkTodayCheckInStatus(user.username); 
-        fetchUserTotalDeposited(user.username); 
       }, 500);
     }
   };
@@ -848,7 +837,7 @@ export default function Navbar() {
 
   return (
     <>
-      {/* NAVBAR RỘNG RÃI, THOÁNG ĐÃNG VÀ CHUYÊN NGHIỆP */}
+      {/* NAVBAR */}
       <nav className="bg-[#080D15]/95 backdrop-blur-2xl border-b border-slate-800/80 sticky top-0 z-40 px-4 sm:px-8 lg:px-12 py-4 sm:py-4.5 shadow-[0_10px_35px_rgba(0,0,0,0.7)] transition-all">
         <div className="max-w-[1550px] mx-auto flex items-center justify-between gap-6">
           
@@ -865,7 +854,7 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* MENU ĐIỀU HƯỚNG RỘNG VÀ THOÁNG */}
+          {/* MENU ĐIỀU HƯỚNG */}
           <div className="hidden md:flex items-center gap-2 bg-[#0D131F]/90 border border-slate-800/90 p-1.5 rounded-2xl shadow-inner">
             {[
               { name: 'Trang chủ', path: '/', icon: Home },
@@ -1198,7 +1187,7 @@ export default function Navbar() {
                   </button>
                 </div>
 
-                {/* KHUNG TIẾN TRÌNH VIP CÓ NÚT XEM ĐẶC QUYỀN NẰM BÊN TRONG */}
+                {/* KHUNG TIẾN TRÌNH VIP */}
                 <div className="bg-[#05080E] border border-slate-800/90 p-4.5 rounded-2xl space-y-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-400 font-bold flex items-center gap-1.5">
@@ -1231,7 +1220,6 @@ export default function Navbar() {
                       </p>
                     )}
 
-                    {/* NÚT ĐẶC QUYỀN VIP NẰM BÊN TRONG Ô TIẾN TRÌNH */}
                     <button
                       onClick={() => setShowVipBenefitsModal(true)}
                       className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 shrink-0 whitespace-nowrap shadow-sm hover:scale-105"
@@ -1263,7 +1251,6 @@ export default function Navbar() {
                     </span>
                   </div>
 
-                  {/* Danh sách lợi ích */}
                   <ul className="space-y-1.5 text-[11px] text-slate-300">
                     {nextTierData.benefits.map((benefit, i) => (
                       <li key={i} className="flex items-start gap-2">
@@ -1476,7 +1463,6 @@ export default function Navbar() {
                         </div>
                       </div>
 
-                      {/* Danh sách lợi ích */}
                       <ul className="space-y-2 text-xs text-slate-300">
                         {tier.benefits.map((b, i) => (
                           <li key={i} className="flex items-start gap-2 leading-relaxed">
