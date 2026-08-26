@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@theme {
+:root {
   --color-darkBg: #080B10;
   --color-darkCard: #0F141C;
   --color-darkBorder: #1A2332;
@@ -26,7 +26,7 @@ body {
   transform: translateZ(0);
 }
 
-/* Tùy chỉnh thanh cuộn phong cách Gaming Cyan phù hợp với toàn trang */
+/* Tùy chỉnh thanh cuộn phong cách Gaming Cyan */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -48,7 +48,7 @@ body {
   box-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
 }
 
-/* HIỆU ỨNG FADE LÊN NHANH VÀ MƯỢT NHƯ VIDEO (0.3s, trượt nhẹ 15px) */
+/* HIỆU ỨNG FADE LÊN NHANH VÀ MƯỢT */
 @keyframes fadeSlideUp {
   0% {
     opacity: 0;
