@@ -9,21 +9,10 @@ import {
 } from 'lucide-react';
 
 export default function HomePage() {
-  const [tools, setTools] = useState<any[]>(() => {
-    if (typeof window !== 'undefined') {
-      const cached = sessionStorage.getItem('ztool_home_tools_cache');
-      if (cached) {
-        try {
-          return JSON.parse(cached);
-        } catch (e) {}
-      }
-    }
-    return [];
-  });
-  
+  const [tools, setTools] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [systemNotice, setSystemNotice] = useState<{ text: string, active: boolean } | null>(null);
-  const [isLoading, setIsLoading] = useState(tools.length === 0);
+  const [isLoading, setIsLoading] = useState(true);
 
   // States Modal Chi Tiết & Modal Mua
   const [selectedToolForDetail, setSelectedToolForDetail] = useState<any | null>(null);
@@ -60,52 +49,48 @@ export default function HomePage() {
 
   const loadHomeSyncData = async () => {
     try {
-      const now = Date.now();
-      const cachedTime = sessionStorage.getItem('ztool_home_tools_cache_time');
+      // 1. Tải tools an toàn với select('*')
+      const { data: toolData, error: toolErr } = await supabase
+        .from('tools')
+        .select('*')
+        .order('views', { ascending: false });
 
-      // Tải tools từ Supabase (Lọc cột chính xác & Lưu cache 3 phút)
-      if (!cachedTime || now - Number(cachedTime) > 180000 || tools.length === 0) {
-        const { data: toolData } = await supabase
-          .from('tools')
-          .select('id, name, toolCode, tool_code, image, status, priceDay, price_day, priceWeek, price_week, priceMonth, price_month, priceLifetime, price_lifetime, description, downloadLink, download_link, videoLink, video_link, version, views, sales')
-          .order('views', { ascending: false });
-
-        if (toolData && toolData.length > 0) {
-          const mappedTools = toolData.map((t: any) => ({
-            id: t.id,
-            name: t.name,
-            toolCode: t.toolCode || t.tool_code || '',
-            image: t.image,
-            status: t.status || 'Đang hoạt động',
-            priceDay: t.priceDay || t.price_day || '',
-            priceWeek: t.priceWeek || t.price_week || '',
-            priceMonth: t.priceMonth || t.price_month || '',
-            priceLifetime: t.priceLifetime || t.price_lifetime || '',
-            description: t.description,
-            downloadLink: t.downloadLink || t.download_link || '',
-            videoLink: t.videoLink || t.video_link || '',
-            version: t.version || '',
-            views: Number(t.views) || 0,
-            sales: Number(t.sales) || 0
-          }));
-          setTools(mappedTools);
-          sessionStorage.setItem('ztool_home_tools_cache', JSON.stringify(mappedTools));
-          sessionStorage.setItem('ztool_home_tools_cache_time', String(now));
-        }
+      if (toolData && toolData.length > 0) {
+        const mappedTools = toolData.map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          toolCode: t.toolCode || t.tool_code || '',
+          image: t.image,
+          status: t.status || 'Đang hoạt động',
+          priceDay: t.priceDay || t.price_day || '',
+          priceWeek: t.priceWeek || t.price_week || '',
+          priceMonth: t.priceMonth || t.price_month || '',
+          priceLifetime: t.priceLifetime || t.price_lifetime || '',
+          description: t.description,
+          downloadLink: t.downloadLink || t.download_link || '',
+          videoLink: t.videoLink || t.video_link || '',
+          version: t.version || '',
+          changelog: t.changelog || '',
+          views: Number(t.views) || 0,
+          sales: Number(t.sales) || 0
+        }));
+        setTools(mappedTools);
       }
 
+      // 2. Tải projects
       const { data: projectData } = await supabase
         .from('projects')
-        .select('id, title, image, status, description')
+        .select('*')
         .order('id', { ascending: false });
 
       if (projectData && projectData.length > 0) {
         setProjects(projectData);
       }
 
+      // 3. Tải thông báo
       const { data: noticeData } = await supabase
         .from('settings')
-        .select('notice_text, is_active')
+        .select('*')
         .eq('id', 1)
         .single();
         
@@ -219,7 +204,7 @@ export default function HomePage() {
     }
 
     setLoadingTrial(true);
-    const { data: userData } = await supabase.from('users').select('id, username, password, is_verified, is_exempt').eq('username', currentUsername).single();
+    const { data: userData } = await supabase.from('users').select('*').eq('username', currentUsername).single();
 
     if (!userData) {
       setLoadingTrial(false);
@@ -308,7 +293,7 @@ export default function HomePage() {
 
     setLoadingBuy(true);
 
-    const { data: userData } = await supabase.from('users').select('id, username, password, balance, is_verified, is_exempt').eq('username', currentUsername).single();
+    const { data: userData } = await supabase.from('users').select('*').eq('username', currentUsername).single();
 
     if (!userData) {
       setLoadingBuy(false);
@@ -443,7 +428,7 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* 2. HERO BANNER KHÔNG BỊ GIẬT LAYOUT */}
+        {/* 2. HERO BANNER CỐ ĐỊNH 12 CỘT */}
         <div className="relative rounded-3xl bg-[#0B1019]/95 border-2 border-cyan-500/30 p-6 sm:p-8 overflow-hidden shadow-[0_0_35px_rgba(6,182,212,0.12)] backdrop-blur-xl">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
             
@@ -509,7 +494,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Cột phải: Tool nổi bật Top 1 (Đã khóa layout cố định chống giật) */}
+            {/* Cột phải: Tool nổi bật Top 1 */}
             <div className="lg:col-span-5 w-full">
               {featuredTool ? (
                 <div 
@@ -534,7 +519,7 @@ export default function HomePage() {
                     />
                     
                     <div className="absolute top-2.5 left-2.5 bg-[#05080E]/90 border border-slate-700/60 px-2.5 py-1 rounded-lg flex items-center gap-1 text-[10px] text-slate-200 font-bold shadow-md">
-                      <Eye className="w-3 h-3 text-cyan-400" /> {featuredTool.views || 0} lượt xem
+                      <Eye className="w-3.5 h-3.5 text-cyan-400" /> {featuredTool.views || 0} lượt xem
                     </div>
                   </div>
 
@@ -544,7 +529,7 @@ export default function HomePage() {
                     </h3>
                   </div>
 
-                  {/* Cụm 2 nút bấm ngang đồng đều */}
+                  {/* Cụm 2 nút bấm ngang */}
                   <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
                     <button
                       onClick={(e) => {
@@ -571,7 +556,6 @@ export default function HomePage() {
                   </div>
                 </div>
               ) : (
-                /* Khung Skeleton giữ vị trí chuẩn tỷ lệ, chống vỡ/nhảy layout khi reload */
                 <div className="bg-[#0D131F]/70 border border-slate-800/80 rounded-3xl p-5 space-y-3.5 animate-pulse">
                   <div className="h-4 bg-slate-800/90 rounded-lg w-2/5"></div>
                   <div className="w-full aspect-square bg-slate-800/50 rounded-2xl"></div>
@@ -824,7 +808,7 @@ export default function HomePage() {
           >
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
@@ -1004,7 +988,7 @@ export default function HomePage() {
                       >
                         <img src={selectedToolForBuy.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={selectedToolForBuy.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out" />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity duration-300 backdrop-blur-[2px]">
-                          <span className="bg-cyan-500 text-slate-950 px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-xl"><ZoomIn className="w-4 h-4" /> BẤM PHÓNG TO ẢNH</span>
+                          <span className="bg-cyan-500 text-slate-950 px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-xl"><ZoomIn className="w-4 h-4" /> PHÓNG TO ẢNH</span>
                         </div>
                       </div>
                     )}
