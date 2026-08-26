@@ -543,7 +543,7 @@ export default function ToolsPage() {
             )}
           </AnimatePresence>
 
-          {/* ================= MODAL CHI TIẾT SẢN PHẨM ================= */}
+          {/* ================= MODAL CHI TIẾT SẢN PHẨM (TABS THẲNG HÀNG TRÊN 1 DÒNG DUY NHẤT) ================= */}
           <AnimatePresence>
             {selectedToolForDetail && (
               <motion.div 
@@ -573,44 +573,48 @@ export default function ToolsPage() {
                     </div>
                   </div>
 
+                  {/* 3 NÚT CHUYỂN ĐỔI TAB: CHIỀU RỘNG RỘNG RÃI & LUÔN THẲNG HÀNG TRÊN 1 DÒNG */}
                   <div className="space-y-3">
-                    <div className="flex items-center justify-center gap-2 bg-[#05080E] p-1 rounded-2xl border border-slate-800 max-w-xs mx-auto">
+                    <div className="flex items-center justify-between gap-1.5 bg-[#05080E] p-1.5 rounded-2xl border border-slate-800 w-full max-w-lg mx-auto">
                       {selectedToolForDetail.videoLink && getYouTubeEmbedUrl(selectedToolForDetail.videoLink) && (
                         <button
                           type="button"
                           onClick={() => setDetailMediaTab('video')}
-                          className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                          className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer whitespace-nowrap shrink-0 ${
                             detailMediaTab === 'video' 
                               ? 'bg-rose-500 text-white shadow-md' 
                               : 'text-slate-400 hover:text-white'
                           }`}
                         >
-                          <Video className="w-3.5 h-3.5" /> Video Demo
+                          <Video className="w-3.5 h-3.5 shrink-0" />
+                          <span>Video Demo</span>
                         </button>
                       )}
 
                       <button
                         type="button"
                         onClick={() => setDetailMediaTab('image')}
-                        className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                        className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer whitespace-nowrap shrink-0 ${
                           detailMediaTab === 'image' 
                             ? 'bg-cyan-500 text-slate-950 shadow-md' 
                             : 'text-slate-400 hover:text-white'
                         }`}
                       >
-                        <ImageIcon className="w-3.5 h-3.5" /> Ảnh Chi Tiết
+                        <ImageIcon className="w-3.5 h-3.5 shrink-0" />
+                        <span>Ảnh Chi Tiết</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setDetailMediaTab('changelog')}
-                        className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                        className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer whitespace-nowrap shrink-0 ${
                           detailMediaTab === 'changelog' 
-                            ? 'bg-amber-500 text-slate-950 font-black' 
+                            ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md' 
                             : 'text-slate-400 hover:text-white'
                         }`}
                       >
-                        <Sparkles className="w-3.5 h-3.5" /> Bản Cập Nhật
+                        <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                        <span>Bản Cập Nhật</span>
                       </button>
                     </div>
 
@@ -627,7 +631,7 @@ export default function ToolsPage() {
                           </iframe>
                         </div>
                       ) : detailMediaTab === 'changelog' ? (
-                        <div className="w-full aspect-video max-h-[340px] p-5 sm:p-6 flex flex-col justify-start overflow-y-auto custom-scrollbar bg-[#05080E]">
+                        <div className="w-full aspect-video max-h-[340px] p-5 sm:p-6 flex flex-col justify-start overflow-y-auto custom-scrollbar bg-gradient-to-b from-[#0B101D] to-[#05080E]">
                           <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5 mb-3">
                             <span className="text-xs font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
                               <History className="w-4 h-4" /> Nhật ký cập nhật
