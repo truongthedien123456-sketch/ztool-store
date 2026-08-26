@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { 
   Lock, User, Key, ShieldCheck, LogOut, Users, 
@@ -298,15 +298,12 @@ export default function AdminPage() {
           const list = Object.keys(parsed)
             .map((accName) => ({ username: accName, ...parsed[accName] }))
             .sort((a, b) => {
-              // Tách phần tên tài khoản gốc trước dấu gạch dưới "_"
               const userA = a.username.split('_')[0].toLowerCase();
               const userB = b.username.split('_')[0].toLowerCase();
               
-              // Nếu cùng 1 tài khoản, sắp xếp theo tên tool/hậu tố phía sau
               if (userA === userB) {
                 return a.username.localeCompare(b.username, undefined, { sensitivity: 'base' });
               }
-              // Khác tài khoản, gom theo tên tài khoản gốc
               return userA.localeCompare(userB, undefined, { sensitivity: 'base' });
             });
 
@@ -771,7 +768,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 2: KHO ACC TOOL ================= */}
+        {/* ================= TAB 2: KHO ACC TOOL (GOM NHÓM THEO TÀI KHOẢN GỐC) ================= */}
         {activeTab === 'gist_accounts' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
@@ -779,7 +776,7 @@ export default function AdminPage() {
                 <h2 className="text-sm font-bold text-white uppercase flex items-center gap-2">
                   <KeyRound className="w-4 h-4 text-cyan-400" /> KHO TÀI KHOẢN TOOL (GITHUB GIST ACCOUNTS.JSON)
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">Quản lý tài khoản kích hoạt, thời hạn, HWID và Xóa tài khoản trực tiếp</p>
+                <p className="text-xs text-slate-400 mt-0.5">Phân nhóm theo chủ sở hữu và quản lý HWID, thời hạn từng Tool</p>
               </div>
               <button onClick={fetchGistAccountsData} className="bg-[#05080E] border border-slate-800 hover:border-cyan-400 text-cyan-300 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer transition">
                 <RefreshCw className={`w-3.5 h-3.5 ${loadingGist ? 'animate-spin' : ''}`} /> Tải lại dữ liệu Gist
@@ -792,10 +789,10 @@ export default function AdminPage() {
               </div>
             ) : (
               <div className="overflow-x-auto border border-slate-800/60 rounded-2xl bg-[#05080E]/40">
-                <table className="w-full text-left text-xs text-slate-300">
+                <table className="w-full text-left text-xs text-slate-300 border-collapse">
                   <thead className="bg-[#05080E] text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
                     <tr>
-                      <th className="p-3.5">Key Tài khoản (Gist)</th>
+                      <th className="p-3.5">Cụm Tài khoản / Key Con</th>
                       <th className="p-3.5">Mật khẩu</th>
                       <th className="p-3.5">Tool Code</th>
                       <th className="p-3.5">Mã thiết bị (HWID)</th>
@@ -807,51 +804,93 @@ export default function AdminPage() {
                     {gistAccounts.length === 0 ? (
                       <tr><td colSpan={6} className="p-6 text-center text-slate-500">Chưa có dữ liệu tài khoản trên GitHub Gist.</td></tr>
                     ) : (
-                      gistAccounts.map((acc, idx) => {
-                        const hasHwid = acc.device_id && acc.device_id.trim() !== '' && acc.device_id.trim().toLowerCase() !== 'chưa liên kết';
+                      (() => {
+                        // Gom nhóm danh sách theo tên tài khoản gốc (phần trước dấu gạch dưới "_")
+                        const grouped: { [baseUser: string]: any[] } = {};
+                        gistAccounts.forEach((acc) => {
+                          const baseUser = acc.username.split('_')[0];
+                          if (!grouped[baseUser]) grouped[baseUser] = [];
+                          grouped[baseUser].push(acc);
+                        });
 
-                        return (
-                          <tr key={idx} className="hover:bg-[#05080E]/60 transition">
-                            <td className="p-3.5 font-bold text-white font-mono">{acc.username}</td>
-                            <td className="p-3.5 font-mono text-cyan-300 font-bold">{acc.password}</td>
-                            <td className="p-3.5 font-mono font-bold text-emerald-400">{acc.tool_code || acc.toolCode || 'Chung'}</td>
-                            <td className="p-3.5 font-mono">
-                              {hasHwid ? (
-                                <span className="text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/30 text-xs font-bold inline-flex items-center gap-1.5">
-                                  <Laptop className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                  <span className="truncate max-w-[150px]">{acc.device_id}</span>
-                                </span>
-                              ) : (
-                                <span className="text-slate-500 italic">Chưa liên kết</span>
-                              )}
-                            </td>
-                            <td className="p-3.5">{renderRemainingTime(acc.expire_timestamp)}</td>
-                            <td className="p-3.5 text-right space-x-2">
-                              {hasHwid && (
-                                <button
-                                  disabled={resettingHwid === acc.username}
-                                  onClick={() => handleResetHwid(acc.username)}
-                                  className="bg-amber-500/10 border border-amber-500/40 hover:bg-amber-500/25 text-amber-300 font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer shadow-sm inline-flex items-center gap-1.5"
-                                  title="Xóa mã thiết bị để đăng nhập máy mới"
-                                >
-                                  {resettingHwid === acc.username ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Cpu className="w-3.5 h-3.5 text-amber-400" />}
-                                  <span>Reset HWID</span>
-                                </button>
-                              )}
+                        return Object.entries(grouped).map(([baseUser, subAccs]) => (
+                          <React.Fragment key={baseUser}>
+                            {/* DÒNG TIÊU ĐỀ TÀI KHOẢN CHÍNH */}
+                            <tr className="bg-[#080E18] border-t-2 border-slate-800/90">
+                              <td colSpan={6} className="px-4 py-2.5">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-lg bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 text-xs font-black">
+                                      <User className="w-3.5 h-3.5" />
+                                    </div>
+                                    <span className="font-mono font-black text-white text-sm tracking-wide">{baseUser}</span>
+                                    <span className="text-[10px] font-extrabold bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 px-2 py-0.5 rounded-md">
+                                      {subAccs.length} Tool đang sở hữu
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
 
-                              <button
-                                disabled={deletingGistKey === acc.username}
-                                onClick={() => handleDeleteGistAccount(acc.username)}
-                                className="bg-rose-500/10 border border-rose-500/40 hover:bg-rose-500/25 text-rose-300 font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer shadow-sm inline-flex items-center gap-1.5"
-                                title="Xóa tài khoản này khỏi Gist"
-                              >
-                                {deletingGistKey === acc.username ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5 text-rose-400" />}
-                                <span>Xóa Acc</span>
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
+                            {/* CÁC NHÁNH CON THUỘC TÀI KHOẢN */}
+                            {subAccs.map((acc, subIdx) => {
+                              const hasHwid = acc.device_id && acc.device_id.trim() !== '' && acc.device_id.trim().toLowerCase() !== 'chưa liên kết';
+                              const isLast = subIdx === subAccs.length - 1;
+
+                              return (
+                                <tr key={acc.username} className="hover:bg-[#060A12]/80 transition">
+                                  <td className="p-3.5 font-mono">
+                                    <div className="flex items-center gap-2 pl-4">
+                                      <span className="text-slate-600 font-mono select-none font-bold text-sm">
+                                        {isLast ? '└──' : '├──'}
+                                      </span>
+                                      <span className="text-cyan-300 font-bold bg-[#0B1019] px-2.5 py-1 rounded-lg border border-slate-800">
+                                        {acc.username}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="p-3.5 font-mono text-slate-200 font-bold">{acc.password}</td>
+                                  <td className="p-3.5 font-mono font-black text-emerald-400">{acc.tool_code || acc.toolCode || 'Chung'}</td>
+                                  <td className="p-3.5 font-mono">
+                                    {hasHwid ? (
+                                      <span className="text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/30 text-xs font-bold inline-flex items-center gap-1.5">
+                                        <Laptop className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                        <span className="truncate max-w-[140px]">{acc.device_id}</span>
+                                      </span>
+                                    ) : (
+                                      <span className="text-slate-500 italic">Chưa liên kết</span>
+                                    )}
+                                  </td>
+                                  <td className="p-3.5">{renderRemainingTime(acc.expire_timestamp)}</td>
+                                  <td className="p-3.5 text-right space-x-2">
+                                    {hasHwid && (
+                                      <button
+                                        disabled={resettingHwid === acc.username}
+                                        onClick={() => handleResetHwid(acc.username)}
+                                        className="bg-amber-500/10 border border-amber-500/40 hover:bg-amber-500/25 text-amber-300 font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer shadow-sm inline-flex items-center gap-1.5"
+                                        title="Xóa mã thiết bị để đăng nhập máy mới"
+                                      >
+                                        {resettingHwid === acc.username ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Cpu className="w-3.5 h-3.5 text-amber-400" />}
+                                        <span>Reset HWID</span>
+                                      </button>
+                                    )}
+
+                                    <button
+                                      disabled={deletingGistKey === acc.username}
+                                      onClick={() => handleDeleteGistAccount(acc.username)}
+                                      className="bg-rose-500/10 border border-rose-500/40 hover:bg-rose-500/25 text-rose-300 font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer shadow-sm inline-flex items-center gap-1.5"
+                                      title="Xóa tài khoản này khỏi Gist"
+                                    >
+                                      {deletingGistKey === acc.username ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5 text-rose-400" />}
+                                      <span>Xóa Acc</span>
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </React.Fragment>
+                        ));
+                      })()
                     )}
                   </tbody>
                 </table>
@@ -997,7 +1036,7 @@ export default function AdminPage() {
                 <input type="text" value={toolForm.videoLink || ''} onChange={e => setToolForm({ ...toolForm, videoLink: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" placeholder="https://youtube.com/watch?v=..." />
               </div>
 
-              <div className="grid grid-cols-2 gap-2"><div><label className="block text-[10px] text-slate-400 font-bold">Giá Ngày</label><input type="text" value={toolForm.priceDay} onChange={e => setToolForm({ ...toolForm, priceDay: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white" placeholder="5000" /></div><div><label className="block text-[10px] text-slate-400 font-bold">Giá Tuần</label><input type="text" value={toolForm.priceWeek} onChange={e => setToolForm({ ...toolForm, priceWeek: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white" placeholder="20000" /></div><div><label className="block text-[10px] text-slate-400 font-bold">Giá Tháng</label><input type="text" value={toolForm.priceMonth} onChange={e => setToolForm({ ...toolForm, priceMonth: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white" placeholder="50000" /></div><div><label className="block text-[10px] text-slate-400 font-bold">Giá Vĩnh Viễn</label><input type="text" value={toolForm.priceLifetime} onChange={e => setToolForm({ ...toolForm, priceLifetime: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white" placeholder="100000" /></div></div>
+              <div className="grid grid-cols-2 gap-2"><div><label className="block text-[10px] text-slate-400 font-bold">Giá Ngày</label><input type="text" value={toolForm.priceDay} onChange={e => setToolForm({ ...toolForm, priceDay: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white" placeholder="5000" /></div><div><label className="block text-[10px] text-slate-400 font-bold">Giá Tuần</label><input type="text" value={toolForm.priceWeek} onChange={e => setToolForm({ ...toolForm, priceWeek: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white" placeholder="20000" /></div><div><label className="block text-[10px] text-slate-400 font-bold">Giá Tháng</label><input type="text" value={toolForm.priceMonth} onChange={e => setToolForm({ ...toolForm, priceMonth: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white" placeholder="50000" /></div><div><label className="block text-[10px] text-slate-400 font-bold">Giá Vĩnh Viễn</label><input type="text" value={toolForm.priceLifetime} onChange={e => setToolForm({ ...toolForm, priceLifetime: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white" placeholder="100000" /></div></div>
               <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Mô tả sản phẩm</label><textarea value={toolForm.description} onChange={e => setToolForm({ ...toolForm, description: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white" rows={3} /></div>
               <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Link Tải Tool</label><input type="text" value={toolForm.downloadLink} onChange={e => setToolForm({ ...toolForm, downloadLink: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white" placeholder="https://..." /></div>
               <button type="submit" disabled={isUploading} className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 py-3 rounded-xl text-xs font-black transition cursor-pointer">{isUploading ? 'ĐANG UPLOAD...' : 'LƯU SẢN PHẨM'}</button>
