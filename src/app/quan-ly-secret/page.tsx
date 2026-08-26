@@ -295,7 +295,21 @@ export default function AdminPage() {
         const result = await res.json();
         if (result.success && result.data) {
           const parsed = result.data;
-          const list = Object.keys(parsed).map((accName) => ({ username: accName, ...parsed[accName] }));
+          const list = Object.keys(parsed)
+            .map((accName) => ({ username: accName, ...parsed[accName] }))
+            .sort((a, b) => {
+              // Tách phần tên tài khoản gốc trước dấu gạch dưới "_"
+              const userA = a.username.split('_')[0].toLowerCase();
+              const userB = b.username.split('_')[0].toLowerCase();
+              
+              // Nếu cùng 1 tài khoản, sắp xếp theo tên tool/hậu tố phía sau
+              if (userA === userB) {
+                return a.username.localeCompare(b.username, undefined, { sensitivity: 'base' });
+              }
+              // Khác tài khoản, gom theo tên tài khoản gốc
+              return userA.localeCompare(userB, undefined, { sensitivity: 'base' });
+            });
+
           setGistAccounts(list);
         }
       }
