@@ -9,10 +9,21 @@ import {
 } from 'lucide-react';
 
 export default function HomePage() {
-  const [tools, setTools] = useState<any[]>([]);
+  const [tools, setTools] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem('ztool_home_tools_cache');
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch (e) {}
+      }
+    }
+    return [];
+  });
+  
   const [projects, setProjects] = useState<any[]>([]);
   const [systemNotice, setSystemNotice] = useState<{ text: string, active: boolean } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(tools.length === 0);
 
   // States Modal Chi Tiết & Modal Mua
   const [selectedToolForDetail, setSelectedToolForDetail] = useState<any | null>(null);
@@ -49,34 +60,43 @@ export default function HomePage() {
 
   const loadHomeSyncData = async () => {
     try {
-      const { data: toolData } = await supabase
-        .from('tools')
-        .select('*')
-        .order('views', { ascending: false });
+      const now = Date.now();
+      const cachedTime = sessionStorage.getItem('ztool_home_tools_cache_time');
 
-      if (toolData && toolData.length > 0) {
-        const mappedTools = toolData.map((t: any) => ({
-          id: t.id,
-          name: t.name,
-          toolCode: t.toolCode || t.tool_code || '',
-          image: t.image,
-          status: t.status || 'Đang hoạt động',
-          priceDay: t.priceDay || t.price_day || '',
-          priceWeek: t.priceWeek || t.price_week || '',
-          priceMonth: t.priceMonth || t.price_month || '',
-          priceLifetime: t.priceLifetime || t.price_lifetime || '',
-          description: t.description,
-          downloadLink: t.downloadLink || t.download_link || '',
-          videoLink: t.videoLink || t.video_link || '',
-          views: Number(t.views) || 0,
-          sales: Number(t.sales) || 0
-        }));
-        setTools(mappedTools);
+      // Tải tools từ Supabase (Lọc cột chính xác & Lưu cache 3 phút)
+      if (!cachedTime || now - Number(cachedTime) > 180000 || tools.length === 0) {
+        const { data: toolData } = await supabase
+          .from('tools')
+          .select('id, name, toolCode, tool_code, image, status, priceDay, price_day, priceWeek, price_week, priceMonth, price_month, priceLifetime, price_lifetime, description, downloadLink, download_link, videoLink, video_link, version, views, sales')
+          .order('views', { ascending: false });
+
+        if (toolData && toolData.length > 0) {
+          const mappedTools = toolData.map((t: any) => ({
+            id: t.id,
+            name: t.name,
+            toolCode: t.toolCode || t.tool_code || '',
+            image: t.image,
+            status: t.status || 'Đang hoạt động',
+            priceDay: t.priceDay || t.price_day || '',
+            priceWeek: t.priceWeek || t.price_week || '',
+            priceMonth: t.priceMonth || t.price_month || '',
+            priceLifetime: t.priceLifetime || t.price_lifetime || '',
+            description: t.description,
+            downloadLink: t.downloadLink || t.download_link || '',
+            videoLink: t.videoLink || t.video_link || '',
+            version: t.version || '',
+            views: Number(t.views) || 0,
+            sales: Number(t.sales) || 0
+          }));
+          setTools(mappedTools);
+          sessionStorage.setItem('ztool_home_tools_cache', JSON.stringify(mappedTools));
+          sessionStorage.setItem('ztool_home_tools_cache_time', String(now));
+        }
       }
 
       const { data: projectData } = await supabase
         .from('projects')
-        .select('*')
+        .select('id, title, image, status, description')
         .order('id', { ascending: false });
 
       if (projectData && projectData.length > 0) {
@@ -85,7 +105,7 @@ export default function HomePage() {
 
       const { data: noticeData } = await supabase
         .from('settings')
-        .select('*')
+        .select('notice_text, is_active')
         .eq('id', 1)
         .single();
         
@@ -94,7 +114,7 @@ export default function HomePage() {
       }
 
     } catch (error) {
-      console.error(error);
+      console.error('Lỗi tải dữ liệu trang chủ:', error);
     } finally {
       setIsLoading(false);
     }
@@ -183,7 +203,6 @@ export default function HomePage() {
     setCouponMsg({ type: 'success', text: successText });
   };
 
-  // Kích hoạt trải nghiệm dùng thử 3 ngày
   const handleActivateTrial = async () => {
     setTrialMsg(null);
     if (!trialTool) return;
@@ -200,7 +219,7 @@ export default function HomePage() {
     }
 
     setLoadingTrial(true);
-    const { data: userData } = await supabase.from('users').select('*').eq('username', currentUsername).single();
+    const { data: userData } = await supabase.from('users').select('id, username, password, is_verified, is_exempt').eq('username', currentUsername).single();
 
     if (!userData) {
       setLoadingTrial(false);
@@ -272,7 +291,6 @@ export default function HomePage() {
     }
   };
 
-  // Mua bản quyền Tool
   const handleBuyTool = async () => {
     setPurchaseMsg(null);
     if (!selectedToolForBuy) return;
@@ -290,7 +308,7 @@ export default function HomePage() {
 
     setLoadingBuy(true);
 
-    const { data: userData } = await supabase.from('users').select('*').eq('username', currentUsername).single();
+    const { data: userData } = await supabase.from('users').select('id, username, password, balance, is_verified, is_exempt').eq('username', currentUsername).single();
 
     if (!userData) {
       setLoadingBuy(false);
@@ -408,7 +426,7 @@ export default function HomePage() {
     <main className="font-sans pb-24 min-h-screen bg-transparent text-slate-100 selection:bg-cyan-500 selection:text-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-8">
 
-        {/* 1. KHUNG THÔNG BÁO ADMIN GỌN GÀNG TINH TẾ */}
+        {/* 1. KHUNG THÔNG BÁO ADMIN */}
         {systemNotice?.active && systemNotice?.text && (
           <div className="bg-[#0B1019]/90 border border-amber-500/40 rounded-2xl px-4 py-2.5 flex items-center gap-3 shadow-md backdrop-blur-md">
             <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0">
@@ -425,7 +443,7 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* 2. HERO BANNER THIẾT KẾ ĐẦY ĐẶN, THOÁNG & HIỆN ĐẠI */}
+        {/* 2. HERO BANNER KHÔNG BỊ GIẬT LAYOUT */}
         <div className="relative rounded-3xl bg-[#0B1019]/95 border-2 border-cyan-500/30 p-6 sm:p-8 overflow-hidden shadow-[0_0_35px_rgba(6,182,212,0.12)] backdrop-blur-xl">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
             
@@ -491,9 +509,9 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Cột phải: Tool nổi bật Top 1 */}
-            {featuredTool && (
-              <div className="lg:col-span-5">
+            {/* Cột phải: Tool nổi bật Top 1 (Đã khóa layout cố định chống giật) */}
+            <div className="lg:col-span-5 w-full">
+              {featuredTool ? (
                 <div 
                   onClick={() => handleOpenDetail(featuredTool)}
                   className="group bg-[#0D131F] border-2 border-amber-500/50 hover:border-amber-400 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-xl transition-all duration-300 cursor-pointer relative"
@@ -534,7 +552,7 @@ export default function HomePage() {
                         setTrialTool(featuredTool);
                         setTrialMsg(null);
                       }}
-                      className="w-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-yellow-500/20 hover:from-amber-500/30 text-amber-300 border border-amber-500/50 font-black py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition whitespace-nowrap"
+                      className="w-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-yellow-500/20 hover:from-amber-500/30 text-amber-300 border border-amber-500/50 font-black py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition whitespace-nowrap cursor-pointer"
                     >
                       <Gift className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                       <span>Trải nghiệm Tool</span>
@@ -545,16 +563,27 @@ export default function HomePage() {
                         e.stopPropagation();
                         handleOpenBuyModal(featuredTool);
                       }}
-                      className="w-full text-xs font-black text-slate-950 bg-gradient-to-r from-cyan-500 to-teal-400 hover:brightness-110 flex items-center justify-center gap-1.5 transition py-2.5 rounded-xl shadow-md whitespace-nowrap"
+                      className="w-full text-xs font-black text-slate-950 bg-gradient-to-r from-cyan-500 to-teal-400 hover:brightness-110 flex items-center justify-center gap-1.5 transition py-2.5 rounded-xl shadow-md whitespace-nowrap cursor-pointer"
                     >
                       <ShoppingBag className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
                       <span>Mua ngay</span>
                     </button>
                   </div>
-
                 </div>
-              </div>
-            )}
+              ) : (
+                /* Khung Skeleton giữ vị trí chuẩn tỷ lệ, chống vỡ/nhảy layout khi reload */
+                <div className="bg-[#0D131F]/70 border border-slate-800/80 rounded-3xl p-5 space-y-3.5 animate-pulse">
+                  <div className="h-4 bg-slate-800/90 rounded-lg w-2/5"></div>
+                  <div className="w-full aspect-square bg-slate-800/50 rounded-2xl"></div>
+                  <div className="h-4 bg-slate-800/90 rounded-lg w-3/5"></div>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="h-9 bg-slate-800/70 rounded-xl"></div>
+                    <div className="h-9 bg-slate-800/70 rounded-xl"></div>
+                  </div>
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
 
@@ -572,7 +601,20 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {activeTools.length === 0 ? (
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-[#0D121D]/60 border border-slate-800/80 rounded-3xl p-4.5 space-y-3 animate-pulse">
+                  <div className="w-full aspect-square bg-slate-800/50 rounded-2xl"></div>
+                  <div className="h-4 bg-slate-800 rounded-lg w-2/3"></div>
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                    <div className="h-8 bg-slate-800 rounded-xl"></div>
+                    <div className="h-8 bg-slate-800 rounded-xl"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : activeTools.length === 0 ? (
             <div className="text-center py-8 bg-[#0D121D]/50 rounded-2xl border border-slate-800 text-slate-400 text-xs">
               Hiện tại chưa có tool nào ở trạng thái hoạt động.
             </div>
@@ -614,7 +656,7 @@ export default function HomePage() {
                         setTrialTool(tool);
                         setTrialMsg(null);
                       }}
-                      className="w-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-yellow-500/20 hover:from-amber-500/30 text-amber-300 border border-amber-500/50 font-black py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition whitespace-nowrap"
+                      className="w-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-yellow-500/20 hover:from-amber-500/30 text-amber-300 border border-amber-500/50 font-black py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition whitespace-nowrap cursor-pointer"
                     >
                       <Gift className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                       <span>Trải nghiệm Tool</span>
@@ -782,7 +824,7 @@ export default function HomePage() {
           >
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
