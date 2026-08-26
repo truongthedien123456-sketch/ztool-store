@@ -121,8 +121,9 @@ export default function AdminPage() {
       }
     });
 
+    // Kênh Realtime nghe tin nhắn và giao dịch SePay
     const channel = supabase
-      .channel(`admin_chat_rt_${Date.now()}`)
+      .channel('admin_unified_channel')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
         const msg = payload.new;
         if (msg.id > lastProcessedMsgIdRef.current) {
@@ -378,10 +379,10 @@ export default function AdminPage() {
           priceMonth: t.priceMonth || t.price_month || '', 
           priceLifetime: t.priceLifetime || t.price_lifetime || '', 
           description: t.description, 
-          downloadLink: t.downloadLink || t.download_link || '',
-          videoLink: t.videoLink || t.video_link || '',
-          version: t.version || '',
-          changelog: t.changelog || '',
+          downloadLink: t.downloadLink || t.download_link || '', 
+          videoLink: t.videoLink || t.video_link || '', 
+          version: t.version || '', 
+          changelog: t.changelog || '', 
           views: t.views || 0, 
           sales: t.sales || 0
         })));
@@ -401,7 +402,7 @@ export default function AdminPage() {
         .order('id', { ascending: false });
       if (feedbackData) setFeedbacks(feedbackData);
 
-      // 5. Tải SePay logs
+      // 5. Tải SePay logs (loại bỏ lỗi lệch tên cột)
       const { data: sepayData } = await supabase
         .from('transactions')
         .select('*')
@@ -548,7 +549,7 @@ export default function AdminPage() {
     const changeAmt = Number(adjustBal.amount); 
     const next = isAddMode ? cur + changeAmt : Math.max(0, cur - changeAmt);
     
-    // Tự động cập nhật trực tiếp cả total_deposited của user
+    // Cập nhật cả total_deposited của user
     const curDeposited = Number(targetUser.total_deposited) || 0;
     const nextDeposited = isAddMode ? curDeposited + changeAmt : Math.max(0, curDeposited - changeAmt);
 
@@ -827,7 +828,7 @@ export default function AdminPage() {
                           <td className="p-4 font-mono whitespace-nowrap"><div className="flex items-center gap-2"><span className="text-slate-300 font-bold">{showPasswords[u.username] ? u.password || '---' : '••••••••'}</span><button onClick={() => handleToggleShowPass(u.username)} className="text-slate-500 hover:text-white transition cursor-pointer">{showPasswords[u.username] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}</button></div></td>
                           <td className="p-4 font-mono font-black text-emerald-400 whitespace-nowrap">{(u.balance || 0).toLocaleString('vi-VN')}đ</td>
                           <td className="p-4 text-center whitespace-nowrap">
-                            {isExempt ? <span className="text-cyan-300 font-black bg-cyan-500/20 px-3 py-1 rounded-xl border border-cyan-400 text-[10px] inline-flex items-center gap-1.5 shadow-[0_0_10px_rgba(6,182,212,0.25)]"><Sparkles className="w-3.5 h-3.5 text-cyan-400" /> MIỄN XÁC THỰC</span> : isVerified ? <span className="text-emerald-400 font-black bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/30 text-[10px] inline-flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> ĐÃ XÁC THỰC</span> : <span className="text-rose-400 font-black bg-rose-500/10 px-3 py-1 rounded-xl border border-rose-500/30 text-[10px] inline-flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5 text-rose-400" /> CHƯA XÁC THỰC</span>}
+                            {isExempt ? <span className="text-cyan-300 font-black bg-cyan-500/20 px-3 py-1 rounded-xl border border-cyan-400 text-[10px] inline-flex items-center gap-1.5 shadow-[0_0_10px_rgba(6,182,212,0.25)]"><Sparkles className="w-3.5 h-3.5 text-cyan-400" /> MIỄN XÁC THỰC</span> : isVerified ? <span className="text-emerald-400 font-black bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/30 text-[10px] inline-flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> ĐÃ XÁC THỰC</span> : <span className="text-rose-400 font-black bg-rose-500/10 px-3 py-1 rounded-xl border border-rose-500/30 text-rose-400 text-[10px] inline-flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5 text-rose-400" /> CHƯA XÁC THỰC</span>}
                           </td>
                           <td className="p-4 text-center whitespace-nowrap"><button disabled={exemptLoadingId === u.id} onClick={() => handleToggleExemptVerification(u)} className={`px-3.5 py-1.5 rounded-xl text-[11px] font-black transition cursor-pointer border inline-flex items-center gap-1.5 ${isExempt ? 'bg-amber-500/10 border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-slate-950' : 'bg-[#05080E] border-slate-700 hover:border-cyan-400 text-slate-300 hover:text-cyan-300'}`}>{exemptLoadingId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : isExempt ? <>Bỏ miễn xác thực</> : <><Shield className="w-3.5 h-3.5 text-cyan-400" /> Miễn xác thực</>}</button></td>
                           <td className="p-4 text-center whitespace-nowrap">{u.isBanned ? <span className="text-rose-400 font-bold bg-rose-500/10 px-2.5 py-1 rounded border border-rose-500/20 text-[10px]">Bị BAN</span> : <span className="text-cyan-400 font-bold bg-cyan-500/10 px-2.5 py-1 rounded border border-cyan-500/20 text-[10px]">Hoạt động</span>}</td>
@@ -1147,7 +1148,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 4: SẢN PHẨM TOOL (QUẢN LÝ ĐA PHIÊN BẢN & CẬP NHẬT TOOL CŨ) ================= */}
+        {/* ================= TAB 4: SẢN PHẨM TOOL ================= */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
@@ -1242,7 +1243,7 @@ export default function AdminPage() {
                     <button
                       type="button"
                       onClick={() => appendChangelogTemplate(toolForm.version || 'v2.0')}
-                      className="text-[10px] font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded transition"
+                      className="text-[10px] font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded transition cursor-pointer"
                       title="Chèn khung phiên bản hiện tại"
                     >
                       + Bản Hiện Tại
@@ -1250,7 +1251,7 @@ export default function AdminPage() {
                     <button
                       type="button"
                       onClick={() => appendChangelogTemplate('v1.0 - Bản Cũ')}
-                      className="text-[10px] font-bold text-slate-400 bg-slate-800 hover:text-white px-2 py-0.5 rounded transition"
+                      className="text-[10px] font-bold text-slate-400 bg-slate-800 hover:text-white px-2 py-0.5 rounded transition cursor-pointer"
                       title="Chèn lịch sử bản cũ"
                     >
                       + Bản Cũ
@@ -1389,7 +1390,7 @@ export default function AdminPage() {
                               setIsEditingTool(true); 
                               window.scrollTo({ top: 400, behavior: 'smooth' });
                             }}
-                            className="text-cyan-400 font-bold hover:underline text-[10px]"
+                            className="text-cyan-400 font-bold hover:underline text-[10px] cursor-pointer"
                           >
                             + Thêm ngay
                           </button>
