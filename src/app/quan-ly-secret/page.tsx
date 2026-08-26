@@ -6,7 +6,7 @@ import {
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
   Ban, CheckCircle, CheckCircle2, CreditCard, KeyRound, Search, DollarSign, Settings,
-  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent, Crown, Gem, Flame, Star, Award, Video, Send, Headset, Volume2
+  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent, Crown, Gem, Flame, Star, Award, Video, Send, Headset, Volume2, FileText
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -57,9 +57,11 @@ export default function AdminPage() {
   const [exemptLoadingId, setExemptLoadingId] = useState<number | null>(null);
   const [deleteEmailLoadingId, setDeleteEmailLoadingId] = useState<number | null>(null);
 
+  // Form Tool đã thêm version và changelog
   const [toolForm, setToolForm] = useState({
     id: 0, name: '', toolCode: '', image: '', status: 'Đang hoạt động',
-    priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '', videoLink: ''
+    priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '', videoLink: '',
+    version: '', changelog: ''
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -401,6 +403,8 @@ export default function AdminPage() {
           priceDay: t.priceDay || t.price_day || '', priceWeek: t.priceWeek || t.price_week || '', priceMonth: t.priceMonth || t.price_month || '',
           priceLifetime: t.priceLifetime || t.price_lifetime || '', description: t.description, downloadLink: t.downloadLink || t.download_link || '',
           videoLink: t.videoLink || t.video_link || '',
+          version: t.version || '',
+          changelog: t.changelog || '',
           views: t.views || 0, sales: t.sales || 0
         })));
       }
@@ -543,9 +547,19 @@ export default function AdminPage() {
       const { data: urlData } = supabase.storage.from('tool-images').getPublicUrl(filePath); finalImageUrl = urlData.publicUrl;
     }
     const payload = { 
-      name: toolForm.name, toolCode: toolForm.toolCode.trim(), image: finalImageUrl, status: toolForm.status, 
-      priceDay: toolForm.priceDay, priceWeek: toolForm.priceWeek, priceMonth: toolForm.priceMonth, priceLifetime: toolForm.priceLifetime, 
-      description: toolForm.description, downloadLink: toolForm.downloadLink, video_link: toolForm.videoLink 
+      name: toolForm.name, 
+      toolCode: toolForm.toolCode.trim(), 
+      image: finalImageUrl, 
+      status: toolForm.status, 
+      priceDay: toolForm.priceDay, 
+      priceWeek: toolForm.priceWeek, 
+      priceMonth: toolForm.priceMonth, 
+      priceLifetime: toolForm.priceLifetime, 
+      description: toolForm.description, 
+      downloadLink: toolForm.downloadLink, 
+      video_link: toolForm.videoLink,
+      version: toolForm.version,
+      changelog: toolForm.changelog
     };
     let result;
     if (isEditingTool && toolForm.id) result = await supabase.from('tools').update(payload).eq('id', toolForm.id);
@@ -554,7 +568,11 @@ export default function AdminPage() {
     if (result.error) alert('Lỗi lưu Tool: ' + result.error.message);
     else { 
       setImageFile(null); setPreviewUrl(''); 
-      setToolForm({ id: 0, name: '', toolCode: '', image: '', status: 'Đang hoạt động', priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '', videoLink: '' }); 
+      setToolForm({ 
+        id: 0, name: '', toolCode: '', image: '', status: 'Đang hoạt động', 
+        priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', 
+        description: '', downloadLink: '', videoLink: '', version: '', changelog: '' 
+      }); 
       setIsEditingTool(false); alert('Lưu sản phẩm thành công!'); loadAllSyncData(); 
     }
   };
@@ -769,7 +787,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 2: KHO ACC TOOL (GIAO DIỆN PREMIUM DASHBOARD) ================= */}
+        {/* ================= TAB 2: KHO ACC TOOL (MASTER UNIFIED TABLE CHUYÊN NGHIỆP) ================= */}
         {activeTab === 'gist_accounts' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 sm:p-7 space-y-6 shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
             
@@ -1088,65 +1106,177 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 4: SẢN PHẨM TOOL */}
+        {/* ================= TAB 4: SẢN PHẨM TOOL (ĐÃ THÊM VERSION VÀ CHANGELOG) ================= */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
-              <h3 className="text-xs font-bold text-white flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase"><Plus className="w-4 h-4 text-cyan-400" /> {isEditingTool ? 'Cập nhật Tool' : 'Thêm Tool mới'}</h3>
-              <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Tên Tool</label><input type="text" required value={toolForm.name} onChange={e => setToolForm({ ...toolForm, name: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" placeholder="vd: AUTO FARM F17" /></div>
-              <div><label className="block text-[11px] text-cyan-400 mb-1 font-bold">Mã Tool (Dùng xác thực đăng nhập Gist)</label><input type="text" required value={toolForm.toolCode} onChange={e => setToolForm({ ...toolForm, toolCode: e.target.value })} className="w-full bg-[#05080E] border border-cyan-500/50 rounded-xl p-2.5 text-xs text-white focus:outline-none font-mono" placeholder="vd: congtruongf17" /></div>
-              <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Trạng Thái</label><select value={toolForm.status} onChange={e => setToolForm({ ...toolForm, status: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white"><option value="Đang hoạt động">Đang hoạt động</option><option value="Tạm ngưng">Tạm ngưng</option></select></div>
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                <h3 className="text-xs font-bold text-white flex items-center gap-2 uppercase tracking-wide">
+                  <Plus className="w-4 h-4 text-cyan-400" /> {isEditingTool ? 'Cập nhật Tool' : 'Thêm Tool mới'}
+                </h3>
+                {isEditingTool && (
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setIsEditingTool(false);
+                      setImageFile(null);
+                      setPreviewUrl('');
+                      setToolForm({ 
+                        id: 0, name: '', toolCode: '', image: '', status: 'Đang hoạt động', 
+                        priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', 
+                        description: '', downloadLink: '', videoLink: '', version: '', changelog: '' 
+                      });
+                    }}
+                    className="text-[10px] text-slate-400 hover:text-white px-2 py-0.5 rounded bg-slate-800"
+                  >
+                    Hủy sửa
+                  </button>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1 font-bold">Tên Tool</label>
+                <input type="text" required value={toolForm.name} onChange={e => setToolForm({ ...toolForm, name: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" placeholder="vd: AUTO FARM F17" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] text-cyan-400 mb-1 font-bold">Mã Tool (Gist)</label>
+                  <input type="text" required value={toolForm.toolCode} onChange={e => setToolForm({ ...toolForm, toolCode: e.target.value })} className="w-full bg-[#05080E] border border-cyan-500/50 rounded-xl p-2.5 text-xs text-white focus:outline-none font-mono" placeholder="vd: congtruongf17" />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-cyan-300 mb-1 font-bold">Phiên bản (Version)</label>
+                  <input type="text" value={toolForm.version} onChange={e => setToolForm({ ...toolForm, version: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono font-bold" placeholder="vd: v2.6 PRO" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1 font-bold">Trạng Thái</label>
+                <select value={toolForm.status} onChange={e => setToolForm({ ...toolForm, status: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white">
+                  <option value="Đang hoạt động">Đang hoạt động</option>
+                  <option value="Tạm ngưng">Tạm ngưng</option>
+                </select>
+              </div>
               
-              <div className="space-y-2"><label className="block text-[11px] text-slate-400 font-bold">Ảnh sản phẩm</label><label className="flex items-center justify-center gap-2 bg-[#05080E] border border-dashed border-slate-800 text-slate-300 p-3 rounded-xl text-xs cursor-pointer hover:border-cyan-400"><Upload className="w-4 h-4 text-cyan-400" /><span className="truncate">{imageFile ? imageFile.name : 'Chọn ảnh...' }</span><input type="file" accept="image/*" onChange={handleFileChange} className="hidden" /></label>{(previewUrl || toolForm.image) && (<div className="w-full aspect-square bg-[#05080E] border border-slate-800 rounded-xl overflow-hidden relative"><img src={previewUrl || toolForm.image} alt="Preview" className="w-full h-full object-cover" /></div>)}</div>
+              <div className="space-y-2">
+                <label className="block text-[11px] text-slate-400 font-bold">Ảnh sản phẩm</label>
+                <label className="flex items-center justify-center gap-2 bg-[#05080E] border border-dashed border-slate-800 text-slate-300 p-3 rounded-xl text-xs cursor-pointer hover:border-cyan-400">
+                  <Upload className="w-4 h-4 text-cyan-400" />
+                  <span className="truncate">{imageFile ? imageFile.name : 'Chọn ảnh...' }</span>
+                  <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                </label>
+                {(previewUrl || toolForm.image) && (
+                  <div className="w-full aspect-square bg-[#05080E] border border-slate-800 rounded-xl overflow-hidden relative">
+                    <img src={previewUrl || toolForm.image} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
               
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1 font-bold flex items-center gap-1.5"><Video className="w-3.5 h-3.5 text-rose-500" /> Link Video Youtube (Giới thiệu)</label>
+                <label className="block text-[11px] text-slate-400 mb-1 font-bold flex items-center gap-1.5">
+                  <Video className="w-3.5 h-3.5 text-rose-500" /> Link Video Youtube (Giới thiệu)
+                </label>
                 <input type="text" value={toolForm.videoLink || ''} onChange={e => setToolForm({ ...toolForm, videoLink: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" placeholder="https://youtube.com/watch?v=..." />
               </div>
 
-              <div className="grid grid-cols-2 gap-2"><div><label className="block text-[10px] text-slate-400 font-bold">Giá Ngày</label><input type="text" value={toolForm.priceDay} onChange={e => setToolForm({ ...toolForm, priceDay: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white" placeholder="5000" /></div><div><label className="block text-[10px] text-slate-400 font-bold">Giá Tuần</label><input type="text" value={toolForm.priceWeek} onChange={e => setToolForm({ ...toolForm, priceWeek: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white" placeholder="20000" /></div><div><label className="block text-[10px] text-slate-400 font-bold">Giá Tháng</label><input type="text" value={toolForm.priceMonth} onChange={e => setToolForm({ ...toolForm, priceMonth: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white" placeholder="50000" /></div><div><label className="block text-[10px] text-slate-400 font-bold">Giá Vĩnh Viễn</label><input type="text" value={toolForm.priceLifetime} onChange={e => setToolForm({ ...toolForm, priceLifetime: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white" placeholder="100000" /></div></div>
-              <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Mô tả sản phẩm</label><textarea value={toolForm.description} onChange={e => setToolForm({ ...toolForm, description: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white" rows={3} /></div>
-              <div><label className="block text-[11px] text-slate-400 mb-1 font-bold">Link Tải Tool</label><input type="text" value={toolForm.downloadLink} onChange={e => setToolForm({ ...toolForm, downloadLink: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white" placeholder="https://..." /></div>
-              <button type="submit" disabled={isUploading} className="w-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 py-3 rounded-xl text-xs font-black transition cursor-pointer">{isUploading ? 'ĐANG UPLOAD...' : 'LƯU SẢN PHẨM'}</button>
+              <div className="grid grid-cols-2 gap-2">
+                <div><label className="block text-[10px] text-slate-400 font-bold">Giá Ngày</label><input type="text" value={toolForm.priceDay} onChange={e => setToolForm({ ...toolForm, priceDay: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white font-mono" placeholder="5000" /></div>
+                <div><label className="block text-[10px] text-slate-400 font-bold">Giá Tuần</label><input type="text" value={toolForm.priceWeek} onChange={e => setToolForm({ ...toolForm, priceWeek: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white font-mono" placeholder="20000" /></div>
+                <div><label className="block text-[10px] text-slate-400 font-bold">Giá Tháng</label><input type="text" value={toolForm.priceMonth} onChange={e => setToolForm({ ...toolForm, priceMonth: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white font-mono" placeholder="50000" /></div>
+                <div><label className="block text-[10px] text-slate-400 font-bold">Giá Vĩnh Viễn</label><input type="text" value={toolForm.priceLifetime} onChange={e => setToolForm({ ...toolForm, priceLifetime: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white font-mono" placeholder="100000" /></div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1 font-bold">Mô tả sản phẩm</label>
+                <textarea value={toolForm.description} onChange={e => setToolForm({ ...toolForm, description: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white leading-relaxed" rows={3} placeholder="Mô tả các tính năng chính của tool..." />
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-cyan-400 mb-1 font-bold flex items-center gap-1.5">
+                  <History className="w-3.5 h-3.5 text-cyan-400" /> Lịch sử cập nhật (Changelog)
+                </label>
+                <textarea 
+                  value={toolForm.changelog} 
+                  onChange={e => setToolForm({ ...toolForm, changelog: e.target.value })} 
+                  className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white leading-relaxed font-mono" 
+                  rows={3} 
+                  placeholder="- Tối ưu vượt Anticheat mới&#10;- Thêm tính năng tự giải mã CAPTCHA&#10;- Sửa lỗi crash game"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1 font-bold">Link Tải Tool</label>
+                <input type="text" value={toolForm.downloadLink} onChange={e => setToolForm({ ...toolForm, downloadLink: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white" placeholder="https://..." />
+              </div>
+
+              <button type="submit" disabled={isUploading} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 py-3 rounded-xl text-xs font-black transition cursor-pointer shadow-md">
+                {isUploading ? 'ĐANG UPLOAD...' : 'LƯU SẢN PHẨM'}
+              </button>
             </form>
             
             <div className="lg:col-span-2 bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
               <h3 className="text-xs font-bold text-white border-b border-slate-800/80 pb-3 uppercase">DANH SÁCH TOOL ĐANG BÁN</h3>
               <div className="space-y-3">
-                {tools.length === 0 ? <p className="text-xs text-slate-500">Chưa có sản phẩm Tool nào.</p> : tools.map((t) => (
-                  <div key={t.id} className="bg-[#05080E] border border-slate-800 p-4 rounded-2xl space-y-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-4 flex-1">
-                        {t.image && (<div className="w-16 h-16 bg-[#0B1019] border border-slate-800 rounded-xl overflow-hidden shrink-0"><img src={t.image} alt={t.name} className="w-full h-full object-cover" /></div>)}
-                        <div>
-                          <h4 className="font-bold text-white text-xs">{t.name}</h4>
-                          <span className="text-[10px] font-mono text-cyan-300 block">Mã Tool: {t.toolCode}</span>
-                          <span className={`inline-block mt-1 text-[9px] font-extrabold px-2 py-0.5 rounded border ${t.status === 'Tạm ngưng' ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'}`}>
-                            {t.status ? t.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
-                          </span>
+                {tools.length === 0 ? (
+                  <p className="text-xs text-slate-500">Chưa có sản phẩm Tool nào.</p>
+                ) : (
+                  tools.map((t) => (
+                    <div key={t.id} className="bg-[#05080E] border border-slate-800 p-4 rounded-2xl space-y-3 hover:border-cyan-500/40 transition">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 flex-1">
+                          {t.image && (
+                            <div className="w-16 h-16 bg-[#0B1019] border border-slate-800 rounded-xl overflow-hidden shrink-0">
+                              <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-white text-xs">{t.name}</h4>
+                              {t.version && (
+                                <span className="text-[10px] font-mono font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2 py-0.2 rounded-md">
+                                  {t.version}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] font-mono text-cyan-300 block mt-0.5">Mã Tool: {t.toolCode}</span>
+                            <span className={`inline-block mt-1 text-[9px] font-extrabold px-2 py-0.5 rounded border ${t.status === 'Tạm ngưng' ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'}`}>
+                              {t.status ? t.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <button onClick={() => { setToolForm(t); setPreviewUrl(t.image); setIsEditingTool(true); }} className="text-cyan-300 p-2 hover:bg-cyan-500/10 rounded-lg cursor-pointer transition" title="Chỉnh sửa Tool"><Edit className="w-4 h-4" /></button>
+                          <button onClick={() => handleDeleteTool(t.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg cursor-pointer transition" title="Xóa Tool"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       </div>
-                      
-                      <div className="flex gap-2">
-                        <button onClick={() => { setToolForm(t); setPreviewUrl(t.image); setIsEditingTool(true); }} className="text-cyan-300 p-2 hover:bg-cyan-500/10 rounded-lg cursor-pointer transition"><Edit className="w-4 h-4" /></button>
-                        <button onClick={() => handleDeleteTool(t.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg cursor-pointer transition"><Trash2 className="w-4 h-4" /></button>
+
+                      {t.changelog && (
+                        <div className="text-[11px] text-slate-300 bg-[#0B1019] border border-slate-800/80 p-2.5 rounded-xl space-y-1">
+                          <span className="text-[10px] font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1">
+                            <Sparkles className="w-3 h-3" /> Nhật ký cập nhật:
+                          </span>
+                          <p className="whitespace-pre-line leading-relaxed font-mono text-slate-400 pl-1">
+                            {t.changelog}
+                          </p>
+                        </div>
+                      )}
+
+                      {t.videoLink && (
+                        <div className="text-[10px] text-rose-400 flex items-center gap-1 font-medium italic truncate bg-[#0B1019] border border-slate-800 p-2 rounded-xl">
+                          <Video className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{t.videoLink}</span>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-[#0B1019] border border-slate-800 p-2.5 rounded-xl text-[11px]">
+                        <div><span className="text-slate-500 block">Ngày:</span><b className="text-emerald-400 font-mono">{t.priceDay ? `${Number(t.priceDay).toLocaleString('vi-VN')}đ` : '---'}</b></div>
+                        <div><span className="text-slate-500 block">Tuần:</span><b className="text-emerald-400 font-mono">{t.priceWeek ? `${Number(t.priceWeek).toLocaleString('vi-VN')}đ` : '---'}</b></div>
+                        <div><span className="text-slate-500 block">Tháng:</span><b className="text-emerald-400 font-mono">{t.priceMonth ? `${Number(t.priceMonth).toLocaleString('vi-VN')}đ` : '---'}</b></div>
+                        <div><span className="text-slate-500 block">Vĩnh viễn:</span><b className="text-cyan-300 font-mono">{t.priceLifetime ? `${Number(t.priceLifetime).toLocaleString('vi-VN')}đ` : '---'}</b></div>
                       </div>
                     </div>
-
-                    {t.videoLink && (
-                      <div className="text-[10px] text-rose-400 flex items-center gap-1 font-medium italic truncate bg-[#0B1019] border border-slate-800 p-2 rounded-xl">
-                        <Video className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{t.videoLink}</span>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-[#0B1019] border border-slate-800 p-2.5 rounded-xl text-[11px]">
-                      <div><span className="text-slate-500 block">Ngày:</span><b className="text-emerald-400">{t.priceDay ? `${Number(t.priceDay).toLocaleString('vi-VN')}đ` : '---'}</b></div>
-                      <div><span className="text-slate-500 block">Tuần:</span><b className="text-emerald-400">{t.priceWeek ? `${Number(t.priceWeek).toLocaleString('vi-VN')}đ` : '---'}</b></div>
-                      <div><span className="text-slate-500 block">Tháng:</span><b className="text-emerald-400">{t.priceMonth ? `${Number(t.priceMonth).toLocaleString('vi-VN')}đ` : '---'}</b></div>
-                      <div><span className="text-slate-500 block">Vĩnh viễn:</span><b className="text-cyan-300">{t.priceLifetime ? `${Number(t.priceLifetime).toLocaleString('vi-VN')}đ` : '---'}</b></div>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>

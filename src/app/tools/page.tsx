@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag, Eye, Shield, Check, ZoomIn, Layers, Activity, AlertTriangle, Clock, Percent, Video, Image as ImageIcon, Gift
+  Wrench, ShoppingBag, ShieldCheck, CheckCircle2, AlertCircle, X, Sparkles, Info, Loader2, Tag, Eye, Shield, Check, ZoomIn, Layers, Activity, AlertTriangle, Clock, Percent, Video, Image as ImageIcon, Gift, History
 } from 'lucide-react';
 
 export default function ToolsPage() {
@@ -59,16 +59,30 @@ export default function ToolsPage() {
       
       if (data && data.length > 0) {
         const mappedTools = data.map((t: any) => ({
-          id: t.id, name: t.name, toolCode: t.toolCode || t.tool_code || '', image: t.image, status: t.status || 'Đang hoạt động',
-          priceDay: t.priceDay || t.price_day || '', priceWeek: t.priceWeek || t.price_week || '', priceMonth: t.priceMonth || t.price_month || '',
-          priceLifetime: t.priceLifetime || t.price_lifetime || '', description: t.description, downloadLink: t.downloadLink || t.download_link || '',
+          id: t.id, 
+          name: t.name, 
+          toolCode: t.toolCode || t.tool_code || '', 
+          image: t.image, 
+          status: t.status || 'Đang hoạt động',
+          priceDay: t.priceDay || t.price_day || '', 
+          priceWeek: t.priceWeek || t.price_week || '', 
+          priceMonth: t.priceMonth || t.price_month || '',
+          priceLifetime: t.priceLifetime || t.price_lifetime || '', 
+          description: t.description, 
+          downloadLink: t.downloadLink || t.download_link || '',
           videoLink: t.videoLink || t.video_link || '',
-          views: t.views || 0, sales: t.sales || 0
+          version: t.version || '',
+          changelog: t.changelog || '',
+          views: t.views || 0, 
+          sales: t.sales || 0
         }));
         setTools(mappedTools);
       }
-    } catch (error) { console.error(error); } 
-    finally { setIsLoadingData(false); }
+    } catch (error) { 
+      console.error(error); 
+    } finally { 
+      setIsLoadingData(false); 
+    }
   };
 
   const formatPrice = (price: string | number) => {
@@ -88,7 +102,9 @@ export default function ToolsPage() {
       const newViews = (tool.views || 0) + 1;
       await supabase.from('tools').update({ views: newViews }).eq('id', tool.id);
       setTools(prev => prev.map(t => t.id === tool.id ? { ...t, views: newViews } : t));
-    } catch (e) { console.error('Lỗi cộng lượt xem:', e); }
+    } catch (e) { 
+      console.error('Lỗi cộng lượt xem:', e); 
+    }
   };
 
   const calculateDiscount = (originalPrice: number, coupon: any) => {
@@ -128,7 +144,7 @@ export default function ToolsPage() {
     setCouponMsg({ type: 'success', text: successText });
   };
 
-  // Kích hoạt dùng thử 3 ngày miễn phí (Có kiểm tra bắt buộc xác thực)
+  // Kích hoạt dùng thử 3 ngày miễn phí
   const handleActivateTrial = async () => {
     setTrialMsg(null);
     if (!trialTool) return;
@@ -153,7 +169,6 @@ export default function ToolsPage() {
       return;
     }
 
-    // BẮT BUỘC TÀI KHOẢN ĐÃ XÁC THỰC HOẶC MIỄN XÁC THỰC
     const isExempt = userData.is_exempt === true;
     const isVerified = userData.is_verified === true || isExempt;
 
@@ -166,7 +181,6 @@ export default function ToolsPage() {
       return;
     }
 
-    // Kiểm tra xem đã từng nhận dùng thử tool này chưa
     const tCode = trialTool.toolCode || trialTool.tool_code || '';
     const { data: trialHistory } = await supabase
       .from('transactions')
@@ -200,7 +214,6 @@ export default function ToolsPage() {
         return;
       }
 
-      // Ghi log giao dịch TRIAL miễn phí 0đ
       await supabase.from('transactions').insert([{
         username: userData.username,
         type: 'TRIAL',
@@ -220,7 +233,7 @@ export default function ToolsPage() {
     }
   };
 
-  // Mua bản quyền Tool (Có kiểm tra bắt buộc xác thực)
+  // Mua bản quyền Tool
   const handleBuyTool = async () => {
     setPurchaseMsg(null);
     if (!selectedToolForBuy) return;
@@ -235,7 +248,6 @@ export default function ToolsPage() {
 
     if (!userData) { setLoadingBuy(false); setPurchaseMsg({ type: 'error', text: 'Không tìm thấy thông tin tài khoản!' }); return; }
 
-    // BẮT BUỘC TÀI KHOẢN ĐÃ XÁC THỰC HOẶC MIỄN XÁC THỰC
     const isExempt = userData.is_exempt === true;
     const isVerified = userData.is_verified === true || isExempt;
 
@@ -375,7 +387,14 @@ export default function ToolsPage() {
                         </div>
 
                         <div>
-                          <h3 className="text-lg font-black text-white group-hover:text-cyan-300 transition duration-200">{tool.name}</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-black text-white group-hover:text-cyan-300 transition duration-200">{tool.name}</h3>
+                            {tool.version && (
+                              <span className="text-[10px] font-mono font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2 py-0.5 rounded-md shadow-sm">
+                                {tool.version}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-slate-400 mt-1 line-clamp-1 truncate" title={tool.description}>{tool.description || 'Chưa có mô tả sản phẩm.'}</p>
                         </div>
 
@@ -436,7 +455,14 @@ export default function ToolsPage() {
                       </div>
 
                       <div>
-                        <h3 className="text-lg font-black text-slate-300 group-hover:text-white transition duration-200">{tool.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-black text-slate-300 group-hover:text-white transition duration-200">{tool.name}</h3>
+                          {tool.version && (
+                            <span className="text-[10px] font-mono font-black bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded-md">
+                              {tool.version}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-slate-500 mt-1 line-clamp-1 truncate" title={tool.description}>{tool.description || 'Chưa có mô tả sản phẩm.'}</p>
                       </div>
 
@@ -458,7 +484,7 @@ export default function ToolsPage() {
             </div>
           )}
 
-          {/* ================= MODAL TRẢI NGHIỆM DÙNG THỬ 3 NGÀY (ĐÃ ẨN MÃ GIST & BỎ HIỆU ỨNG NẨY) ================= */}
+          {/* ================= MODAL TRẢI NGHIỆM DÙNG THỬ 3 NGÀY ================= */}
           <AnimatePresence>
             {trialTool && (
               <motion.div 
@@ -478,7 +504,14 @@ export default function ToolsPage() {
                       <Gift className="w-7 h-7" />
                     </div>
                     <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest block">CHƯƠNG TRÌNH DÙNG THỬ MIỄN PHÍ</span>
-                    <h2 className="text-xl font-black text-white">{trialTool.name}</h2>
+                    <div className="flex items-center justify-center gap-2">
+                      <h2 className="text-xl font-black text-white">{trialTool.name}</h2>
+                      {trialTool.version && (
+                        <span className="text-[10px] font-mono font-black bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-md">
+                          {trialTool.version}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-slate-400">Trải nghiệm toàn bộ tính năng cao cấp hoàn toàn miễn phí trong vòng 3 ngày!</p>
                   </div>
 
@@ -523,7 +556,7 @@ export default function ToolsPage() {
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95, y: 15 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 15 }} transition={{ duration: 0.2 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-[#0D121D] border-2 border-cyan-500/40 w-full max-w-2xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.25)] max-h-[90vh] overflow-y-auto cursor-default custom-scrollbar"
+                  className="bg-[#0D121D] border-2 border-cyan-500/40 w-full max-w-2xl rounded-3xl p-6 sm:p-8 space-y-5 relative shadow-[0_0_50px_rgba(6,182,212,0.25)] max-h-[90vh] overflow-y-auto cursor-default custom-scrollbar"
                 >
                   <button onClick={() => setSelectedToolForDetail(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#080B10] border border-slate-800 transition hover:border-cyan-400 z-10"><X className="w-5 h-5" /></button>
                   
@@ -531,7 +564,14 @@ export default function ToolsPage() {
                     <div className="w-11 h-11 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0"><Info className="w-5 h-5" /></div>
                     <div>
                       <span className="text-[10px] text-cyan-400 font-extrabold uppercase tracking-wider block">THÔNG TIN CHI TIẾT SẢN PHẨM</span>
-                      <h2 className="text-xl font-black text-white leading-tight">{selectedToolForDetail.name}</h2>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-xl font-black text-white leading-tight">{selectedToolForDetail.name}</h2>
+                        {selectedToolForDetail.version && (
+                          <span className="text-[10px] font-mono font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2.5 py-0.5 rounded-lg shadow-sm">
+                            {selectedToolForDetail.version}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -590,12 +630,26 @@ export default function ToolsPage() {
                     </div>
                   </div>
 
+                  {/* KHUNG MÔ TẢ TÍNH NĂNG */}
                   <div className="space-y-2">
                     <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Mô tả tính năng đầy đủ:</h4>
-                    <p className="text-xs text-slate-300 bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl leading-relaxed whitespace-pre-line max-h-36 overflow-y-auto custom-scrollbar font-medium">
+                    <p className="text-xs text-slate-300 bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl leading-relaxed whitespace-pre-line max-h-32 overflow-y-auto custom-scrollbar font-medium">
                       {selectedToolForDetail.description || 'Chưa có nội dung mô tả chi tiết cho sản phẩm này.'}
                     </p>
                   </div>
+
+                  {/* KHUNG LỊCH SỬ BẢN CẬP NHẬT (CHANGELOG) */}
+                  {selectedToolForDetail.changelog && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-xs font-black text-cyan-300 uppercase tracking-wider">
+                        <History className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Nhật ký bản cập nhật {selectedToolForDetail.version ? `(${selectedToolForDetail.version})` : ''}:</span>
+                      </div>
+                      <div className="text-xs text-slate-300 bg-[#05080E]/90 border border-cyan-500/30 p-4 rounded-2xl leading-relaxed whitespace-pre-line max-h-32 overflow-y-auto custom-scrollbar font-mono shadow-inner">
+                        {selectedToolForDetail.changelog}
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     <div className="bg-[#05080E] border border-slate-800 p-2.5 rounded-2xl text-center"><span className="text-[10px] text-slate-500 block font-bold">Ngày</span><b className="text-xs text-emerald-400 font-mono">{formatPrice(selectedToolForDetail.priceDay)}đ</b></div>
@@ -647,7 +701,14 @@ export default function ToolsPage() {
                   
                   <div className="space-y-1.5 border-b border-slate-800/80 pb-4">
                     <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">XÁC NHẬN MUA BẢN QUYỀN</span>
-                    <h2 className="text-2xl font-black text-white tracking-wide">{selectedToolForBuy.name}</h2>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-2xl font-black text-white tracking-wide">{selectedToolForBuy.name}</h2>
+                      {selectedToolForBuy.version && (
+                        <span className="text-[11px] font-mono font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2.5 py-0.5 rounded-lg shadow-sm">
+                          {selectedToolForBuy.version}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
