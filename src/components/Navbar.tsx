@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { 
   User, Lock, LogIn, UserPlus, LogOut, Wallet, X, AlertCircle, CheckCircle2,
-  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift, Bell, Home, FolderKanban, Sparkles, Eye, EyeOff, ShieldCheck, Zap, ShoppingBag, Mail, Send, ShieldAlert, Shield, Award, ChevronRight, Gem, Flame, Star, HelpCircle
+  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift, Bell, Home, FolderKanban, Sparkles, Eye, EyeOff, ShieldCheck, Zap, ShoppingBag, Mail, Send, ShieldAlert, Shield, Award, ChevronRight, Gem, Flame, Star, HelpCircle, CheckCircle
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -55,6 +55,7 @@ export default function Navbar() {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showAccountInfoModal, setShowAccountInfoModal] = useState(false);
   const [showPurchasedToolsModal, setShowPurchasedToolsModal] = useState(false);
+  const [showVipBenefitsModal, setShowVipBenefitsModal] = useState(false);
   
   // Profile Tabs (info | email | password)
   const [profileTab, setProfileTab] = useState<'info' | 'email' | 'password'>('info');
@@ -302,6 +303,103 @@ export default function Navbar() {
 
   const vipInfo = getVipInfo(totalDeposited);
   const VipIcon = vipInfo.icon;
+
+  // Dữ liệu bảng đặc quyền VIP chi tiết
+  const VIP_TIERS_DATA = [
+    {
+      level: 0,
+      title: 'THÀNH VIÊN',
+      req: 'Nạp từ 0đ',
+      icon: User,
+      color: 'text-cyan-400',
+      badgeBg: 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400',
+      cardBg: 'bg-[#080E18] border-slate-800',
+      benefits: [
+        'Điểm danh hàng ngày nhận +1.000đ vào ví',
+        'Mua và kích hoạt key tự động 24/7',
+        'Hỗ trợ qua kênh Ticket / Live chat cơ bản'
+      ]
+    },
+    {
+      level: 1,
+      title: 'VIP 1 - ĐỒNG NEON',
+      req: 'Tổng nạp từ 500.000đ',
+      icon: Award,
+      color: 'text-orange-400',
+      badgeBg: 'bg-orange-500/20 border-orange-500/50 text-orange-300',
+      cardBg: 'bg-[#0C0E14] border-orange-500/40 shadow-[0_0_20px_rgba(249,115,22,0.1)]',
+      benefits: [
+        'Bao gồm toàn bộ quyền lợi Thành viên',
+        'Huy hiệu Chiến Binh Đồng Neon phát sáng',
+        'Ưu tiên duyệt tiền nạp SePay tự động tốc độ cao'
+      ]
+    },
+    {
+      level: 2,
+      title: 'VIP 2 - TINH ANH',
+      req: 'Tổng nạp từ 1.000.000đ',
+      icon: Star,
+      color: 'text-cyan-300',
+      badgeBg: 'bg-slate-400/20 border-cyan-400/50 text-cyan-300',
+      cardBg: 'bg-[#060F1A] border-cyan-400/40 shadow-[0_0_20px_rgba(6,182,212,0.15)]',
+      benefits: [
+        'Bao gồm toàn bộ quyền lợi VIP 1',
+        'Huy hiệu Tinh Anh Hiệp Sĩ Bạc',
+        'Được hỗ trợ cài đặt Tool trực tiếp qua Ultraviewer',
+        'Tham gia kênh thông báo bản cập nhật Tool sớm nhất'
+      ]
+    },
+    {
+      level: 3,
+      title: 'VIP 3 - HOÀNG KIM',
+      req: 'Tổng nạp từ 2.000.000đ',
+      icon: Crown,
+      color: 'text-amber-300',
+      badgeBg: 'bg-amber-500/20 border-amber-500/60 text-amber-300',
+      cardBg: 'bg-[#121008] border-amber-400/50 shadow-[0_0_25px_rgba(251,191,36,0.18)]',
+      benefits: [
+        'Bao gồm toàn bộ quyền lợi VIP 2',
+        'Huy hiệu Hoàng Gia Thương Gia Cao Cấp',
+        'Hỗ trợ Reset HWID (đổi máy) không giới hạn qua Admin',
+        'Tặng Voucher giảm giá độc quyền mỗi tháng'
+      ]
+    },
+    {
+      level: 4,
+      title: 'VIP 4 - BẠCH KIM',
+      req: 'Tổng nạp từ 3.000.000đ',
+      icon: Gem,
+      color: 'text-purple-300',
+      badgeBg: 'bg-purple-500/30 border-purple-400 text-purple-200 shadow-[0_0_12px_rgba(168,85,247,0.7)]',
+      cardBg: 'bg-[#110B1C] border-purple-500/60 shadow-[0_0_30px_rgba(168,85,247,0.22)]',
+      benefits: [
+        'Bao gồm toàn bộ quyền lợi VIP 3',
+        'Huy hiệu Bạch Kim Hoàng Tộc phát sáng',
+        'Kênh Live Chat hỗ trợ riêng biệt trực tiếp với Admin',
+        'Ưu tiên xử lý lỗi kỹ thuật trong vòng 5 phút'
+      ]
+    },
+    {
+      level: 5,
+      title: 'VIP 5 - HUYỀN THOẠI',
+      req: 'Tổng nạp từ 5.000.000đ',
+      icon: Flame,
+      color: 'text-rose-400',
+      badgeBg: 'bg-gradient-to-r from-rose-600/40 to-amber-500/40 border-rose-400 text-rose-100 shadow-[0_0_15px_rgba(244,63,94,0.7)]',
+      cardBg: 'bg-gradient-to-b from-[#180A10] to-[#0A060A] border-rose-500/80 shadow-[0_0_40px_rgba(244,63,94,0.3)]',
+      benefits: [
+        'ĐẶC QUYỀN CAO CẤP NHẤT TOÀN HỆ THỐNG',
+        'Huy hiệu Kim Cương Đỏ Huyền Thoại Tối Thượng',
+        'Được quyền yêu cầu code tính năng Auto FiveM riêng',
+        'Bảo hành 1 đổi 1 và hỗ trợ kỹ thuật VIP 24/7'
+      ]
+    }
+  ];
+
+  // Lấy dữ liệu cấp VIP tiếp theo (hoặc VIP 5 nếu đã đạt tối đa)
+  const nextTierIndex = Math.min(5, vipInfo.level < 5 ? vipInfo.level + 1 : 5);
+  const nextTierData = VIP_TIERS_DATA[nextTierIndex];
+  const NextTierIcon = nextTierData.icon;
 
   const loadUserGistData = async (username: string) => {
     setLoadingPurchasedTools(true);
@@ -1040,11 +1138,20 @@ export default function Navbar() {
                 {currentUser.username.substring(0, 1).toUpperCase()}
               </div>
               
-              <div className="pt-0.5">
-                <span className={`text-[11px] font-black px-3.5 py-1 rounded-full border flex items-center gap-1.5 shadow-lg whitespace-nowrap ${vipInfo.badgeBg}`}>
-                  <VipIcon className={`w-3.5 h-3.5 ${vipInfo.color}`} />
+              <div className="flex flex-col items-center gap-2 pt-0.5">
+                <span className={`text-[11px] font-black px-4 py-1.5 rounded-full border flex items-center gap-1.5 shadow-lg whitespace-nowrap ${vipInfo.badgeBg}`}>
+                  <VipIcon className={`w-4 h-4 ${vipInfo.color}`} />
                   <span className={vipInfo.color}>{vipInfo.title}</span>
                 </span>
+
+                {/* NÚT XEM TẤT CẢ ĐẶC QUYỀN VIP */}
+                <button
+                  onClick={() => setShowVipBenefitsModal(true)}
+                  className="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 px-3 py-1 rounded-xl transition cursor-pointer flex items-center gap-1 shadow-sm hover:scale-105"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                  Xem tất cả đặc quyền VIP
+                </button>
               </div>
 
               <div className="space-y-0.5">
@@ -1131,6 +1238,38 @@ export default function Navbar() {
                   )}
                 </div>
 
+                {/* KHUNG GIỚI THIỆU ĐẶC QUYỀN CỦA CẤP ĐỘ KẾ TIẾP DỰA TRÊN TÀI KHOẢN HIỆN TẠI */}
+                <div className={`p-4 rounded-2xl border transition duration-300 space-y-2.5 ${nextTierData.cardBg}`}>
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${nextTierData.badgeBg}`}>
+                        <NextTierIcon className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 uppercase font-black block tracking-wider">
+                          {vipInfo.level === 5 ? 'ĐẶC QUYỀN ĐANG SỞ HỮU' : 'ĐẶC QUYỀN MỤC TIÊU TIẾP THEO'}
+                        </span>
+                        <h4 className={`text-xs font-black ${nextTierData.color}`}>
+                          {nextTierData.title}
+                        </h4>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-md">
+                      {nextTierData.req}
+                    </span>
+                  </div>
+
+                  {/* Danh sách lợi ích */}
+                  <ul className="space-y-1.5 text-[11px] text-slate-300">
+                    {nextTierData.benefits.map((benefit, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <CheckCircle className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${nextTierData.color}`} />
+                        <span>{benefit}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
                 <div className="bg-[#05080E] border border-slate-800/90 p-4 rounded-2xl space-y-2 text-xs">
                   <div className="flex justify-between items-center border-b border-slate-800/80 pb-2.5">
                     <span className="text-slate-400">Gmail liên kết:</span>
@@ -1144,7 +1283,7 @@ export default function Navbar() {
                       </span>
                     ) : isVerified ? (
                       <span className="text-[11px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> ĐÃ XÁC THỰC
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> ĐÃ XÁC THỰC
                       </span>
                     ) : (
                       <span className="text-[11px] font-black text-rose-400 bg-rose-500/10 border border-rose-500/30 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
@@ -1271,6 +1410,106 @@ export default function Navbar() {
                 )}
               </div>
             )}
+
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL BẢNG ĐẶC QUYỀN VIP ================= */}
+      {showVipBenefitsModal && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-2xl z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-[#070B14] border-2 border-cyan-400/80 w-full max-w-4xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_70px_rgba(6,182,212,0.35)] text-slate-200 max-h-[92vh] overflow-y-auto">
+            
+            <button 
+              onClick={() => setShowVipBenefitsModal(false)} 
+              className="absolute top-5 right-5 text-slate-400 hover:text-white p-2 rounded-2xl bg-[#05080E] border border-slate-800 cursor-pointer hover:border-cyan-400 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header Modal VIP */}
+            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-5">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500/20 via-rose-500/20 to-purple-500/20 border border-amber-400/50 flex items-center justify-center text-amber-300 shrink-0 shadow-[0_0_20px_rgba(251,191,36,0.3)]">
+                <Crown className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-white tracking-wide flex items-center gap-2">
+                  BẢNG ĐẶC QUYỀN & LỢI ÍCH VIP <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-md font-mono">ZTOOL VIP CLUB</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">Tích lũy nạp tiền tự động để mở khóa đặc quyền và ưu đãi độc quyền</p>
+              </div>
+            </div>
+
+            {/* Grid Thẻ VIP Từng Cấp */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {VIP_TIERS_DATA.map((tier) => {
+                const TierIcon = tier.icon;
+                const isCurrent = vipInfo.level === tier.level;
+
+                return (
+                  <div 
+                    key={tier.level}
+                    className={`rounded-2xl p-5 border flex flex-col justify-between relative transition duration-300 hover:scale-[1.02] ${tier.cardBg} ${
+                      isCurrent ? 'ring-2 ring-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.4)]' : ''
+                    }`}
+                  >
+                    {isCurrent && (
+                      <div className="absolute -top-3 right-4 bg-cyan-500 text-slate-950 font-black text-[9px] px-2.5 py-0.5 rounded-full shadow-[0_0_10px_rgba(6,182,212,0.6)] uppercase tracking-wider">
+                        CẤP ĐỘ CỦA BẠN
+                      </div>
+                    )}
+
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${tier.badgeBg}`}>
+                            <TierIcon className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h4 className={`font-black text-xs ${tier.color}`}>{tier.title}</h4>
+                            <span className="text-[10px] font-mono text-slate-400 font-bold block">{tier.req}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Danh sách lợi ích */}
+                      <ul className="space-y-2 text-xs text-slate-300">
+                        {tier.benefits.map((b, i) => (
+                          <li key={i} className="flex items-start gap-2 leading-relaxed">
+                            <CheckCircle className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${tier.color}`} />
+                            <span className="text-[11px]">{b}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="pt-4 mt-3 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                      <span>Cấp độ V{tier.level}</span>
+                      <span className={tier.color}>Kích hoạt vĩnh viễn</span>
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Nút hành động nạp tiền */}
+            <div className="bg-[#05080E] border border-slate-800 p-4.5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-inner">
+              <div>
+                <span className="text-xs font-bold text-white block">Tích lũy nạp hiện tại của bạn: <b className="text-emerald-400 font-mono font-black">{totalDeposited.toLocaleString('vi-VN')} VNĐ</b></span>
+                <span className="text-[11px] text-slate-400">Nạp thêm bất kỳ lúc nào để tự động nâng cấp bậc VIP ngay lập tức.</span>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowVipBenefitsModal(false);
+                  setShowAccountInfoModal(false);
+                  setShowRechargeModal(true);
+                }}
+                className="bg-gradient-to-r from-emerald-500 to-teal-400 hover:brightness-110 text-slate-950 font-black px-6 py-2.5 rounded-xl text-xs shadow-lg transition cursor-pointer flex items-center gap-1.5 shrink-0"
+              >
+                <PlusCircle className="w-4 h-4 text-slate-950" /> NẠP TIỀN NÂNG CẤP VIP
+              </button>
+            </div>
 
           </div>
         </div>
