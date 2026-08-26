@@ -6,7 +6,7 @@ import {
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
   Ban, CheckCircle, CheckCircle2, CreditCard, KeyRound, Search, DollarSign, Settings,
-  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent, Crown, Gem, Flame, Star, Award, Video, Send, Headset, Volume2, FileText
+  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent, Crown, Gem, Flame, Star, Award, Video, Send, Headset, Volume2, FileText, Check
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -399,13 +399,22 @@ export default function AdminPage() {
       const { data: toolData } = await supabase.from('tools').select('*').order('id', { ascending: false });
       if (toolData) {
         setTools(toolData.map((t: any) => ({
-          id: t.id, name: t.name, toolCode: t.toolCode || t.tool_code || '', image: t.image, status: t.status || 'Đang hoạt động',
-          priceDay: t.priceDay || t.price_day || '', priceWeek: t.priceWeek || t.price_week || '', priceMonth: t.priceMonth || t.price_month || '',
-          priceLifetime: t.priceLifetime || t.price_lifetime || '', description: t.description, downloadLink: t.downloadLink || t.download_link || '',
+          id: t.id, 
+          name: t.name, 
+          toolCode: t.toolCode || t.tool_code || '', 
+          image: t.image, 
+          status: t.status || 'Đang hoạt động',
+          priceDay: t.priceDay || t.price_day || '', 
+          priceWeek: t.priceWeek || t.price_week || '', 
+          priceMonth: t.priceMonth || t.price_month || '',
+          priceLifetime: t.priceLifetime || t.price_lifetime || '', 
+          description: t.description, 
+          downloadLink: t.downloadLink || t.download_link || '',
           videoLink: t.videoLink || t.video_link || '',
           version: t.version || '',
           changelog: t.changelog || '',
-          views: t.views || 0, sales: t.sales || 0
+          views: t.views || 0, 
+          sales: t.sales || 0
         })));
       }
 
@@ -537,6 +546,15 @@ export default function AdminPage() {
     }
   };
 
+  // Hàm hỗ trợ chèn mẫu phiên bản vào ô Changelog
+  const appendChangelogTemplate = (ver: string) => {
+    const template = `[${ver}]\n- Cập nhật tính năng mới\n- Tối ưu hóa hiệu năng & vượt Anticheat\n- Sửa lỗi hoạt động\n`;
+    setToolForm(prev => ({
+      ...prev,
+      changelog: prev.changelog ? `${template}\n${prev.changelog}` : template
+    }));
+  };
+
   const handleSaveTool = async (e: React.FormEvent) => {
     e.preventDefault(); if (!toolForm.name) return alert('Nhập tên Tool!');
     setIsUploading(true); let finalImageUrl = toolForm.image;
@@ -558,8 +576,8 @@ export default function AdminPage() {
       description: toolForm.description, 
       downloadLink: toolForm.downloadLink, 
       video_link: toolForm.videoLink,
-      version: toolForm.version,
-      changelog: toolForm.changelog
+      version: toolForm.version.trim(),
+      changelog: toolForm.changelog.trim()
     };
     let result;
     if (isEditingTool && toolForm.id) result = await supabase.from('tools').update(payload).eq('id', toolForm.id);
@@ -787,11 +805,9 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 2: KHO ACC TOOL (MASTER UNIFIED TABLE CHUYÊN NGHIỆP) ================= */}
+        {/* ================= TAB 2: KHO ACC TOOL ================= */}
         {activeTab === 'gist_accounts' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 sm:p-7 space-y-6 shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
-            
-            {/* Header & Thanh tìm kiếm */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
               <div className="space-y-1">
                 <div className="flex items-center gap-2.5">
@@ -840,7 +856,6 @@ export default function AdminPage() {
             ) : (
               <div className="overflow-x-auto border border-slate-800/80 rounded-2xl bg-[#060911] shadow-2xl">
                 <table className="w-full text-left text-xs border-collapse table-fixed min-w-[1000px]">
-                  {/* TIÊU ĐỀ MASTER BẢNG DUY NHẤT */}
                   <thead className="bg-[#090E1A] text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800 font-black select-none">
                     <tr>
                       <th className="py-4 px-6 w-[28%]">Key Tài Khoản Tool</th>
@@ -883,7 +898,6 @@ export default function AdminPage() {
 
                       return filteredEntries.map(([baseUser, subAccs]) => (
                         <React.Fragment key={baseUser}>
-                          {/* THANH BANNER KHÁCH HÀNG CHÍNH */}
                           <tr className="bg-gradient-to-r from-[#0C1527] via-[#09101F] to-[#060911] border-t-2 border-slate-800">
                             <td colSpan={6} className="py-2.5 px-6">
                               <div className="flex items-center justify-between">
@@ -903,13 +917,11 @@ export default function AdminPage() {
                             </td>
                           </tr>
 
-                          {/* CÁC KEY TOOL CON CỦA KHÁCH */}
                           {subAccs.map((acc) => {
                             const hasHwid = acc.device_id && acc.device_id.trim() !== '' && acc.device_id.trim().toLowerCase() !== 'chưa liên kết';
 
                             return (
                               <tr key={acc.username} className="hover:bg-[#080E1C] transition-colors group">
-                                {/* Key Con */}
                                 <td className="py-3 px-6 font-mono">
                                   <div className="flex items-center gap-2 pl-4">
                                     <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/60 shrink-0"></span>
@@ -919,17 +931,14 @@ export default function AdminPage() {
                                   </div>
                                 </td>
 
-                                {/* Mật khẩu */}
                                 <td className="py-3 px-4 font-mono text-slate-300 font-semibold truncate">
                                   {acc.password}
                                 </td>
 
-                                {/* Mã Tool */}
                                 <td className="py-3 px-4 font-mono font-black text-emerald-400 truncate">
                                   {acc.tool_code || acc.toolCode || 'Chung'}
                                 </td>
 
-                                {/* Mã HWID */}
                                 <td className="py-3 px-4 font-mono">
                                   {hasHwid ? (
                                     <span className="text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-xl border border-amber-500/30 text-[11px] font-bold inline-flex items-center gap-1.5 max-w-full shadow-sm">
@@ -941,14 +950,12 @@ export default function AdminPage() {
                                   )}
                                 </td>
 
-                                {/* Thời Gian */}
                                 <td className="py-3 px-4 text-center">
                                   <div className="flex justify-center">
                                     {renderRemainingTime(acc.expire_timestamp)}
                                   </div>
                                 </td>
 
-                                {/* Thao Tác */}
                                 <td className="py-3 px-6 text-right whitespace-nowrap space-x-1.5">
                                   {hasHwid && (
                                     <button
@@ -1001,8 +1008,6 @@ export default function AdminPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-[500px]">
-              
-              {/* Cột danh sách khách hàng chat có Badge đếm số tin nhắn mới */}
               <div className="md:col-span-4 bg-[#05080E] border border-slate-800 rounded-2xl p-3 space-y-2 overflow-y-auto">
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block px-2">Khách hàng cần hỗ trợ ({chatUsers.length})</span>
                 {chatUsers.length === 0 ? (
@@ -1041,7 +1046,6 @@ export default function AdminPage() {
                 )}
               </div>
 
-              {/* Khung trò chuyện */}
               <div className="md:col-span-8 bg-[#05080E] border border-slate-800 rounded-2xl flex flex-col overflow-hidden">
                 {selectedChatUser ? (
                   <>
@@ -1106,13 +1110,13 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 4: SẢN PHẨM TOOL (ĐÃ THÊM VERSION VÀ CHANGELOG) ================= */}
+        {/* ================= TAB 4: SẢN PHẨM TOOL (QUẢN LÝ ĐA PHIÊN BẢN & CẬP NHẬT TOOL CŨ) ================= */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <h3 className="text-xs font-bold text-white flex items-center gap-2 uppercase tracking-wide">
-                  <Plus className="w-4 h-4 text-cyan-400" /> {isEditingTool ? 'Cập nhật Tool' : 'Thêm Tool mới'}
+                  <Plus className="w-4 h-4 text-cyan-400" /> {isEditingTool ? `Cập nhật: ${toolForm.name}` : 'Thêm Tool mới'}
                 </h3>
                 {isEditingTool && (
                   <button 
@@ -1127,7 +1131,7 @@ export default function AdminPage() {
                         description: '', downloadLink: '', videoLink: '', version: '', changelog: '' 
                       });
                     }}
-                    className="text-[10px] text-slate-400 hover:text-white px-2 py-0.5 rounded bg-slate-800"
+                    className="text-[10px] text-rose-400 hover:text-white px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/30 transition cursor-pointer"
                   >
                     Hủy sửa
                   </button>
@@ -1145,8 +1149,8 @@ export default function AdminPage() {
                   <input type="text" required value={toolForm.toolCode} onChange={e => setToolForm({ ...toolForm, toolCode: e.target.value })} className="w-full bg-[#05080E] border border-cyan-500/50 rounded-xl p-2.5 text-xs text-white focus:outline-none font-mono" placeholder="vd: congtruongf17" />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-cyan-300 mb-1 font-bold">Phiên bản (Version)</label>
-                  <input type="text" value={toolForm.version} onChange={e => setToolForm({ ...toolForm, version: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono font-bold" placeholder="vd: v2.6 PRO" />
+                  <label className="block text-[11px] text-cyan-300 mb-1 font-bold">Phiên bản hiện tại</label>
+                  <input type="text" value={toolForm.version} onChange={e => setToolForm({ ...toolForm, version: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono font-bold" placeholder="vd: v2.0 hoặc v1.8" />
                 </div>
               </div>
 
@@ -1191,16 +1195,38 @@ export default function AdminPage() {
                 <textarea value={toolForm.description} onChange={e => setToolForm({ ...toolForm, description: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white leading-relaxed" rows={3} placeholder="Mô tả các tính năng chính của tool..." />
               </div>
 
-              <div>
-                <label className="block text-[11px] text-cyan-400 mb-1 font-bold flex items-center gap-1.5">
-                  <History className="w-3.5 h-3.5 text-cyan-400" /> Lịch sử cập nhật (Changelog)
-                </label>
+              {/* KHUNG NHẬP CHANGELOG KÈM BỘ NÚT CHÈN MẪU PHIÊN BẢN */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] text-cyan-400 font-bold flex items-center gap-1.5">
+                    <History className="w-3.5 h-3.5 text-cyan-400" /> Lịch sử các phiên bản (Changelog):
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => appendChangelogTemplate(toolForm.version || 'v2.0')}
+                      className="text-[10px] font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded transition"
+                      title="Chèn khung phiên bản hiện tại"
+                    >
+                      + Bản Hiện Tại
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => appendChangelogTemplate('v1.0 - Bản Cũ')}
+                      className="text-[10px] font-bold text-slate-400 bg-slate-800 hover:text-white px-2 py-0.5 rounded transition"
+                      title="Chèn lịch sử bản cũ"
+                    >
+                      + Bản Cũ
+                    </button>
+                  </div>
+                </div>
+
                 <textarea 
                   value={toolForm.changelog} 
                   onChange={e => setToolForm({ ...toolForm, changelog: e.target.value })} 
-                  className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white leading-relaxed font-mono" 
-                  rows={3} 
-                  placeholder="- Tối ưu vượt Anticheat mới&#10;- Thêm tính năng tự giải mã CAPTCHA&#10;- Sửa lỗi crash game"
+                  className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-3 text-xs text-white leading-relaxed font-mono focus:outline-none focus:border-cyan-400" 
+                  rows={4} 
+                  placeholder="[v2.0 - Mới nhất]&#10;- Tối ưu tốc độ di chuyển và tự động hóa&#10;- Thêm cơ chế vượt Anticheat mới&#10;&#10;[v1.0 - Bản Cũ]&#10;- Khởi tạo tính năng tự động cơ bản"
                 />
               </div>
 
@@ -1210,12 +1236,17 @@ export default function AdminPage() {
               </div>
 
               <button type="submit" disabled={isUploading} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 py-3 rounded-xl text-xs font-black transition cursor-pointer shadow-md">
-                {isUploading ? 'ĐANG UPLOAD...' : 'LƯU SẢN PHẨM'}
+                {isUploading ? 'ĐANG UPLOAD...' : isEditingTool ? 'LƯU CẬP NHẬT TOOL NÀY' : 'LƯU SẢN PHẨM MỚI'}
               </button>
             </form>
             
+            {/* DANH SÁCH TOOL VỚI NÚT SỬA NHANH TỪNG SẢN PHẨM */}
             <div className="lg:col-span-2 bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
-              <h3 className="text-xs font-bold text-white border-b border-slate-800/80 pb-3 uppercase">DANH SÁCH TOOL ĐANG BÁN</h3>
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                <h3 className="text-xs font-bold text-white uppercase">DANH SÁCH TOOL ĐANG BÁN ({tools.length})</h3>
+                <span className="text-[11px] text-slate-400">Bấm nút Sửa để cập nhật phiên bản & lịch sử</span>
+              </div>
+
               <div className="space-y-3">
                 {tools.length === 0 ? (
                   <p className="text-xs text-slate-500">Chưa có sản phẩm Tool nào.</p>
@@ -1232,9 +1263,13 @@ export default function AdminPage() {
                           <div>
                             <div className="flex items-center gap-2">
                               <h4 className="font-bold text-white text-xs">{t.name}</h4>
-                              {t.version && (
+                              {t.version ? (
                                 <span className="text-[10px] font-mono font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2 py-0.2 rounded-md">
                                   {t.version}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-mono text-slate-500 bg-slate-800/50 px-2 py-0.2 rounded-md italic">
+                                  Chưa có ver
                                 </span>
                               )}
                             </div>
@@ -1246,25 +1281,81 @@ export default function AdminPage() {
                         </div>
                         
                         <div className="flex gap-2">
-                          <button onClick={() => { setToolForm(t); setPreviewUrl(t.image); setIsEditingTool(true); }} className="text-cyan-300 p-2 hover:bg-cyan-500/10 rounded-lg cursor-pointer transition" title="Chỉnh sửa Tool"><Edit className="w-4 h-4" /></button>
-                          <button onClick={() => handleDeleteTool(t.id)} className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg cursor-pointer transition" title="Xóa Tool"><Trash2 className="w-4 h-4" /></button>
+                          <button 
+                            onClick={() => { 
+                              setToolForm({
+                                id: t.id,
+                                name: t.name || '',
+                                toolCode: t.toolCode || '',
+                                image: t.image || '',
+                                status: t.status || 'Đang hoạt động',
+                                priceDay: t.priceDay || '',
+                                priceWeek: t.priceWeek || '',
+                                priceMonth: t.priceMonth || '',
+                                priceLifetime: t.priceLifetime || '',
+                                description: t.description || '',
+                                downloadLink: t.downloadLink || '',
+                                videoLink: t.videoLink || '',
+                                version: t.version || '',
+                                changelog: t.changelog || ''
+                              }); 
+                              setPreviewUrl(t.image); 
+                              setIsEditingTool(true); 
+                              window.scrollTo({ top: 400, behavior: 'smooth' });
+                            }} 
+                            className="bg-cyan-500/10 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 p-2 rounded-xl cursor-pointer transition flex items-center gap-1.5 text-xs font-bold" 
+                            title="Sửa thông tin và cập nhật phiên bản"
+                          >
+                            <Edit className="w-3.5 h-3.5" /> Sửa
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteTool(t.id)} 
+                            className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-xl cursor-pointer transition" 
+                            title="Xóa Tool"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </div>
 
-                      {t.changelog && (
+                      {t.changelog ? (
                         <div className="text-[11px] text-slate-300 bg-[#0B1019] border border-slate-800/80 p-2.5 rounded-xl space-y-1">
                           <span className="text-[10px] font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1">
                             <Sparkles className="w-3 h-3" /> Nhật ký cập nhật:
                           </span>
-                          <p className="whitespace-pre-line leading-relaxed font-mono text-slate-400 pl-1">
+                          <p className="whitespace-pre-line leading-relaxed font-mono text-slate-400 pl-1 text-[11px]">
                             {t.changelog}
                           </p>
                         </div>
-                      )}
-
-                      {t.videoLink && (
-                        <div className="text-[10px] text-rose-400 flex items-center gap-1 font-medium italic truncate bg-[#0B1019] border border-slate-800 p-2 rounded-xl">
-                          <Video className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{t.videoLink}</span>
+                      ) : (
+                        <div className="text-[11px] text-slate-500 bg-[#0B1019] border border-slate-800/40 p-2 rounded-xl flex items-center justify-between">
+                          <span className="italic">Chưa nhập nhật ký bản cập nhật cho tool này.</span>
+                          <button 
+                            onClick={() => {
+                              setToolForm({
+                                id: t.id,
+                                name: t.name || '',
+                                toolCode: t.toolCode || '',
+                                image: t.image || '',
+                                status: t.status || 'Đang hoạt động',
+                                priceDay: t.priceDay || '',
+                                priceWeek: t.priceWeek || '',
+                                priceMonth: t.priceMonth || '',
+                                priceLifetime: t.priceLifetime || '',
+                                description: t.description || '',
+                                downloadLink: t.downloadLink || '',
+                                videoLink: t.videoLink || '',
+                                version: t.version || '',
+                                changelog: t.changelog || ''
+                              }); 
+                              setPreviewUrl(t.image); 
+                              setIsEditingTool(true); 
+                              window.scrollTo({ top: 400, behavior: 'smooth' });
+                            }}
+                            className="text-cyan-400 font-bold hover:underline text-[10px]"
+                          >
+                            + Thêm ngay
+                          </button>
                         </div>
                       )}
 
