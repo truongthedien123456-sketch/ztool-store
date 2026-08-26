@@ -17,7 +17,6 @@ export default function ToolsPage() {
   const [purchaseMsg, setPurchaseMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [loadingBuy, setLoadingBuy] = useState(false);
 
-  // State Trải Nghiệm Dùng Thử 3 Ngày
   const [trialTool, setTrialTool] = useState<any | null>(null);
   const [loadingTrial, setLoadingTrial] = useState(false);
   const [trialMsg, setTrialMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -144,7 +143,6 @@ export default function ToolsPage() {
     setCouponMsg({ type: 'success', text: successText });
   };
 
-  // Kích hoạt dùng thử 3 ngày miễn phí
   const handleActivateTrial = async () => {
     setTrialMsg(null);
     if (!trialTool) return;
@@ -233,7 +231,6 @@ export default function ToolsPage() {
     }
   };
 
-  // Mua bản quyền Tool
   const handleBuyTool = async () => {
     setPurchaseMsg(null);
     if (!selectedToolForBuy) return;
@@ -341,107 +338,86 @@ export default function ToolsPage() {
           <div className="w-10 h-10 border-4 border-cyan-500/20 border-t-cyan-400 rounded-full animate-spin"></div>
         </div>
       ) : (
-        <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+        <div className="max-w-7xl mx-auto px-4 py-8 space-y-10">
           
           {/* HEADER TRANG */}
-          <div className="text-center space-y-3 bg-[#0B1019] p-6 sm:p-7 rounded-3xl border border-slate-800/80 shadow-xl">
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-wide">
-              KHO SẢN PHẨM <span className="text-cyan-400">TOOL AUTO</span>
+          <div className="text-center space-y-4 border-b border-slate-800/80 pb-8 bg-[#0B1019]/95 p-6 sm:p-8 rounded-3xl border border-cyan-500/30 shadow-[0_0_25px_rgba(6,182,212,0.15)]">
+            <div className="inline-flex items-center gap-2 bg-[#05080E] border border-cyan-400/50 px-4 py-1.5 rounded-full text-xs font-bold text-cyan-300">
+              <Sparkles className="w-4 h-4 text-cyan-400" /> BẢNG HÃNG TOOL AUTO HIGH-QUALITY
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-black text-white tracking-wide">
+              DANH SÁCH SẢN PHẨM <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-300">TOOL AUTO</span>
             </h1>
-            <p className="text-xs text-slate-400 max-w-lg mx-auto font-medium">
-              Tối ưu hiệu năng, an toàn tuyệt đối và kích hoạt bản quyền tự động 24/7.
+            <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto font-medium leading-relaxed">
+              Cập nhật liên tục các bản tool tự động mới nhất. Đảm bảo an toàn tuyệt đối, tối ưu hiệu năng và kích hoạt tự động 24/7.
             </p>
 
-            <div className="pt-2 flex items-center justify-center gap-2 flex-wrap">
-              <button onClick={() => setActiveTab('all')} className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'all' ? 'bg-cyan-500 text-slate-950 font-black shadow-md' : 'bg-[#05080E] text-slate-400 border border-slate-800 hover:text-white'}`}>Tất Cả ({tools.length})</button>
-              <button onClick={() => setActiveTab('active')} className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'active' ? 'bg-emerald-500 text-slate-950 font-black shadow-md' : 'bg-[#05080E] text-slate-400 border border-slate-800 hover:text-emerald-400'}`}>Đang Hoạt Động ({activeTools.length})</button>
-              <button onClick={() => setActiveTab('inactive')} className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'inactive' ? 'bg-rose-500 text-white font-black shadow-md' : 'bg-[#05080E] text-slate-400 border border-slate-800 hover:text-rose-400'}`}>Tạm Ngưng ({inactiveTools.length})</button>
+            <div className="pt-3 flex items-center justify-center gap-2.5 flex-wrap">
+              <button onClick={() => setActiveTab('all')} className={`px-5 py-2.5 rounded-2xl text-xs font-black transition-all duration-200 flex items-center gap-2 cursor-pointer ${activeTab === 'all' ? 'bg-cyan-500 text-slate-950 shadow-[0_0_20px_rgba(6,182,212,0.4)] scale-105' : 'bg-[#05080E] text-slate-400 border border-slate-800 hover:border-slate-700 hover:text-white'}`}><Layers className="w-4 h-4" /> Tất Cả ({tools.length})</button>
+              <button onClick={() => setActiveTab('active')} className={`px-5 py-2.5 rounded-2xl text-xs font-black transition-all duration-200 flex items-center gap-2 cursor-pointer ${activeTab === 'active' ? 'bg-emerald-500 text-slate-950 shadow-[0_0_20px_rgba(16,185,129,0.4)] scale-105' : 'bg-[#05080E] text-slate-400 border border-slate-800 hover:border-emerald-500/40 hover:text-emerald-300'}`}><Activity className="w-4 h-4" /> Đang Hoạt Động ({activeTools.length})</button>
+              <button onClick={() => setActiveTab('inactive')} className={`px-5 py-2.5 rounded-2xl text-xs font-black transition-all duration-200 flex items-center gap-2 cursor-pointer ${activeTab === 'inactive' ? 'bg-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.4)] scale-105' : 'bg-[#05080E] text-slate-400 border border-slate-800 hover:border-rose-500/40 hover:text-rose-300'}`}><AlertTriangle className="w-4 h-4" /> Tạm Ngưng / Bảo Trì ({inactiveTools.length})</button>
             </div>
           </div>
 
-          {/* DANH SÁCH TOOL HOẠT ĐỘNG (ĐÃ BỎ HOÀN TOÀN MÔ TẢ NHỎ NGOÀI CARD) */}
+          {/* DANH SÁCH TOOL ĐANG HOẠT ĐỘNG */}
           {(activeTab === 'all' || activeTab === 'active') && (
-            <div className="space-y-4">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between border-b border-emerald-500/20 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_12px_#10b981]"></span>
+                  <h2 className="text-lg sm:text-xl font-black text-white tracking-wide uppercase flex items-center gap-2">SẢN PHẨM KHẢ DỤNG <span className="text-emerald-400 text-xs px-2.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 font-bold">MUA & DÙNG NGAY</span></h2>
+                </div>
+                <span className="text-xs text-slate-400 font-bold">{activeTools.length} Tool sẵn sàng</span>
+              </div>
+
               {activeTools.length === 0 ? (
                 <div className="p-8 text-center bg-[#0B1019]/60 border border-slate-800 rounded-3xl text-slate-400 text-xs">Hiện chưa có sản phẩm nào ở trạng thái hoạt động.</div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {activeTools.map((tool) => (
-                    <div 
-                      key={tool.id} 
-                      onClick={() => handleOpenDetail(tool)} 
-                      className="group bg-[#0B1019] border border-slate-800/90 hover:border-slate-700 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-lg transition-all duration-200 cursor-pointer"
-                    >
-                      <div className="space-y-3">
-                        {/* ẢNH TOOL */}
-                        <div className="w-full aspect-square bg-[#05080E] border border-slate-800/80 rounded-2xl overflow-hidden relative">
-                          <img src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={tool.name} className="w-full h-full object-cover group-hover:scale-102 transition duration-300" />
-                          <div className="absolute top-2.5 left-2.5 bg-[#05080E]/90 border border-slate-800 px-2 py-0.5 rounded-lg flex items-center gap-1 text-[10px] text-slate-300 font-bold">
-                            <Eye className="w-3 h-3 text-cyan-400" /> {tool.views || 0}
+                    <div key={tool.id} onClick={() => handleOpenDetail(tool)} className="group bg-[#0D121D]/95 border-2 border-slate-700/80 hover:border-cyan-400 rounded-3xl p-6 flex flex-col justify-between space-y-4 shadow-lg hover:shadow-[0_0_25px_rgba(6,182,212,0.35)] transition-all duration-200 cursor-pointer relative">
+                      <div className="space-y-3.5">
+                        <div className="w-full aspect-square bg-[#05080E] border border-slate-800 rounded-2xl overflow-hidden relative">
+                          <img src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={tool.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-300 ease-out" />
+                          <div className="absolute top-3 left-3 bg-[#05080E]/90 border border-slate-700/60 px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[10px] text-slate-200 font-extrabold shadow-md"><Eye className="w-3.5 h-3.5 text-cyan-400" /> {tool.views || 0}</div>
+                          <span className="absolute top-3 right-3 text-[10px] font-black px-2.5 py-1 rounded-xl border shadow-md bg-emerald-500/20 border-emerald-500/40 text-emerald-400 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> ĐANG HOẠT ĐỘNG</span>
+                        </div>
+
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-black text-white group-hover:text-cyan-300 transition duration-200">{tool.name}</h3>
+                            {tool.version && (
+                              <span className="text-[10px] font-mono font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2 py-0.5 rounded-md shadow-sm">
+                                {tool.version}
+                              </span>
+                            )}
                           </div>
-                          <span className="absolute top-2.5 right-2.5 text-[9px] font-black px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
-                            HOẠT ĐỘNG
-                          </span>
+                          <p className="text-xs text-slate-400 mt-1 line-clamp-1 truncate" title={tool.description}>{tool.description || 'Chưa có mô tả sản phẩm.'}</p>
                         </div>
 
-                        {/* TÊN TOOL & PHIÊN BẢN */}
-                        <div className="flex items-center justify-between gap-2 pt-0.5">
-                          <h3 className="text-base font-black text-white group-hover:text-cyan-300 transition truncate">
-                            {tool.name}
-                          </h3>
-                          {tool.version && (
-                            <span className="text-[10px] font-mono font-black bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 px-2 py-0.5 rounded-md shrink-0">
-                              {tool.version}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* BẢNG GIÁ 4 GÓI ĐƠN GIẢN */}
-                        <div className="grid grid-cols-2 gap-1.5 bg-[#05080E] p-2 rounded-2xl border border-slate-800/80">
-                          <div className="p-1.5 text-center"><span className="text-[9px] text-slate-500 font-bold uppercase block">Ngày</span><b className="text-xs text-emerald-400 font-mono font-black">{tool.priceDay ? `${formatPrice(tool.priceDay)}đ` : '---'}</b></div>
-                          <div className="p-1.5 text-center"><span className="text-[9px] text-slate-500 font-bold uppercase block">Tuần</span><b className="text-xs text-emerald-400 font-mono font-black">{tool.priceWeek ? `${formatPrice(tool.priceWeek)}đ` : '---'}</b></div>
-                          <div className="p-1.5 text-center"><span className="text-[9px] text-slate-500 font-bold uppercase block">Tháng</span><b className="text-xs text-emerald-400 font-mono font-black">{tool.priceMonth ? `${formatPrice(tool.priceMonth)}đ` : '---'}</b></div>
-                          <div className="p-1.5 text-center bg-cyan-500/5 rounded-xl border border-cyan-500/20"><span className="text-[9px] text-cyan-400 font-bold uppercase block">Vĩnh Viễn</span><b className="text-xs text-cyan-300 font-mono font-black">{tool.priceLifetime ? `${formatPrice(tool.priceLifetime)}đ` : '---'}</b></div>
+                        <div className="grid grid-cols-2 gap-2 bg-[#05080E] border border-slate-800/90 p-3 rounded-2xl text-xs">
+                          <div className="bg-[#0B1019] border border-slate-800/80 p-2 rounded-xl flex flex-col justify-center space-y-0.5"><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Theo Ngày</span><b className="text-xs text-emerald-400 font-mono font-black">{tool.priceDay ? `${formatPrice(tool.priceDay)}đ` : '---'}</b></div>
+                          <div className="bg-[#0B1019] border border-slate-800/80 p-2 rounded-xl flex flex-col justify-center space-y-0.5"><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Theo Tuần</span><b className="text-xs text-emerald-400 font-mono font-black">{tool.priceWeek ? `${formatPrice(tool.priceWeek)}đ` : '---'}</b></div>
+                          <div className="bg-[#0B1019] border border-slate-800/80 p-2 rounded-xl flex flex-col justify-center space-y-0.5"><span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Theo Tháng</span><b className="text-xs text-emerald-400 font-mono font-black">{tool.priceMonth ? `${formatPrice(tool.priceMonth)}đ` : '---'}</b></div>
+                          <div className="bg-[#0B1019] border border-cyan-500/40 p-2 rounded-xl flex flex-col justify-center space-y-0.5"><span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">Vĩnh Viễn</span><b className="text-xs text-cyan-300 font-mono font-black">{tool.priceLifetime ? `${formatPrice(tool.priceLifetime)}đ` : '---'}</b></div>
                         </div>
                       </div>
 
-                      {/* CỤM NÚT BẤM GỌN GÀNG */}
-                      <div className="space-y-1.5 pt-1">
+                      <div className="space-y-2 pt-1">
                         <button 
                           onClick={(e) => { 
                             e.stopPropagation(); 
-                            setSelectedToolForBuy(tool); 
-                            setPurchaseMsg(null); 
-                            setCouponInput(''); 
-                            setAppliedCoupon(null); 
-                            setCouponMsg(null); 
+                            setTrialTool(tool);
+                            setTrialMsg(null);
                           }} 
-                          className="w-full bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 font-black py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-sm hover:brightness-110 transition"
+                          className="w-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-yellow-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 border border-amber-500/60 hover:border-amber-400 text-amber-300 font-black py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.2)]"
                         >
-                          <ShoppingBag className="w-3.5 h-3.5 stroke-[2.5]" /> Mua Ngay
+                          <Gift className="w-4 h-4 text-amber-400" /> Trải Nghiệm 3 Ngày (Miễn Phí)
                         </button>
 
-                        <div className="grid grid-cols-2 gap-1.5">
-                          <button 
-                            onClick={(e) => { 
-                              e.stopPropagation(); 
-                              setTrialTool(tool);
-                              setTrialMsg(null);
-                            }} 
-                            className="bg-amber-500/10 border border-amber-500/30 text-amber-300 font-bold py-2 rounded-xl text-[11px] flex items-center justify-center gap-1 cursor-pointer hover:bg-amber-500/20 transition"
-                          >
-                            <Gift className="w-3 h-3 text-amber-400" /> Dùng thử 3 ngày
-                          </button>
-                          
-                          <button 
-                            onClick={(e) => { 
-                              e.stopPropagation(); 
-                              handleOpenDetail(tool); 
-                            }} 
-                            className="bg-[#05080E] border border-slate-800 text-slate-300 font-bold py-2 rounded-xl text-[11px] flex items-center justify-center gap-1 cursor-pointer hover:bg-slate-800/80 transition"
-                          >
-                            <Info className="w-3 h-3 text-cyan-400" /> Chi tiết
-                          </button>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button onClick={(e) => { e.stopPropagation(); setSelectedToolForBuy(tool); setPurchaseMsg(null); setCouponInput(''); setAppliedCoupon(null); setCouponMsg(null); }} className="bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 font-black py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:brightness-110"><ShoppingBag className="w-3.5 h-3.5 stroke-[2.5]" /> Mua Ngay</button>
+                          <button onClick={(e) => { e.stopPropagation(); handleOpenDetail(tool); }} className="bg-[#05080E] border border-slate-800 hover:border-cyan-400/60 text-slate-200 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 text-center transition-all duration-200 cursor-pointer hover:bg-slate-800/80"><Info className="w-3.5 h-3.5 text-cyan-400" /> Chi tiết</button>
                         </div>
                       </div>
                     </div>
@@ -453,38 +429,49 @@ export default function ToolsPage() {
 
           {/* DANH SÁCH TOOL TẠM NGƯNG */}
           {(activeTab === 'all' || activeTab === 'inactive') && inactiveTools.length > 0 && (
-            <div className="space-y-4 pt-4">
-              <div className="flex items-center justify-between border-b border-rose-500/20 pb-2">
-                <h2 className="text-sm font-black text-rose-400 uppercase tracking-wide flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4" /> SẢN PHẨM ĐANG BẢO TRÌ ({inactiveTools.length})
-                </h2>
+            <div className="space-y-6 pt-4">
+              <div className="flex items-center justify-between border-b border-rose-500/20 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_12px_#f43f5e]"></span>
+                  <h2 className="text-lg sm:text-xl font-black text-slate-300 tracking-wide uppercase flex items-center gap-2">SẢN PHẨM ĐANG BẢO TRÌ & NÂNG CẤP <span className="text-rose-400 text-xs px-2.5 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/30 font-bold">TẠM NGƯNG BÁN</span></h2>
+                </div>
+                <span className="text-xs text-slate-500 font-bold">{inactiveTools.length} Tool đang update</span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {inactiveTools.map((tool) => (
-                  <div key={tool.id} onClick={() => handleOpenDetail(tool)} className="bg-[#0B1019]/70 border border-slate-800 rounded-3xl p-5 flex flex-col justify-between space-y-4 opacity-80 hover:opacity-100 transition cursor-pointer">
-                    <div className="space-y-3">
-                      <div className="w-full aspect-square bg-[#05080E] border border-slate-800/80 rounded-2xl overflow-hidden relative">
-                        <img src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={tool.name} className="w-full h-full object-cover grayscale-[50%]" />
-                        <span className="absolute top-2.5 right-2.5 text-[9px] font-black px-2 py-0.5 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/40">TẠM NGƯNG</span>
+                  <div key={tool.id} onClick={() => handleOpenDetail(tool)} className="group bg-[#0A0E17]/85 border-2 border-slate-800/90 hover:border-slate-700 rounded-3xl p-6 flex flex-col justify-between space-y-5 shadow-md relative transition-all duration-200 cursor-pointer opacity-90 hover:opacity-100">
+                    <div className="space-y-4">
+                      <div className="w-full aspect-square bg-[#05080E] border border-slate-800/90 rounded-2xl overflow-hidden relative">
+                        <img src={tool.image || 'https://i.ibb.co/8L2gsmQ0/logo.jpg'} alt={tool.name} className="w-full h-full object-cover grayscale-[40%] group-hover:grayscale-0 transition duration-300 ease-out" />
+                        <div className="absolute top-3 left-3 bg-[#05080E]/90 border border-slate-800 px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[10px] text-slate-400 font-bold shadow-md"><Eye className="w-3.5 h-3.5 text-slate-500" /> {tool.views || 0}</div>
+                        <span className="absolute top-3 right-3 text-[10px] font-black px-2.5 py-1 rounded-xl border shadow-md bg-rose-500/20 border-rose-500/40 text-rose-400 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> TẠM NGƯNG</span>
+                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent p-3.5 text-center"><p className="text-[11px] font-black text-rose-300 flex items-center justify-center gap-1.5 tracking-wide"><Clock className="w-3.5 h-3.5 text-rose-400 animate-spin" /> Đang tối ưu thuật toán</p></div>
                       </div>
 
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 className="text-base font-black text-slate-300 truncate">{tool.name}</h3>
-                        {tool.version && <span className="text-[10px] font-mono text-slate-500 bg-slate-800 px-2 py-0.5 rounded-md">{tool.version}</span>}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-black text-slate-300 group-hover:text-white transition duration-200">{tool.name}</h3>
+                          {tool.version && (
+                            <span className="text-[10px] font-mono font-black bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded-md">
+                              {tool.version}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1 line-clamp-1 truncate" title={tool.description}>{tool.description || 'Chưa có mô tả sản phẩm.'}</p>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-1.5 bg-[#05080E] p-2 rounded-2xl border border-slate-800/60 opacity-60">
-                        <div className="p-1.5 text-center"><span className="text-[9px] text-slate-600 block">Ngày</span><b className="text-xs text-slate-400 font-mono">{tool.priceDay ? `${formatPrice(tool.priceDay)}đ` : '---'}</b></div>
-                        <div className="p-1.5 text-center"><span className="text-[9px] text-slate-600 block">Tuần</span><b className="text-xs text-slate-400 font-mono">{tool.priceWeek ? `${formatPrice(tool.priceWeek)}đ` : '---'}</b></div>
-                        <div className="p-1.5 text-center"><span className="text-[9px] text-slate-600 block">Tháng</span><b className="text-xs text-slate-400 font-mono">{tool.priceMonth ? `${formatPrice(tool.priceMonth)}đ` : '---'}</b></div>
-                        <div className="p-1.5 text-center"><span className="text-[9px] text-slate-600 block">Vĩnh Viễn</span><b className="text-xs text-slate-400 font-mono">{tool.priceLifetime ? `${formatPrice(tool.priceLifetime)}đ` : '---'}</b></div>
+                      <div className="grid grid-cols-2 gap-2 bg-[#05080E] border border-slate-800/60 p-3 rounded-2xl text-xs opacity-60">
+                        <div className="bg-[#0B1019] border border-slate-800/60 p-2 rounded-xl flex flex-col justify-center space-y-0.5"><span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Theo Ngày</span><b className="text-xs text-slate-400 font-mono">{tool.priceDay ? `${formatPrice(tool.priceDay)}đ` : '---'}</b></div>
+                        <div className="bg-[#0B1019] border border-slate-800/60 p-2 rounded-xl flex flex-col justify-center space-y-0.5"><span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Theo Tuần</span><b className="text-xs text-slate-400 font-mono">{tool.priceWeek ? `${formatPrice(tool.priceWeek)}đ` : '---'}</b></div>
+                        <div className="bg-[#0B1019] border border-slate-800/60 p-2 rounded-xl flex flex-col justify-center space-y-0.5"><span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Theo Tháng</span><b className="text-xs text-slate-400 font-mono">{tool.priceMonth ? `${formatPrice(tool.priceMonth)}đ` : '---'}</b></div>
+                        <div className="bg-[#0B1019] border border-slate-800/60 p-2 rounded-xl flex flex-col justify-center space-y-0.5"><span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Vĩnh Viễn</span><b className="text-xs text-slate-400 font-mono">{tool.priceLifetime ? `${formatPrice(tool.priceLifetime)}đ` : '---'}</b></div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      <button disabled className="bg-slate-800 text-slate-500 font-bold py-2 rounded-xl text-xs cursor-not-allowed">Tạm Ngưng</button>
-                      <button onClick={(e) => { e.stopPropagation(); handleOpenDetail(tool); }} className="bg-[#05080E] border border-slate-800 text-slate-300 font-bold py-2 rounded-xl text-xs hover:bg-slate-800 transition">Chi tiết</button>
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                      <button disabled={true} className="bg-slate-800/80 text-slate-500 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 border border-slate-700/60 cursor-not-allowed"><AlertTriangle className="w-3.5 h-3.5" /> Tạm Ngưng</button>
+                      <button onClick={(e) => { e.stopPropagation(); handleOpenDetail(tool); }} className="bg-[#05080E] border border-slate-800 hover:border-slate-700 text-slate-300 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 text-center transition cursor-pointer hover:bg-slate-800/60"><Info className="w-4 h-4 text-slate-400" /> Chi tiết</button>
                     </div>
                   </div>
                 ))}
@@ -492,61 +479,68 @@ export default function ToolsPage() {
             </div>
           )}
 
-          {/* MODAL TRẢI NGHIỆM DÙNG THỬ */}
+          {/* ================= MODAL TRẢI NGHIỆM DÙNG THỬ 3 NGÀY ================= */}
           <AnimatePresence>
             {trialTool && (
               <motion.div 
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}
                 onClick={() => setTrialTool(null)}
-                className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 cursor-pointer"
+                className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 cursor-pointer"
               >
                 <motion.div 
-                  initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.2 }}
+                  initial={{ opacity: 0, scale: 0.95, y: 15 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 15 }} transition={{ duration: 0.2 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-[#0B1019] border border-amber-500/50 w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-2xl cursor-default"
+                  className="bg-[#0B1019] border-2 border-amber-500/60 w-full max-w-lg rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_50px_rgba(245,158,11,0.25)] cursor-default"
                 >
-                  <button onClick={() => setTrialTool(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 transition"><X className="w-5 h-5" /></button>
+                  <button onClick={() => setTrialTool(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 transition hover:border-amber-400 z-10"><X className="w-5 h-5" /></button>
 
-                  <div className="text-center space-y-1.5">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
-                      <Gift className="w-6 h-6" />
+                  <div className="text-center space-y-2">
+                    <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto shadow-[0_0_20px_rgba(245,158,11,0.3)]">
+                      <Gift className="w-7 h-7" />
                     </div>
-                    <h2 className="text-lg font-black text-white">{trialTool.name}</h2>
-                    <p className="text-xs text-slate-400">Trải nghiệm miễn phí 3 ngày bản quyền tool!</p>
+                    <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest block">CHƯƠNG TRÌNH DÙNG THỬ MIỄN PHÍ</span>
+                    <div className="flex items-center justify-center gap-2">
+                      <h2 className="text-xl font-black text-white">{trialTool.name}</h2>
+                      {trialTool.version && (
+                        <span className="text-[10px] font-mono font-black bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-md">
+                          {trialTool.version}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-400">Trải nghiệm toàn bộ tính năng cao cấp hoàn toàn miễn phí trong vòng 3 ngày!</p>
                   </div>
 
-                  <div className="bg-[#05080E] border border-slate-800 p-3.5 rounded-2xl space-y-2 text-xs">
-                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-                      <span className="text-slate-400">Thời hạn:</span>
+                  <div className="bg-[#05080E] border border-slate-800 p-4 rounded-2xl space-y-2.5 text-xs">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                      <span className="text-slate-400">Thời hạn dùng thử:</span>
                       <b className="text-amber-400 font-mono font-black">3 Ngày (72 Giờ)</b>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Chi phí:</span>
-                      <b className="text-emerald-400 font-mono font-black">0 VNĐ</b>
+                      <span className="text-slate-400">Chi phí kích hoạt:</span>
+                      <b className="text-emerald-400 font-mono font-black">0 VNĐ (Miễn Phí)</b>
                     </div>
                   </div>
 
                   {trialMsg && (
-                    <div className={`p-3 rounded-xl text-xs font-bold flex items-start gap-2 ${trialMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'}`}>
-                      {trialMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
-                      <span>{trialMsg.text}</span>
+                    <div className={`p-4 rounded-2xl text-xs font-bold flex items-start gap-2.5 ${trialMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'}`}>
+                      {trialMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />}
+                      <span className="leading-relaxed">{trialMsg.text}</span>
                     </div>
                   )}
 
                   <button
                     disabled={loadingTrial}
                     onClick={handleActivateTrial}
-                    className="w-full bg-gradient-to-r from-amber-500 to-yellow-400 hover:brightness-110 text-slate-950 font-black py-3 rounded-xl text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-1.5"
+                    className="w-full bg-gradient-to-r from-amber-500 to-yellow-400 hover:brightness-110 text-slate-950 font-black py-3.5 rounded-2xl text-xs shadow-lg transition cursor-pointer flex items-center justify-center gap-2"
                   >
-                    {loadingTrial ? <Loader2 className="w-4 h-4 animate-spin" /> : <Gift className="w-4 h-4" />}
-                    <span>XÁC NHẬN NHẬN 3 NGÀY DÙNG THỬ</span>
+                    {loadingTrial ? <><Loader2 className="w-4 h-4 animate-spin text-slate-950" /><span>ĐANG KÍCH HOẠT DÙNG THỬ...</span></> : <><Gift className="w-4 h-4" /> XÁC NHẬN NHẬN 3 NGÀY DÙNG THỬ</>}
                   </button>
                 </motion.div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* ================= MODAL CHI TIẾT SẢN PHẨM (ĐÃ TỐI GIẢN & KHÔNG CÒN RỐI MẮT) ================= */}
+          {/* ================= MODAL CHI TIẾT SẢN PHẨM (TỐI GIẢN & DỄ NHÌN) ================= */}
           <AnimatePresence>
             {selectedToolForDetail && (
               <motion.div 
@@ -559,7 +553,7 @@ export default function ToolsPage() {
                   onClick={(e) => e.stopPropagation()}
                   className="bg-[#0B1019] border border-slate-800 w-full max-w-xl rounded-3xl p-5 sm:p-7 space-y-5 relative shadow-[0_10px_40px_rgba(0,0,0,0.8)] max-h-[90vh] overflow-y-auto cursor-default custom-scrollbar"
                 >
-                  <button onClick={() => setSelectedToolForDetail(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 transition hover:border-cyan-400 z-10"><X className="w-5 h-5" /></button>
+                  <button onClick={() => setSelectedToolForDetail(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 transition hover:border-cyan-400 z-10"><X className="w-4 h-4" /></button>
                   
                   {/* HEADER */}
                   <div className="flex items-center gap-3 border-b border-slate-800/80 pb-3">
@@ -619,7 +613,7 @@ export default function ToolsPage() {
                       </button>
                     </div>
 
-                    {/* KHUNG HIỂN THỊ NỘI DUNG CHÍNH (ĐÃ THU GỌN CHIỀU CAO & BỎ CÁC KHUNG VIỀN RỐI MẮT) */}
+                    {/* KHUNG HIỂN THỊ NỘI DUNG CHÍNH (ĐÃ THU GỌN CHIỀU CAO & BỎ RỐI MẮT) */}
                     <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-[#05080E]">
                       {detailMediaTab === 'video' && selectedToolForDetail.videoLink && getYouTubeEmbedUrl(selectedToolForDetail.videoLink) ? (
                         <div className="w-full aspect-video max-h-[260px]">
@@ -633,7 +627,7 @@ export default function ToolsPage() {
                           </iframe>
                         </div>
                       ) : detailMediaTab === 'changelog' ? (
-                        /* GIAO DIỆN BẢN CẬP NHẬT TỐI GIẢN & DỄ NHÌN */
+                        /* GIAO DIỆN BẢN CẬP NHẬT TỐI GIẢN & ĐẸP MẮT */
                         <div className="w-full h-[240px] p-4 flex flex-col justify-start overflow-y-auto custom-scrollbar bg-[#05080E]">
                           <div className="flex items-center justify-between border-b border-slate-800/80 pb-2 mb-3">
                             <span className="text-[11px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
