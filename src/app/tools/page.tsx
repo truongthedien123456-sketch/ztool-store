@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -31,13 +31,22 @@ export default function ToolsPage() {
   const [buyMediaTab, setBuyMediaTab] = useState<'image' | 'video'>('image');
   const [zoomImage, setZoomImage] = useState<string | null>(null);
 
+  // Dùng Ref để lắng nghe event mở modal mua mà không làm trigger lại loadToolsData
+  const toolsRef = useRef<any[]>([]);
+  useEffect(() => {
+    toolsRef.current = tools;
+  }, [tools]);
+
   useEffect(() => {
     loadToolsData();
 
     const handleOpenBuyModal = (e: any) => {
       const toolCodeToBuy = e.detail?.toolCode;
-      if (toolCodeToBuy && tools.length > 0) {
-        const found = tools.find(t => (t.toolCode || t.tool_code || '').trim().toLowerCase() === toolCodeToBuy.trim().toLowerCase());
+      const currentTools = toolsRef.current;
+      if (toolCodeToBuy && currentTools.length > 0) {
+        const found = currentTools.find(
+          t => (t.toolCode || t.tool_code || '').trim().toLowerCase() === toolCodeToBuy.trim().toLowerCase()
+        );
         if (found) {
           setSelectedToolForBuy(found);
           setBuyMediaTab(found.videoLink ? 'video' : 'image');
@@ -51,11 +60,14 @@ export default function ToolsPage() {
 
     window.addEventListener('open-buy-tool-modal', handleOpenBuyModal);
     return () => window.removeEventListener('open-buy-tool-modal', handleOpenBuyModal);
-  }, [tools]);
+  }, []); // <-- CHỈ CHẠY 1 LẦN DUY NHẤT KHI VÀO TRANG
 
   const loadToolsData = async () => {
     try {
-      const { data } = await supabase.from('tools').select('*').order('views', { ascending: false });
+      const { data } = await supabase
+        .from('tools')
+        .select('id, name, toolCode, tool_code, image, status, priceDay, price_day, priceWeek, price_week, priceMonth, price_month, priceLifetime, price_lifetime, description, downloadLink, download_link, videoLink, video_link, version, changelog, views, sales')
+        .order('views', { ascending: false });
       
       if (data && data.length > 0) {
         const mappedTools = data.map((t: any) => ({
@@ -79,7 +91,7 @@ export default function ToolsPage() {
         setTools(mappedTools);
       }
     } catch (error) { 
-      console.error(error); 
+      console.error('Lỗi tải danh sách tools:', error); 
     } finally { 
       setIsLoadingData(false); 
     }
@@ -489,7 +501,7 @@ export default function ToolsPage() {
                         </div>
                       </div>
 
-                      {/* CỤM NÚT THAO TÁC: TRẢI NGHIỆM TOOL KẾ BÊN MUA NGAY TRÊN CÙNG 1 DÒNG */}
+                      {/* CỤM NÚT THAO TÁC */}
                       <div className="grid grid-cols-2 gap-2 pt-1">
                         <button 
                           onClick={(e) => { 
@@ -667,7 +679,7 @@ export default function ToolsPage() {
                     </div>
                   </div>
 
-                  {/* 3 NÚT CHUYỂN ĐỔI TAB TRÊN 1 DÒNG DUY NHẤT */}
+                  {/* 3 NÚT CHUYỂN ĐỔI TAB */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between gap-1.5 bg-[#05080E] p-1.5 rounded-2xl border border-slate-800 w-full max-w-lg mx-auto flex-nowrap">
                       {selectedToolForDetail.videoLink && getYouTubeEmbedUrl(selectedToolForDetail.videoLink) && (

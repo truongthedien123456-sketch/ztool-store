@@ -185,7 +185,8 @@ export default function AdminPage() {
     const { data } = await supabase
       .from('messages')
       .select('sender_username, receiver_username')
-      .order('id', { ascending: false });
+      .order('id', { ascending: false })
+      .limit(200);
 
     if (data) {
       const unique = Array.from(
@@ -211,9 +212,10 @@ export default function AdminPage() {
 
     const { data } = await supabase
       .from('messages')
-      .select('*')
+      .select('id, sender_username, sender_role, receiver_username, message, created_at')
       .or(`sender_username.eq.${targetUser},receiver_username.eq.${targetUser}`)
-      .order('id', { ascending: true });
+      .order('id', { ascending: true })
+      .limit(100);
 
     if (data) {
       setChatMessages(data);
@@ -235,7 +237,7 @@ export default function AdminPage() {
       message: text
     };
 
-    const { data, error } = await supabase.from('messages').insert([newMsg]).select().single();
+    const { data, error } = await supabase.from('messages').insert([newMsg]).select('id, sender_username, sender_role, receiver_username, message, created_at').single();
     setSendingReply(false);
 
     if (!error && data) {
@@ -349,12 +351,13 @@ export default function AdminPage() {
     }
   };
 
+  // Tối ưu hóa truy vấn có chọn lọc trường dữ liệu (Tiết kiệm PostgREST Egress)
   const loadAllSyncData = async () => {
     try {
       // 1. Tải users
       const { data: userData } = await supabase
         .from('users')
-        .select('*')
+        .select('id, username, email, password, balance, is_verified, is_exempt, isBanned, total_deposited')
         .order('id', { ascending: false });
         
       if (userData) {
@@ -364,7 +367,7 @@ export default function AdminPage() {
       // 2. Tải tools
       const { data: toolData } = await supabase
         .from('tools')
-        .select('*')
+        .select('id, name, toolCode, tool_code, image, status, priceDay, price_day, priceWeek, price_week, priceMonth, price_month, priceLifetime, price_lifetime, description, downloadLink, download_link, videoLink, video_link, version, changelog, views, sales')
         .order('id', { ascending: false });
         
       if (toolData) {
@@ -391,21 +394,21 @@ export default function AdminPage() {
       // 3. Tải projects
       const { data: projectData } = await supabase
         .from('projects')
-        .select('*')
+        .select('id, title, image, status, description')
         .order('id', { ascending: false });
       if (projectData) setProjects(projectData);
 
       // 4. Tải feedbacks
       const { data: feedbackData } = await supabase
         .from('feedbacks')
-        .select('*')
+        .select('id, username, content, created_at')
         .order('id', { ascending: false });
       if (feedbackData) setFeedbacks(feedbackData);
 
-      // 5. Tải SePay logs (loại bỏ lỗi lệch tên cột)
+      // 5. Tải SePay logs
       const { data: sepayData } = await supabase
         .from('transactions')
-        .select('*')
+        .select('id, username, title, amount, type, status, created_at')
         .eq('type', 'RECHARGE')
         .order('id', { ascending: false })
         .limit(100);
@@ -414,14 +417,14 @@ export default function AdminPage() {
       // 6. Tải coupons
       const { data: couponData } = await supabase
         .from('coupons')
-        .select('*')
+        .select('id, code, tool_code, discount_type, discount_amount, discount_percent, quantity, max_uses_per_user')
         .order('id', { ascending: false });
       if (couponData) setCoupons(couponData);
 
       // 7. Tải settings
       const { data: settingsData } = await supabase
         .from('settings')
-        .select('*')
+        .select('id, notice_text, is_active')
         .eq('id', 1)
         .single();
       if (settingsData) {
@@ -465,9 +468,10 @@ export default function AdminPage() {
     setSelectedUserHistory({ username, logs: [] });
     const { data, error } = await supabase
       .from('transactions')
-      .select('*')
+      .select('id, username, title, amount, type, status, created_at')
       .eq('username', username)
-      .order('id', { ascending: false });
+      .order('id', { ascending: false })
+      .limit(50);
     setLoadingUserHistory(false); 
     if (!error && data) setSelectedUserHistory({ username, logs: data });
   };
@@ -1587,7 +1591,7 @@ export default function AdminPage() {
                 <div className="bg-[#0B1019] border border-slate-800 p-4 rounded-xl text-xs text-slate-200 leading-relaxed whitespace-pre-line min-h-[90px]">
                   {currentActiveNotice?.text ? currentActiveNotice.text : <span className="text-slate-500 italic">Chưa có thông báo nào được bật.</span>}
                 </div>
-                <button
+                <button 
                   onClick={() => {
                     if (currentActiveNotice) {
                       setNoticeForm({ text: currentActiveNotice.text, active: currentActiveNotice.active });

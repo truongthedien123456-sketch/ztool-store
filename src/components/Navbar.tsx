@@ -143,11 +143,37 @@ export default function Navbar() {
   }, []);
 
   const loadAllToolsMeta = async () => {
+    // Đọc cache bộ nhớ phiên để giảm thiểu PostgREST Egress
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem('ztool_tools_meta');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setToolsList(parsed);
+            return;
+          }
+        } catch (e) {}
+      }
+    }
+
     const { data } = await supabase.from('tools').select('id, name, toolCode, tool_code, downloadLink, download_link');
-    if (data) setToolsList(data);
+    if (data) {
+      setToolsList(data);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('ztool_tools_meta', JSON.stringify(data));
+      }
+    }
   };
 
   const checkTodayCheckInStatus = async (username: string) => {
+    const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+    const localChecked = localStorage.getItem(`ztool_checkin_${todayStr}`);
+    if (localChecked === 'true') {
+      setHasCheckedInToday(true);
+      return;
+    }
+
     try {
       const { data: lastCheckIn } = await supabase
         .from('transactions')
@@ -157,7 +183,6 @@ export default function Navbar() {
         .order('created_at', { ascending: false })
         .limit(1);
 
-      const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
       if (lastCheckIn && lastCheckIn.length > 0) {
         const lastCheckInDate = new Date(lastCheckIn[0].created_at).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
         const checkedIn = lastCheckInDate === todayStr;
@@ -176,10 +201,23 @@ export default function Navbar() {
     }
   };
 
-  // Tối ưu hoá truy vấn tài khoản & đọc trực tiếp total_deposited (Tiết kiệm 99% Egress)
+  // Tối ưu hoá truy vấn tài khoản với Cache LocalStorage (Tiết kiệm triệt để Egress)
   const checkLoggedInUser = async () => {
     const savedUser = localStorage.getItem('ztool_current_user');
     if (savedUser) {
+      const cachedData = localStorage.getItem('ztool_user_data');
+      if (cachedData) {
+        try {
+          const parsed = JSON.parse(cachedData);
+          if (parsed && parsed.username === savedUser) {
+            setCurrentUser(parsed);
+            setAccountEmailInput(parsed.email || '');
+            setTotalDeposited(Number(parsed.total_deposited) || 0);
+            return;
+          }
+        } catch (e) {}
+      }
+
       const { data } = await supabase
         .from('users')
         .select('id, username, email, password, balance, is_verified, is_exempt, isBanned, total_deposited')
@@ -633,8 +671,8 @@ export default function Navbar() {
           is_exempt: false, 
           password: passwordInput, 
           balance: 0, 
-          isBanned: false,
-          total_deposited: 0
+          isBanned: false, 
+          total_deposited: 0 
         }])
         .select()
         .single();
@@ -657,7 +695,7 @@ export default function Navbar() {
           setShowAuthModal(false); 
           resetForm(); 
           checkTodayCheckInStatus(newUser.username); 
-          setShowAccountInfoModal(true);
+          setShowAccountInfoModal(true); 
         }, 500);
       }
     } else {
@@ -804,6 +842,9 @@ export default function Navbar() {
         setEmailActionMsg({ type: 'success', text: 'Xác thực tài khoản thành công!' });
         setIsOtpSent(false);
         setOtpInput('');
+        
+        // Buộc xóa cache để đọc dữ liệu verified mới nhất
+        localStorage.removeItem('ztool_user_data');
         await checkLoggedInUser();
       } else {
         setEmailActionMsg({ type: 'error', text: data.message || 'Mã OTP không đúng!' });
