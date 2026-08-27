@@ -49,7 +49,7 @@ export default function ToolsPage() {
         );
         if (found) {
           setSelectedToolForBuy(found);
-          setBuyMediaTab(found.videoLink ? 'video' : 'image');
+          setBuyMediaTab(found.videoLink || found.video_link ? 'video' : 'image');
           setPurchaseMsg(null);
           setCouponInput('');
           setAppliedCoupon(null);
@@ -64,11 +64,16 @@ export default function ToolsPage() {
 
   const loadToolsData = async () => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('tools')
-        .select('id, name, toolCode, tool_code, image, status, priceDay, price_day, priceWeek, price_week, priceMonth, price_month, priceLifetime, price_lifetime, description, downloadLink, download_link, videoLink, video_link, version, changelog, views, sales')
+        .select('*')
         .order('views', { ascending: false });
       
+      if (error) {
+        console.error('Lỗi truy vấn bảng tools:', error);
+        return;
+      }
+
       if (data && data.length > 0) {
         const mappedTools = data.map((t: any) => ({
           id: t.id, 
@@ -109,7 +114,7 @@ export default function ToolsPage() {
 
   const handleOpenDetail = async (tool: any) => {
     setSelectedToolForDetail(tool);
-    setDetailMediaTab(tool.videoLink ? 'video' : 'image');
+    setDetailMediaTab(tool.videoLink || tool.video_link ? 'video' : 'image');
     try {
       const newViews = (tool.views || 0) + 1;
       await supabase.from('tools').update({ views: newViews }).eq('id', tool.id);
