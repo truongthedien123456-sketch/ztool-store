@@ -8,8 +8,34 @@ import {
 } from 'lucide-react';
 
 export default function ToolsPage() {
-  const [tools, setTools] = useState<any[]>([]);
-  const [isLoadingData, setIsLoadingData] = useState(true);
+  // Khởi tạo ngay từ sessionStorage nếu có để hiển thị tức thì (0ms loading)
+  const [tools, setTools] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem('ztool_tools_cache');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {}
+      }
+    }
+    return [];
+  });
+
+  // Nếu đã có dữ liệu cache sẵn thì tắt trạng thái loading ngay từ đầu
+  const [isLoadingData, setIsLoadingData] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem('ztool_tools_cache');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return false;
+        } catch (e) {}
+      }
+    }
+    return true;
+  });
+
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'inactive'>('all');
   
   const [selectedToolForBuy, setSelectedToolForBuy] = useState<any | null>(null);
@@ -93,7 +119,11 @@ export default function ToolsPage() {
           views: t.views || 0, 
           sales: t.sales || 0
         }));
+        
         setTools(mappedTools);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('ztool_tools_cache', JSON.stringify(mappedTools));
+        }
       }
     } catch (error) { 
       console.error('Lỗi tải danh sách tools:', error); 
