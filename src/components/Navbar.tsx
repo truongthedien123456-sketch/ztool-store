@@ -143,26 +143,9 @@ export default function Navbar() {
   }, []);
 
   const loadAllToolsMeta = async () => {
-    // Đọc cache bộ nhớ phiên để giảm thiểu PostgREST Egress
-    if (typeof window !== 'undefined') {
-      const cached = sessionStorage.getItem('ztool_tools_meta');
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setToolsList(parsed);
-            return;
-          }
-        } catch (e) {}
-      }
-    }
-
-    const { data } = await supabase.from('tools').select('id, name, toolCode, tool_code, downloadLink, download_link');
+    const { data } = await supabase.from('tools').select('*');
     if (data) {
       setToolsList(data);
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('ztool_tools_meta', JSON.stringify(data));
-      }
     }
   };
 
@@ -201,7 +184,7 @@ export default function Navbar() {
     }
   };
 
-  // Tối ưu hoá truy vấn tài khoản với Cache LocalStorage (Tiết kiệm triệt để Egress)
+  // Tối ưu hoá truy vấn tài khoản với Cache LocalStorage
   const checkLoggedInUser = async () => {
     const savedUser = localStorage.getItem('ztool_current_user');
     if (savedUser) {
@@ -491,6 +474,12 @@ export default function Navbar() {
   const loadUserGistData = async (username: string) => {
     setLoadingPurchasedTools(true);
     try {
+      // 1. Luôn tải danh sách tools mới nhất trực tiếp từ Supabase để lấy link tải mới
+      const { data: latestTools } = await supabase.from('tools').select('*');
+      const currentTools = latestTools && latestTools.length > 0 ? latestTools : toolsList;
+      if (latestTools) setToolsList(latestTools);
+
+      // 2. Tải danh sách bản quyền từ Gist API
       const res = await fetch('/api/get-gist', { 
         cache: 'no-store', 
         headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } 
@@ -512,9 +501,11 @@ export default function Navbar() {
               const item = parsed[k];
               const tCode = item.tool_code || item.toolCode || '';
               
-              const foundTool = toolsList.find(t => 
-                (t.toolCode || t.tool_code || '').trim().toLowerCase() === tCode.trim().toLowerCase()
-              );
+              const foundTool = currentTools.find(t => {
+                const codeA = (t.toolCode || t.tool_code || '').trim().toLowerCase();
+                const codeB = tCode.trim().toLowerCase();
+                return codeA === codeB;
+              });
 
               return {
                 accountKey: k,
