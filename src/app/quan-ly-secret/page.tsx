@@ -351,13 +351,12 @@ export default function AdminPage() {
     }
   };
 
-  // Tối ưu hóa truy vấn có chọn lọc trường dữ liệu (Tiết kiệm PostgREST Egress)
   const loadAllSyncData = async () => {
     try {
       // 1. Tải users
       const { data: userData } = await supabase
         .from('users')
-        .select('id, username, email, password, balance, is_verified, is_exempt, isBanned, total_deposited')
+        .select('*')
         .order('id', { ascending: false });
         
       if (userData) {
@@ -367,7 +366,7 @@ export default function AdminPage() {
       // 2. Tải tools
       const { data: toolData } = await supabase
         .from('tools')
-        .select('id, name, toolCode, tool_code, image, status, priceDay, price_day, priceWeek, price_week, priceMonth, price_month, priceLifetime, price_lifetime, description, downloadLink, download_link, videoLink, video_link, version, changelog, views, sales')
+        .select('*')
         .order('id', { ascending: false });
         
       if (toolData) {
@@ -394,21 +393,21 @@ export default function AdminPage() {
       // 3. Tải projects
       const { data: projectData } = await supabase
         .from('projects')
-        .select('id, title, image, status, description')
+        .select('*')
         .order('id', { ascending: false });
       if (projectData) setProjects(projectData);
 
       // 4. Tải feedbacks
       const { data: feedbackData } = await supabase
         .from('feedbacks')
-        .select('id, username, content, created_at')
+        .select('*')
         .order('id', { ascending: false });
       if (feedbackData) setFeedbacks(feedbackData);
 
       // 5. Tải SePay logs
       const { data: sepayData } = await supabase
         .from('transactions')
-        .select('id, username, title, amount, type, status, created_at')
+        .select('*')
         .eq('type', 'RECHARGE')
         .order('id', { ascending: false })
         .limit(100);
@@ -417,14 +416,14 @@ export default function AdminPage() {
       // 6. Tải coupons
       const { data: couponData } = await supabase
         .from('coupons')
-        .select('id, code, tool_code, discount_type, discount_amount, discount_percent, quantity, max_uses_per_user')
+        .select('*')
         .order('id', { ascending: false });
       if (couponData) setCoupons(couponData);
 
       // 7. Tải settings
       const { data: settingsData } = await supabase
         .from('settings')
-        .select('id, notice_text, is_active')
+        .select('*')
         .eq('id', 1)
         .single();
       if (settingsData) {
@@ -468,7 +467,7 @@ export default function AdminPage() {
     setSelectedUserHistory({ username, logs: [] });
     const { data, error } = await supabase
       .from('transactions')
-      .select('id, username, title, amount, type, status, created_at')
+      .select('*')
       .eq('username', username)
       .order('id', { ascending: false })
       .limit(50);
