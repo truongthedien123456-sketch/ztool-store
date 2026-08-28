@@ -131,6 +131,43 @@ export default function Navbar() {
     loadAllToolsMeta();
     loadRechargeEventSettings();
 
+    // Lắng nghe sự kiện mở modal Tool đã mua từ trang Home / Tools
+    const handleOpenPurchasedModalEvent = () => {
+      const savedUser = localStorage.getItem('ztool_current_user');
+      if (savedUser) {
+        loadUserGistData(savedUser);
+        setShowPurchasedToolsModal(true);
+      }
+    };
+    window.addEventListener('open-purchased-tools', handleOpenPurchasedModalEvent);
+
+    // Lắng nghe thay đổi số dư theo thời gian thực (Realtime)
+    const savedUser = localStorage.getItem('ztool_current_user');
+    let userChannel: any = null;
+
+    if (savedUser) {
+      userChannel = supabase
+        .channel(`realtime_user_navbar_${savedUser}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'users',
+            filter: `username=eq.${savedUser}`
+          },
+          (payload) => {
+            const updated = payload.new;
+            if (updated) {
+              setCurrentUser(updated);
+              setTotalDeposited(Number(updated.total_deposited) || 0);
+              localStorage.setItem('ztool_user_data', JSON.stringify(updated));
+            }
+          }
+        )
+        .subscribe();
+    }
+
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowUserDropdown(false);
@@ -141,6 +178,8 @@ export default function Navbar() {
     const timer = setInterval(() => setNowTime(Date.now()), 1000);
 
     return () => {
+      window.removeEventListener('open-purchased-tools', handleOpenPurchasedModalEvent);
+      if (userChannel) supabase.removeChannel(userChannel);
       document.removeEventListener('mousedown', handleClickOutside);
       clearInterval(timer);
     };
@@ -200,45 +239,45 @@ export default function Navbar() {
     }
   };
 
-  // Tối ưu hoá truy vấn tài khoản với Cache LocalStorage
+  // Đồng bộ tài khoản và lấy số dư mới nhất từ Supabase
   const checkLoggedInUser = async () => {
     const savedUser = localStorage.getItem('ztool_current_user');
-    if (savedUser) {
-      const cachedData = localStorage.getItem('ztool_user_data');
-      if (cachedData) {
-        try {
-          const parsed = JSON.parse(cachedData);
-          if (parsed && parsed.username === savedUser) {
-            setCurrentUser(parsed);
-            setAccountEmailInput(parsed.email || '');
-            setTotalDeposited(Number(parsed.total_deposited) || 0);
-            return;
-          }
-        } catch (e) {}
-      }
-
-      const { data } = await supabase
-        .from('users')
-        .select('id, username, email, password, balance, is_verified, is_exempt, isBanned, total_deposited')
-        .eq('username', savedUser)
-        .single();
-
-      if (data) {
-        if (data.isBanned) {
-          alert('Tài khoản của bạn đã bị khóa!');
-          handleLogout();
-          return;
-        }
-        setCurrentUser(data);
-        setAccountEmailInput(data.email || '');
-        setTotalDeposited(Number(data.total_deposited) || 0);
-        localStorage.setItem('ztool_user_data', JSON.stringify(data));
-        checkTodayCheckInStatus(data.username);
-      } else {
-        handleLogout();
-      }
-    } else {
+    if (!savedUser) {
       setCurrentUser(null);
+      return;
+    }
+
+    // 1. Tạm thời đọc cache để hiển thị 0ms
+    const cachedData = localStorage.getItem('ztool_user_data');
+    if (cachedData) {
+      try {
+        const parsed = JSON.parse(cachedData);
+        if (parsed && parsed.username === savedUser) {
+          setCurrentUser(parsed);
+          setAccountEmailInput(parsed.email || '');
+          setTotalDeposited(Number(parsed.total_deposited) || 0);
+        }
+      } catch (e) {}
+    }
+
+    // 2. Luôn truy vấn dữ liệu mới nhất từ Supabase
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, username, email, password, balance, is_verified, is_exempt, isBanned, total_deposited')
+      .eq('username', savedUser)
+      .single();
+
+    if (data && !error) {
+      if (data.isBanned) {
+        alert('Tài khoản của bạn đã bị khóa!');
+        handleLogout();
+        return;
+      }
+      setCurrentUser(data);
+      setAccountEmailInput(data.email || '');
+      setTotalDeposited(Number(data.total_deposited) || 0);
+      localStorage.setItem('ztool_user_data', JSON.stringify(data));
+      checkTodayCheckInStatus(data.username);
     }
   };
 
@@ -490,12 +529,10 @@ export default function Navbar() {
   const loadUserGistData = async (username: string) => {
     setLoadingPurchasedTools(true);
     try {
-      // 1. Luôn tải danh sách tools mới nhất trực tiếp từ Supabase để lấy link tải mới
       const { data: latestTools } = await supabase.from('tools').select('*');
       const currentTools = latestTools && latestTools.length > 0 ? latestTools : toolsList;
       if (latestTools) setToolsList(latestTools);
 
-      // 2. Tải danh sách bản quyền từ Gist API
       const res = await fetch('/api/get-gist', { 
         cache: 'no-store', 
         headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } 
