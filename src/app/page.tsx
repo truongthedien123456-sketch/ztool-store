@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Sparkles, Wrench, ShieldCheck, Zap, ArrowRight, ShoppingBag, FolderKanban, Bell, Flame, Eye, Info, X, Tag, CheckCircle2, AlertCircle, Loader2, Shield, Check, ZoomIn, Gift, Laptop, Star, Activity, Video, Image as ImageIcon, HelpCircle, Cpu
+  Sparkles, Wrench, ShieldCheck, Zap, ArrowRight, ShoppingBag, FolderKanban, Bell, Flame, Eye, Info, X, Tag, CheckCircle2, AlertCircle, Loader2, Shield, Check, ZoomIn, Gift, Laptop, Star, Activity, Video, Image as ImageIcon, HelpCircle, Cpu, History
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -18,7 +18,7 @@ export default function HomePage() {
   const [selectedToolForDetail, setSelectedToolForDetail] = useState<any | null>(null);
   const [selectedToolForBuy, setSelectedToolForBuy] = useState<any | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<'day' | 'week' | 'month' | 'lifetime'>('day');
-  const [detailMediaTab, setDetailMediaTab] = useState<'image' | 'video'>('video');
+  const [detailMediaTab, setDetailMediaTab] = useState<'video' | 'image' | 'changelog'>('video');
   const [buyMediaTab, setBuyMediaTab] = useState<'image' | 'video'>('image');
   
   // State Trải Nghiệm Dùng Thử 3 Ngày
@@ -410,6 +410,89 @@ export default function HomePage() {
     } catch (e) { return null; }
   };
 
+  const renderFormattedChangelog = (changelogText: string, currentVersion: string) => {
+    if (!changelogText || !changelogText.trim()) {
+      return (
+        <div className="py-12 text-center text-xs text-slate-500 italic">
+          Bản cập nhật hiện tại đang hoạt động ổn định và chưa có nhật ký mới.
+        </div>
+      );
+    }
+
+    const lines = changelogText.split('\n').map(l => l.trim()).filter(Boolean);
+    const sections: { title: string; items: string[] }[] = [];
+    let currentSection: { title: string; items: string[] } = { title: '', items: [] };
+
+    lines.forEach((line) => {
+      const isHeader = line.startsWith('[') && line.endsWith(']');
+      if (isHeader) {
+        if (currentSection.title || currentSection.items.length > 0) {
+          sections.push(currentSection);
+        }
+        currentSection = { title: line.replace(/^\[|\]$/g, '').trim(), items: [] };
+      } else {
+        currentSection.items.push(line.replace(/^-\s*/, ''));
+      }
+    });
+
+    if (currentSection.title || currentSection.items.length > 0) {
+      sections.push(currentSection);
+    }
+
+    return (
+      <div className="space-y-3.5">
+        {sections.map((sec, idx) => {
+          const isLatest = idx === 0;
+
+          return (
+            <div 
+              key={idx} 
+              className={`rounded-2xl p-3.5 space-y-2 transition-all ${
+                isLatest 
+                  ? 'bg-[#0D1525] border border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.1)]' 
+                  : 'bg-[#060910] border border-slate-800/80 opacity-80 hover:opacity-100'
+              }`}
+            >
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className={`text-[11px] font-mono font-black px-2.5 py-0.5 rounded-lg border ${
+                    isLatest 
+                      ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/50 shadow-sm' 
+                      : 'bg-slate-800/80 text-slate-400 border-slate-700'
+                  }`}>
+                    {sec.title || (isLatest ? (currentVersion || 'Bản mới nhất') : 'Bản cũ')}
+                  </span>
+                  
+                  {isLatest && (
+                    <span className="text-[9px] font-extrabold uppercase tracking-wider bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 px-2 py-0.5 rounded-md flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      Mới Nhất
+                    </span>
+                  )}
+                </div>
+
+                {!isLatest && (
+                  <span className="text-[10px] text-slate-500 font-bold italic">
+                    Phiên bản trước
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-1.5 pl-1">
+                {sec.items.map((item, i) => (
+                  <div key={i} className="flex items-start gap-2 text-xs text-slate-200 leading-relaxed font-sans">
+                    <span className={`font-bold select-none ${isLatest ? 'text-cyan-400' : 'text-slate-500'}`}>•</span>
+                    <span className={isLatest ? 'text-slate-200' : 'text-slate-400'}>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <main className="font-sans pb-24 min-h-screen bg-transparent text-slate-100 selection:bg-cyan-500 selection:text-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-8">
@@ -526,10 +609,16 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  <div className="space-y-0.5">
+                  {/* Tên Tool & Bản cập nhật (Version) */}
+                  <div className="flex items-center gap-2">
                     <h3 className="font-black text-white text-sm sm:text-base group-hover:text-amber-400 transition truncate">
                       {featuredTool.name}
                     </h3>
+                    {featuredTool.version && (
+                      <span className="text-[10px] font-mono font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2 py-0.5 rounded-md shadow-sm shrink-0">
+                        {featuredTool.version}
+                      </span>
+                    )}
                   </div>
 
                   {/* Cụm 2 nút bấm ngang */}
@@ -630,8 +719,16 @@ export default function HomePage() {
                       </span>
                     </div>
 
-                    <div>
-                      <h3 className="font-bold text-white text-sm group-hover:text-cyan-300 transition truncate">{tool.name}</h3>
+                    {/* Tên Tool & Bản cập nhật (Version) */}
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-white text-sm group-hover:text-cyan-300 transition truncate">
+                        {tool.name}
+                      </h3>
+                      {tool.version && (
+                        <span className="text-[10px] font-mono font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2 py-0.5 rounded-md shadow-sm shrink-0">
+                          {tool.version}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -764,6 +861,11 @@ export default function HomePage() {
                 <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest block">CHƯƠNG TRÌNH DÙNG THỬ MIỄN PHÍ</span>
                 <div className="flex items-center justify-center gap-2">
                   <h2 className="text-xl font-black text-white">{trialTool.name}</h2>
+                  {trialTool.version && (
+                    <span className="text-[10px] font-mono font-black bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-md">
+                      {trialTool.version}
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-slate-400">Trải nghiệm toàn bộ tính năng cao cấp hoàn toàn miễn phí trong vòng 3 ngày!</p>
               </div>
@@ -843,33 +945,61 @@ export default function HomePage() {
                 <div className="w-11 h-11 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0"><Info className="w-5 h-5" /></div>
                 <div>
                   <span className="text-[10px] text-cyan-400 font-extrabold uppercase tracking-wider block">THÔNG TIN CHI TIẾT SẢN PHẨM</span>
-                  <h2 className="text-xl font-black text-white leading-tight">{selectedToolForDetail.name}</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-black text-white leading-tight">{selectedToolForDetail.name}</h2>
+                    {selectedToolForDetail.version && (
+                      <span className="text-[10px] font-mono font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2.5 py-0.5 rounded-lg shadow-sm">
+                        {selectedToolForDetail.version}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
+              {/* 3 NÚT CHUYỂN ĐỔI TAB */}
               <div className="space-y-3">
-                {selectedToolForDetail.videoLink && getYouTubeEmbedUrl(selectedToolForDetail.videoLink) && (
-                  <div className="flex items-center justify-center gap-2 bg-[#05080E] p-1 rounded-2xl border border-slate-800 max-w-xs mx-auto">
+                <div className="flex items-center justify-between gap-1.5 bg-[#05080E] p-1.5 rounded-2xl border border-slate-800 w-full max-w-lg mx-auto flex-nowrap">
+                  {selectedToolForDetail.videoLink && getYouTubeEmbedUrl(selectedToolForDetail.videoLink) && (
                     <button
                       type="button"
                       onClick={() => setDetailMediaTab('video')}
-                      className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                        detailMediaTab === 'video' ? 'bg-rose-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                      className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer whitespace-nowrap shrink-0 ${
+                        detailMediaTab === 'video' 
+                          ? 'bg-rose-500 text-white shadow-md' 
+                          : 'text-slate-400 hover:text-white'
                       }`}
                     >
-                      <Video className="w-3.5 h-3.5" /> Video Demo
+                      <Video className="w-3.5 h-3.5 shrink-0" />
+                      <span>Video Demo</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setDetailMediaTab('image')}
-                      className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                        detailMediaTab === 'image' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <ImageIcon className="w-3.5 h-3.5" /> Ảnh Chi Tiết
-                    </button>
-                  </div>
-                )}
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setDetailMediaTab('image')}
+                    className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer whitespace-nowrap shrink-0 ${
+                      detailMediaTab === 'image' 
+                        ? 'bg-cyan-500 text-slate-950 shadow-md' 
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <ImageIcon className="w-3.5 h-3.5 shrink-0" />
+                    <span>Ảnh Chi Tiết</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setDetailMediaTab('changelog')}
+                    className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer whitespace-nowrap shrink-0 ${
+                      detailMediaTab === 'changelog' 
+                        ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md' 
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                    <span>Bản Cập Nhật</span>
+                  </button>
+                </div>
 
                 <div className="relative rounded-2xl overflow-hidden border-2 border-slate-800 bg-[#05080E] shadow-inner">
                   {detailMediaTab === 'video' && selectedToolForDetail.videoLink && getYouTubeEmbedUrl(selectedToolForDetail.videoLink) ? (
@@ -882,6 +1012,26 @@ export default function HomePage() {
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                         allowFullScreen>
                       </iframe>
+                    </div>
+                  ) : detailMediaTab === 'changelog' ? (
+                    <div className="w-full aspect-video max-h-[340px] p-4 sm:p-5 flex flex-col justify-start overflow-y-auto custom-scrollbar bg-gradient-to-b from-[#090E1A] to-[#05080E]">
+                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5 mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400">
+                            <History className="w-3.5 h-3.5" />
+                          </div>
+                          <h4 className="text-xs font-black text-white uppercase tracking-wider">
+                            LỊCH SỬ THAY ĐỔI THEO PHIÊN BẢN
+                          </h4>
+                        </div>
+                        {selectedToolForDetail.version && (
+                          <span className="text-[10px] font-mono font-black text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-700">
+                            Hiện tại: {selectedToolForDetail.version}
+                          </span>
+                        )}
+                      </div>
+
+                      {renderFormattedChangelog(selectedToolForDetail.changelog, selectedToolForDetail.version)}
                     </div>
                   ) : (
                     <div 
@@ -963,7 +1113,14 @@ export default function HomePage() {
               
               <div className="space-y-1.5 border-b border-slate-800/80 pb-4">
                 <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">XÁC NHẬN MUA BẢN QUYỀN</span>
-                <h2 className="text-2xl font-black text-white tracking-wide">{selectedToolForBuy.name}</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-2xl font-black text-white tracking-wide">{selectedToolForBuy.name}</h2>
+                  {selectedToolForBuy.version && (
+                    <span className="text-[11px] font-mono font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2.5 py-0.5 rounded-lg shadow-sm">
+                      {selectedToolForBuy.version}
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
