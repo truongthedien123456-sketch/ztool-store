@@ -24,13 +24,13 @@ export default function HomePage() {
   // State Trải Nghiệm Dùng Thử 3 Ngày
   const [trialTool, setTrialTool] = useState<any | null>(null);
   const [loadingTrial, setLoadingTrial] = useState(false);
-  const [trialMsg, setTrialMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [trialMsg, setTrialMsg] = useState<{ type: 'success' | 'error'; text: string; successAction?: 'open_purchased' } | null>(null);
 
   // States Mã giảm giá & Thanh toán
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
   const [couponMsg, setCouponMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [purchaseMsg, setPurchaseMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [purchaseMsg, setPurchaseMsg] = useState<{ type: 'success' | 'error'; text: string; successAction?: 'open_purchased' } | null>(null);
   const [loadingBuy, setLoadingBuy] = useState(false);
 
   // State Phóng to ảnh
@@ -266,10 +266,11 @@ export default function HomePage() {
       }]);
 
       setLoadingTrial(false);
-      setTrialMsg({ type: 'success', text: `Kích hoạt trải nghiệm 3 ngày thành công! Bạn có thể tải tool và đăng nhập tài khoản "${userData.username}" để sử dụng ngay.` });
-      setTimeout(() => {
-        window.location.reload();
-      }, 2500);
+      setTrialMsg({ 
+        type: 'success', 
+        text: `Kích hoạt trải nghiệm 3 ngày thành công! Bản quyền đã được cấp cho tài khoản "${userData.username}".`,
+        successAction: 'open_purchased'
+      });
     } catch (err: any) {
       setLoadingTrial(false);
       setTrialMsg({ type: 'error', text: `Lỗi kết nối máy chủ: ${err.message}` });
@@ -381,9 +382,11 @@ export default function HomePage() {
       await supabase.from('transactions').insert([{ username: userData.username, type: 'BUY', title: logTitle, amount: -priceNum, status: 'Thành công' }]);
 
       setLoadingBuy(false);
-      setPurchaseMsg({ type: 'success', text: `Kích hoạt thành công! Tài khoản "${userData.username}" đã được cấp quyền sử dụng Tool (${durationText}) trên ứng dụng.` });
-
-      setTimeout(() => { window.location.reload(); }, 2500);
+      setPurchaseMsg({ 
+        type: 'success', 
+        text: `Kích hoạt thành công! Quyền sử dụng Tool đã được cấp cho tài khoản "${userData.username}".`,
+        successAction: 'open_purchased'
+      });
 
     } catch (err: any) {
       setLoadingBuy(false);
@@ -777,19 +780,39 @@ export default function HomePage() {
               </div>
 
               {trialMsg && (
-                <div className={`p-4 rounded-2xl text-xs font-bold flex items-start gap-2.5 ${trialMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'}`}>
-                  {trialMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />}
-                  <span className="leading-relaxed">{trialMsg.text}</span>
+                <div className={`p-4 rounded-2xl text-xs font-bold flex flex-col gap-2.5 ${trialMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'}`}>
+                  <div className="flex items-start gap-2">
+                    {trialMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />}
+                    <span className="leading-relaxed">{trialMsg.text}</span>
+                  </div>
+                  
+                  {trialMsg.successAction === 'open_purchased' && (
+                    <button
+                      onClick={() => {
+                        setTrialTool(null);
+                        const currentUserStr = localStorage.getItem('ztool_current_user');
+                        if (currentUserStr) {
+                          const event = new CustomEvent('open-purchased-tools');
+                          window.dispatchEvent(event);
+                        }
+                      }}
+                      className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-2.5 px-4 rounded-xl text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-1.5 mt-1"
+                    >
+                      <Wrench className="w-3.5 h-3.5" /> Kiểm tra tài khoản (Tool đã mua)
+                    </button>
+                  )}
                 </div>
               )}
 
-              <button
-                disabled={loadingTrial}
-                onClick={handleActivateTrial}
-                className="w-full bg-gradient-to-r from-amber-500 to-yellow-400 hover:brightness-110 text-slate-950 font-black py-3.5 rounded-2xl text-xs shadow-lg transition cursor-pointer flex items-center justify-center gap-2"
-              >
-                {loadingTrial ? <><Loader2 className="w-4 h-4 animate-spin text-slate-950" /><span>ĐANG KÍCH HOẠT DÙNG THỬ...</span></> : <><Gift className="w-4 h-4" /> XÁC NHẬN NHẬN 3 NGÀY DÙNG THỬ</>}
-              </button>
+              {!trialMsg?.successAction && (
+                <button
+                  disabled={loadingTrial}
+                  onClick={handleActivateTrial}
+                  className="w-full bg-gradient-to-r from-amber-500 to-yellow-400 hover:brightness-110 text-slate-950 font-black py-3.5 rounded-2xl text-xs shadow-lg transition cursor-pointer flex items-center justify-center gap-2"
+                >
+                  {loadingTrial ? <><Loader2 className="w-4 h-4 animate-spin text-slate-950" /><span>ĐANG KÍCH HOẠT DÙNG THỬ...</span></> : <><Gift className="w-4 h-4" /> XÁC NHẬN NHẬN 3 NGÀY DÙNG THỬ</>}
+                </button>
+              )}
             </motion.div>
           </motion.div>
         )}
@@ -812,7 +835,7 @@ export default function HomePage() {
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-[#0D121D] border-2 border-cyan-500/40 w-full max-w-2xl rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.25)] max-h-[90vh] overflow-y-auto cursor-default custom-scrollbar"
+              className="bg-[#0D121D] border-2 border-cyan-500/40 w-full max-w-2xl rounded-3xl p-6 sm:p-8 space-y-5 relative shadow-[0_0_50px_rgba(6,182,212,0.25)] max-h-[90vh] overflow-y-auto cursor-default custom-scrollbar"
             >
               <button onClick={() => setSelectedToolForDetail(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#080B10] border border-slate-800 transition hover:border-cyan-400 z-10"><X className="w-5 h-5" /></button>
               
@@ -1048,15 +1071,35 @@ export default function HomePage() {
               </div>
 
               {purchaseMsg && (
-                <div className={`p-4 rounded-2xl text-xs font-bold flex items-start gap-2.5 ${purchaseMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'}`}>
-                  {purchaseMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />}
-                  <span className="leading-relaxed">{purchaseMsg.text}</span>
+                <div className={`p-4 rounded-2xl text-xs font-bold flex flex-col gap-2.5 ${purchaseMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'}`}>
+                  <div className="flex items-start gap-2">
+                    {purchaseMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />}
+                    <span className="leading-relaxed">{purchaseMsg.text}</span>
+                  </div>
+
+                  {purchaseMsg.successAction === 'open_purchased' && (
+                    <button
+                      onClick={() => {
+                        setSelectedToolForBuy(null);
+                        const currentUserStr = localStorage.getItem('ztool_current_user');
+                        if (currentUserStr) {
+                          const event = new CustomEvent('open-purchased-tools');
+                          window.dispatchEvent(event);
+                        }
+                      }}
+                      className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-2.5 px-4 rounded-xl text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-1.5 mt-1"
+                    >
+                      <Wrench className="w-3.5 h-3.5" /> Kiểm tra tài khoản (Tool đã mua)
+                    </button>
+                  )}
                 </div>
               )}
 
-              <button disabled={loadingBuy} onClick={handleBuyTool} className="w-full bg-gradient-to-r from-cyan-500 to-teal-400 hover:brightness-110 text-slate-950 font-black py-4 rounded-2xl text-xs shadow-lg transition cursor-pointer flex items-center justify-center gap-2">
-                {loadingBuy ? <><Loader2 className="w-4 h-4 animate-spin text-slate-950" /><span>ĐANG KHỞI TẠO TÀI KHOẢN...</span></> : <><Shield className="w-4 h-4" /> XÁC THỰC THANH TOÁN TỪ VÍ</>}
-              </button>
+              {!purchaseMsg?.successAction && (
+                <button disabled={loadingBuy} onClick={handleBuyTool} className="w-full bg-gradient-to-r from-cyan-500 to-teal-400 hover:brightness-110 text-slate-950 font-black py-4 rounded-2xl text-xs shadow-lg transition cursor-pointer flex items-center justify-center gap-2">
+                  {loadingBuy ? <><Loader2 className="w-4 h-4 animate-spin text-slate-950" /><span>ĐANG KHỞI TẠO TÀI KHOẢN...</span></> : <><Shield className="w-4 h-4" /> XÁC THỰC THANH TOÁN TỪ VÍ</>}
+                </button>
+              )}
             </motion.div>
           </motion.div>
         )}
@@ -1073,7 +1116,6 @@ export default function HomePage() {
           </motion.div>
         )}
       </AnimatePresence>
-
     </main>
   );
 }

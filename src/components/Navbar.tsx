@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { 
   User, Lock, LogIn, UserPlus, LogOut, Wallet, X, AlertCircle, CheckCircle2,
-  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift, Bell, Home, FolderKanban, Sparkles, Eye, EyeOff, ShieldCheck, Zap, ShoppingBag, Mail, Send, ShieldAlert, Shield, Award, ChevronRight, Gem, Flame, Star, HelpCircle, CheckCircle
+  PlusCircle, History, Calendar, CreditCard, Copy, Check, ChevronDown, Key, ArrowUpRight, ArrowDownLeft, Loader2, Wrench, Clock, RefreshCw, Download, Crown, CalendarCheck, Gift, Bell, Home, FolderKanban, Sparkles, Eye, EyeOff, ShieldCheck, Zap, ShoppingBag, Mail, Send, ShieldAlert, Shield, Award, ChevronRight, Gem, Flame, Star, HelpCircle, CheckCircle, Hourglass
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -109,6 +109,9 @@ export default function Navbar() {
 
   const [rechargeAmount, setRechargeAmount] = useState('50000');
 
+  // State Sự kiện nạp tiền đồng bộ từ Database
+  const [rechargeEvent, setRechargeEvent] = useState<{ percent: number; active: boolean }>({ percent: 0, active: false });
+
   // Dữ liệu Gist và Lịch sử
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -126,6 +129,7 @@ export default function Navbar() {
   useEffect(() => {
     checkLoggedInUser();
     loadAllToolsMeta();
+    loadRechargeEventSettings();
 
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -141,6 +145,18 @@ export default function Navbar() {
       clearInterval(timer);
     };
   }, []);
+
+  const loadRechargeEventSettings = async () => {
+    try {
+      const { data } = await supabase.from('settings').select('bonus_percent, bonus_active').eq('id', 1).single();
+      if (data) {
+        setRechargeEvent({
+          percent: Number(data.bonus_percent) || 0,
+          active: data.bonus_active === true
+        });
+      }
+    } catch (e) {}
+  };
 
   const loadAllToolsMeta = async () => {
     const { data } = await supabase.from('tools').select('*');
@@ -834,7 +850,6 @@ export default function Navbar() {
         setIsOtpSent(false);
         setOtpInput('');
         
-        // Buộc xóa cache để đọc dữ liệu verified mới nhất
         localStorage.removeItem('ztool_user_data');
         await checkLoggedInUser();
       } else {
@@ -866,6 +881,10 @@ export default function Navbar() {
 
   const isExempt = currentUser?.is_exempt === true;
   const isVerified = currentUser?.is_verified === true || isExempt;
+
+  // Tính số tiền thực nhận sau khuyến mãi
+  const bonusMultiplier = (rechargeEvent.active && rechargeEvent.percent > 0) ? (1 + rechargeEvent.percent / 100) : 1;
+  const actualReceivedAmount = Math.round(Number(rechargeAmount) * bonusMultiplier);
 
   return (
     <>
@@ -939,12 +958,17 @@ export default function Navbar() {
                   )}
                 </button>
 
-                {/* NÚT NẠP TIỀN */}
+                {/* NÚT NẠP TIỀN CÓ HIỂN THỊ BADGE KHUYẾN MÃI NẾU BẬT */}
                 <button
-                  onClick={() => setShowRechargeModal(true)}
-                  className="bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 hover:brightness-110 text-slate-950 font-black px-4 sm:px-5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 shadow-[0_0_20px_rgba(16,185,129,0.35)] hover:shadow-[0_0_25px_rgba(16,185,129,0.55)] transition duration-300 hover:scale-[1.03] cursor-pointer border border-emerald-300/50"
+                  onClick={() => { loadRechargeEventSettings(); setShowRechargeModal(true); }}
+                  className="relative overflow-hidden bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 hover:brightness-110 text-slate-950 font-black px-4 sm:px-5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 shadow-[0_0_20px_rgba(16,185,129,0.35)] hover:shadow-[0_0_25px_rgba(16,185,129,0.55)] transition duration-300 hover:scale-[1.03] cursor-pointer border border-emerald-300/50"
                 >
                   <PlusCircle className="w-4 h-4 text-slate-950 stroke-[2.5]" /> Nạp tiền
+                  {rechargeEvent.active && rechargeEvent.percent > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full animate-bounce shadow-md">
+                      +{rechargeEvent.percent}%
+                    </span>
+                  )}
                 </button>
 
                 {/* Ô THÔNG TIN KHÁCH HÀNG */}
@@ -1062,25 +1086,58 @@ export default function Navbar() {
               </div>
             </div>
 
+            {/* BANNER SỰ KIỆN KHUYẾN MÃI NẠP NẾU ĐANG BẬT */}
+            {rechargeEvent.active && rechargeEvent.percent > 0 && (
+              <div className="bg-gradient-to-r from-rose-500/20 via-amber-500/20 to-orange-500/20 border-2 border-amber-400/60 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-[0_0_25px_rgba(251,191,36,0.2)] animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/30 border border-amber-400 flex items-center justify-center text-amber-300">
+                    <Gift className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-black text-amber-300 uppercase tracking-wide block">
+                      🔥 ĐANG DIỄN RA SỰ KIỆN KHUYẾN MÃI +{rechargeEvent.percent}% NẠP TIỀN!
+                    </span>
+                    <span className="text-[11px] text-slate-300">
+                      Cộng thêm ngay <b className="text-emerald-400">+{rechargeEvent.percent}%</b> giá trị nạp vào số dư ví của bạn.
+                    </span>
+                  </div>
+                </div>
+                <span className="text-xs font-black font-mono bg-amber-400 text-slate-950 px-3 py-1 rounded-xl shrink-0 shadow-md">
+                  +{rechargeEvent.percent}%
+                </span>
+              </div>
+            )}
+
             {/* Chọn số tiền nạp nhanh */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Chọn nhanh số tiền muốn nạp:
+              <label className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Chọn nhanh số tiền nạp:</span>
+                {rechargeEvent.active && rechargeEvent.percent > 0 && (
+                  <span className="text-amber-300 text-[11px] font-bold">Thực nhận sau khuyến mãi:</span>
+                )}
               </label>
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                {['20000', '50000', '100000', '200000', '500000', '1000000'].map((amt) => (
-                  <button 
-                    key={amt} 
-                    onClick={() => setRechargeAmount(amt)} 
-                    className={`py-2.5 px-2 rounded-2xl border text-xs font-extrabold transition cursor-pointer text-center font-mono ${
-                      rechargeAmount === amt 
-                        ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black shadow-[0_0_15px_rgba(16,185,129,0.4)] border-emerald-300' 
-                        : 'bg-[#05080E] border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
-                    }`}
-                  >
-                    {Number(amt).toLocaleString('vi-VN')}đ
-                  </button>
-                ))}
+                {['20000', '50000', '100000', '200000', '500000', '1000000'].map((amt) => {
+                  const bonusAmt = Math.round(Number(amt) * bonusMultiplier);
+                  return (
+                    <button 
+                      key={amt} 
+                      onClick={() => setRechargeAmount(amt)} 
+                      className={`py-2.5 px-2 rounded-2xl border text-xs font-extrabold transition cursor-pointer text-center font-mono flex flex-col items-center justify-center ${
+                        rechargeAmount === amt 
+                          ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black shadow-[0_0_15px_rgba(16,185,129,0.4)] border-emerald-300' 
+                          : 'bg-[#05080E] border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
+                      }`}
+                    >
+                      <span>{Number(amt).toLocaleString('vi-VN')}đ</span>
+                      {rechargeEvent.active && rechargeEvent.percent > 0 && (
+                        <span className={`text-[9px] font-black ${rechargeAmount === amt ? 'text-slate-950' : 'text-amber-400'}`}>
+                          🎁={bonusAmt.toLocaleString('vi-VN')}đ
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -1094,9 +1151,16 @@ export default function Navbar() {
                   alt="QR SePay" 
                   className="w-48 h-48 rounded-xl bg-white p-2 shadow-lg object-contain" 
                 />
-                <span className="text-[11px] font-black text-emerald-400 mt-2 font-mono">
-                  {Number(rechargeAmount).toLocaleString('vi-VN')} VNĐ
-                </span>
+                <div className="text-center mt-2">
+                  <span className="text-[11px] font-black text-slate-400 block font-mono">
+                    Số tiền thanh toán: <b className="text-white">{Number(rechargeAmount).toLocaleString('vi-VN')}đ</b>
+                  </span>
+                  {rechargeEvent.active && rechargeEvent.percent > 0 && (
+                    <span className="text-[11px] font-black text-emerald-400 block font-mono">
+                      Thực nhận vào ví: <b>{actualReceivedAmount.toLocaleString('vi-VN')} VNĐ</b>
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Thông tin chuyển khoản */}
@@ -1137,7 +1201,7 @@ export default function Navbar() {
                 </div>
 
                 <p className="text-[10px] text-slate-500 italic leading-relaxed pt-1">
-                  * Lưu ý: Hãy ghi chính xác cú pháp chuyển khoản để hệ thống tự động cộng tiền ngay sau khi giao dịch thành công.
+                  * Lưu ý: Hãy ghi chính xác cú pháp chuyển khoản để hệ thống tự động cộng tiền và thưởng khuyến mãi ngay sau khi giao dịch thành công.
                 </p>
               </div>
 
@@ -1565,6 +1629,8 @@ export default function Navbar() {
                   </div>
                 ) : (
                   userTransactions.map((log: any, idx: number) => {
+                    const isBonus = log.type === 'BONUS';
+                    const isExtend = log.type === 'EXTEND';
                     const isPositive = log.amount > 0;
                     const isCheckin = log.type === 'CHECKIN';
                     const isBuy = log.type === 'BUY' || log.amount < 0;
@@ -1573,7 +1639,11 @@ export default function Navbar() {
                       <div 
                         key={idx} 
                         className={`bg-[#05080E] border p-4 rounded-2xl flex items-center justify-between gap-3 text-xs transition duration-300 hover:-translate-y-0.5 ${
-                          isBuy 
+                          isBonus 
+                            ? 'border-amber-500/40 bg-amber-500/5 hover:border-amber-400' 
+                            : isExtend
+                            ? 'border-cyan-500/40 bg-cyan-500/5 hover:border-cyan-400'
+                            : isBuy 
                             ? 'border-slate-800/90 hover:border-rose-500/40 hover:shadow-[0_0_15px_rgba(244,63,94,0.12)]' 
                             : isCheckin 
                             ? 'border-slate-800/90 hover:border-cyan-500/40 hover:shadow-[0_0_15px_rgba(6,182,212,0.12)]'
@@ -1582,13 +1652,17 @@ export default function Navbar() {
                       >
                         <div className="flex items-center gap-3.5 min-w-0">
                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
-                            isBuy 
+                            isBonus
+                              ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                              : isExtend
+                              ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
+                              : isBuy 
                               ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' 
                               : isCheckin 
                               ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
                               : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                           }`}>
-                            {isBuy ? <ShoppingBag className="w-5 h-5" /> : isCheckin ? <Gift className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
+                            {isBonus ? <Gift className="w-5 h-5" /> : isExtend ? <Hourglass className="w-5 h-5" /> : isBuy ? <ShoppingBag className="w-5 h-5" /> : isCheckin ? <Gift className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
                           </div>
 
                           <div className="space-y-0.5 min-w-0">
@@ -1603,9 +1677,15 @@ export default function Navbar() {
 
                         <div className="text-right shrink-0">
                           <span className={`text-sm font-mono font-black block ${
-                            isPositive ? 'text-emerald-400' : 'text-rose-400'
+                            isBonus
+                              ? 'text-amber-300'
+                              : isExtend
+                              ? 'text-cyan-300'
+                              : isPositive 
+                              ? 'text-emerald-400' 
+                              : 'text-rose-400'
                           }`}>
-                            {isPositive ? '+' : ''}{(log.amount || 0).toLocaleString('vi-VN')}đ
+                            {isExtend ? '0đ' : `${isPositive ? '+' : ''}${(log.amount || 0).toLocaleString('vi-VN')}đ`}
                           </span>
                           <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider block mt-0.5">
                             {log.status || 'Thành công'}

@@ -6,7 +6,7 @@ import {
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
   Ban, CheckCircle, CheckCircle2, CreditCard, KeyRound, Search, DollarSign, Settings,
-  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent, Crown, Gem, Flame, Star, Award, Video, Send, Headset, Volume2, FileText, Check
+  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent, Crown, Gem, Flame, Star, Award, Video, Send, Headset, Volume2, FileText, Check, Gift, Hourglass
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -34,15 +34,23 @@ export default function AdminPage() {
   const [sendingReply, setSendingReply] = useState(false);
   const lastProcessedMsgIdRef = useRef<number>(0);
 
-  // State Thông báo
+  // State Thông báo & Sự kiện nạp tiền
   const [noticeForm, setNoticeForm] = useState({ text: '', active: false });
   const [currentActiveNotice, setCurrentActiveNotice] = useState<{ text: string, active: boolean } | null>(null);
+  const [bonusEventForm, setBonusEventForm] = useState({ percent: 10, active: false });
 
   const [gistAccounts, setGistAccounts] = useState<any[]>([]);
   const [loadingGist, setLoadingGist] = useState(false);
   const [resettingHwid, setResettingHwid] = useState<string | null>(null);
   const [deletingGistKey, setDeletingGistKey] = useState<string | null>(null);
   const [nowTime, setNowTime] = useState(Date.now());
+
+  // Modal Gia hạn Key Tool
+  const [extendModalData, setExtendModalData] = useState<{ accountKey: string; currentExpire: number } | null>(null);
+  const [extendDaysInput, setExtendDaysInput] = useState<number>(1);
+  const [extendHoursInput, setExtendHoursInput] = useState<number>(0);
+  const [isExtendLifetime, setIsExtendLifetime] = useState<boolean>(false);
+  const [extendingLoading, setExtendingLoading] = useState(false);
 
   const [userSearch, setUserSearch] = useState('');
   const [gistSearch, setGistSearch] = useState('');
@@ -133,7 +141,7 @@ export default function AdminPage() {
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'transactions' }, (payload) => {
         const newTx = payload.new;
-        if (newTx.type === 'RECHARGE') {
+        if (newTx.type === 'RECHARGE' || newTx.type === 'BONUS' || newTx.type === 'EXTEND') {
           setSepayLogs(prev => [newTx, ...prev]);
         }
       })
@@ -237,7 +245,7 @@ export default function AdminPage() {
       message: text
     };
 
-    const { data, error } = await supabase.from('messages').insert([newMsg]).select('id, sender_username, sender_role, receiver_username, message, created_at').single();
+    const { data, error } = await supabase.from('messages').insert([newMsg]).select().single();
     setSendingReply(false);
 
     if (!error && data) {
@@ -351,6 +359,40 @@ export default function AdminPage() {
     }
   };
 
+  // Xử lý gọi API Gia Hạn Thời Gian
+  const handleExecuteExtendTime = async () => {
+    if (!extendModalData) return;
+    setExtendingLoading(true);
+
+    try {
+      const res = await fetch('/api/gist-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountKey: extendModalData.accountKey,
+          action: 'EXTEND_TIME',
+          addDays: Number(extendDaysInput) || 0,
+          addHours: Number(extendHoursInput) || 0,
+          isLifetime: isExtendLifetime
+        })
+      });
+
+      const result = await res.json();
+      setExtendingLoading(false);
+
+      if (result.success) {
+        alert(`Đã gia hạn thành công cho key "${extendModalData.accountKey}"!`);
+        setExtendModalData(null);
+        fetchGistAccountsData();
+      } else {
+        alert(`Lỗi: ${result.message || 'Không thể gia hạn'}`);
+      }
+    } catch (err: any) {
+      setExtendingLoading(false);
+      alert(`Lỗi kết nối: ${err.message}`);
+    }
+  };
+
   const loadAllSyncData = async () => {
     try {
       // 1. Tải users
@@ -404,11 +446,11 @@ export default function AdminPage() {
         .order('id', { ascending: false });
       if (feedbackData) setFeedbacks(feedbackData);
 
-      // 5. Tải SePay logs
+      // 5. Tải SePay & Bonus logs
       const { data: sepayData } = await supabase
         .from('transactions')
         .select('*')
-        .eq('type', 'RECHARGE')
+        .or('type.eq.RECHARGE,type.eq.BONUS,type.eq.EXTEND')
         .order('id', { ascending: false })
         .limit(100);
       if (sepayData) setSepayLogs(sepayData);
@@ -429,6 +471,10 @@ export default function AdminPage() {
       if (settingsData) {
         setNoticeForm({ text: settingsData.notice_text || '', active: settingsData.is_active });
         setCurrentActiveNotice({ text: settingsData.notice_text || '', active: settingsData.is_active });
+        setBonusEventForm({ 
+          percent: Number(settingsData.bonus_percent) || 10, 
+          active: settingsData.bonus_active === true 
+        });
       }
 
       fetchGistAccountsData();
@@ -681,6 +727,17 @@ export default function AdminPage() {
     else { setCurrentActiveNotice({ text: noticeForm.text, active: noticeForm.active }); alert('Đã lưu và cập nhật thông báo thành công!'); }
   };
 
+  // Lưu cấu hình Sự Kiện Nạp Tiền
+  const handleSaveBonusEvent = async () => {
+    const { error } = await supabase.from('settings').upsert({ 
+      id: 1, 
+      bonus_percent: Number(bonusEventForm.percent) || 0, 
+      bonus_active: bonusEventForm.active 
+    });
+    if (error) alert('Lỗi lưu sự kiện nạp tiền: ' + error.message);
+    else { alert('Đã cập nhật sự kiện nạp tiền thành công!'); }
+  };
+
   if (!isAuthenticated) {
     return (
       <main className="min-h-screen bg-[#05070D] text-white font-sans flex flex-col justify-center items-center px-4">
@@ -732,15 +789,9 @@ export default function AdminPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={playNotificationSound} className="bg-[#05080E] border border-slate-800 hover:border-cyan-400 text-slate-400 hover:text-cyan-300 p-2.5 rounded-xl transition cursor-pointer" title="Test âm thanh">
-            <Volume2 className="w-4 h-4" />
-          </button>
-          <button onClick={loadAllSyncData} className="bg-[#05080E] border border-slate-800 hover:border-cyan-400 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition cursor-pointer shadow-sm">
-            <RefreshCw className="w-3.5 h-3.5 text-cyan-400" /> Tải lại dữ liệu Cloud
-          </button>
-          <button onClick={handleAdminLogout} className="bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-400 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-2 transition cursor-pointer shadow-sm">
-            <LogOut className="w-3.5 h-3.5" /> Đăng xuất
-          </button>
+          <button onClick={playNotificationSound} className="bg-[#05080E] border border-slate-800 hover:border-cyan-400 text-slate-400 hover:text-cyan-300 p-2.5 rounded-xl transition cursor-pointer" title="Test âm thanh"><Volume2 className="w-4 h-4" /></button>
+          <button onClick={loadAllSyncData} className="bg-[#05080E] border border-slate-800 hover:border-cyan-400 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition cursor-pointer shadow-sm"><RefreshCw className="w-3.5 h-3.5 text-cyan-400" /> Tải lại dữ liệu Cloud</button>
+          <button onClick={handleAdminLogout} className="bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-400 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-2 transition cursor-pointer shadow-sm"><LogOut className="w-3.5 h-3.5" /> Đăng xuất</button>
         </div>
       </header>
 
@@ -784,7 +835,7 @@ export default function AdminPage() {
           <button onClick={() => setActiveTab('projects')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'projects' ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}><FolderKanban className="w-4 h-4" /> DỰ ÁN CỦA SHOP ({projects.length})</button>
           <button onClick={() => setActiveTab('sepay')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'sepay' ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}><CreditCard className="w-4 h-4" /> LỊCH SỬ SEPAY ({sepayLogs.length})</button>
           <button onClick={() => setActiveTab('feedback')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'feedback' ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}><MessageSquare className="w-4 h-4" /> ĐÓNG GÓP ({feedbacks.length})</button>
-          <button onClick={() => setActiveTab('settings')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'settings' ? 'bg-amber-500 text-slate-950 font-black shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'text-amber-400 hover:text-amber-300 hover:bg-slate-800/50'}`}><Bell className="w-4 h-4" /> THÔNG BÁO CHUNG</button>
+          <button onClick={() => setActiveTab('settings')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'settings' ? 'bg-amber-500 text-slate-950 font-black shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'text-amber-400 hover:text-amber-300 hover:bg-slate-800/50'}`}><Bell className="w-4 h-4" /> THÔNG BÁO & SỰ KIỆN</button>
         </div>
 
         {/* ================= TAB 1: QUẢN LÝ NGƯỜI DÙNG ================= */}
@@ -860,7 +911,7 @@ export default function AdminPage() {
                   </h2>
                 </div>
                 <p className="text-xs text-slate-400 pl-11.5">
-                  Tự động phân nhóm bản quyền theo chủ sở hữu • Quản lý HWID và thời hạn kích hoạt
+                  Tự động phân nhóm bản quyền theo chủ sở hữu • Quản lý HWID, Gia hạn giờ/ngày và thời hạn kích hoạt
                 </p>
               </div>
 
@@ -896,15 +947,15 @@ export default function AdminPage() {
               </div>
             ) : (
               <div className="overflow-x-auto border border-slate-800/80 rounded-2xl bg-[#060911] shadow-2xl">
-                <table className="w-full text-left text-xs border-collapse table-fixed min-w-[1000px]">
+                <table className="w-full text-left text-xs border-collapse table-fixed min-w-[1050px]">
                   <thead className="bg-[#090E1A] text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800 font-black select-none">
                     <tr>
-                      <th className="py-4 px-6 w-[28%]">Key Tài Khoản Tool</th>
-                      <th className="py-4 px-4 w-[13%]">Mật Khẩu</th>
-                      <th className="py-4 px-4 w-[13%]">Mã Tool</th>
-                      <th className="py-4 px-4 w-[18%]">Mã Thiết Bị (HWID)</th>
-                      <th className="py-4 px-4 w-[14%] text-center">Thời Gian Còn Lại</th>
-                      <th className="py-4 px-6 w-[14%] text-right">Thao Tác</th>
+                      <th className="py-4 px-6 w-[25%]">Key Tài Khoản Tool</th>
+                      <th className="py-4 px-4 w-[11%]">Mật Khẩu</th>
+                      <th className="py-4 px-4 w-[12%]">Mã Tool</th>
+                      <th className="py-4 px-4 w-[17%]">Mã Thiết Bị (HWID)</th>
+                      <th className="py-4 px-4 w-[15%] text-center">Thời Gian Còn Lại</th>
+                      <th className="py-4 px-6 w-[20%] text-right">Thao Tác</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/40">
@@ -998,6 +1049,21 @@ export default function AdminPage() {
                                 </td>
 
                                 <td className="py-3 px-6 text-right whitespace-nowrap space-x-1.5">
+                                  
+                                  {/* NÚT GIA HẠN THỜI GIAN */}
+                                  <button
+                                    onClick={() => {
+                                      setExtendModalData({ accountKey: acc.username, currentExpire: acc.expire_timestamp || 0 });
+                                      setExtendDaysInput(1);
+                                      setExtendHoursInput(0);
+                                      setIsExtendLifetime(false);
+                                    }}
+                                    className="bg-cyan-500/10 border border-cyan-500/40 hover:bg-cyan-500 hover:text-slate-950 text-cyan-300 px-2.5 py-1 rounded-xl text-[11px] font-bold inline-flex items-center gap-1 transition cursor-pointer shadow-sm"
+                                    title="Thêm giờ, thêm ngày hoặc đặt vĩnh viễn"
+                                  >
+                                    <Hourglass className="w-3.5 h-3.5" /> + Gia hạn
+                                  </button>
+
                                   {hasHwid && (
                                     <button
                                       disabled={resettingHwid === acc.username}
@@ -1006,7 +1072,7 @@ export default function AdminPage() {
                                       title="Xóa HWID để chuyển máy"
                                     >
                                       {resettingHwid === acc.username ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Cpu className="w-3.5 h-3.5 text-amber-400" />}
-                                      <span>Reset HWID</span>
+                                      <span>Reset</span>
                                     </button>
                                   )}
 
@@ -1017,7 +1083,7 @@ export default function AdminPage() {
                                     title="Xóa tài khoản này khỏi Gist"
                                   >
                                     {deletingGistKey === acc.username ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5 text-rose-400" />}
-                                    <span>Xóa Acc</span>
+                                    <span>Xóa</span>
                                   </button>
                                 </td>
                               </tr>
@@ -1414,7 +1480,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 5: MÃ GIẢM GIÁ */}
+        {/* ================= TAB 5: MÃ GIẢM GIÁ ================= */}
         {activeTab === 'coupons' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleCreateCoupon} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
@@ -1478,7 +1544,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 6: DỰ ÁN SHOP */}
+        {/* ================= TAB 6: DỰ ÁN SHOP ================= */}
         {activeTab === 'projects' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveProject} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
@@ -1503,19 +1569,19 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 7: LỊCH SỬ SEPAY */}
+        {/* ================= TAB 7: LỊCH SỬ SEPAY & GIA HẠN ================= */}
         {activeTab === 'sepay' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
-            <h2 className="text-sm font-bold text-white border-b border-slate-800/80 pb-3 uppercase flex items-center gap-2"><CreditCard className="w-4 h-4 text-cyan-400" /> LỊCH SỬ BIẾN ĐỘNG SEPAY AUTO</h2>
+            <h2 className="text-sm font-bold text-white border-b border-slate-800/80 pb-3 uppercase flex items-center gap-2"><CreditCard className="w-4 h-4 text-cyan-400" /> LỊCH SỬ NẠP TIỀN, THƯỞNG & GIA HẠN TÀI KHOẢN</h2>
             <div className="overflow-x-auto border border-slate-800/60 rounded-2xl bg-[#05080E]/40">
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-[#05080E] text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800"><tr><th className="p-3.5">Tài khoản</th><th className="p-3.5">Nội dung</th><th className="p-3.5">Số tiền</th><th className="p-3.5">Thời gian</th></tr></thead>
                 <tbody className="divide-y divide-slate-800/60">
-                  {sepayLogs.length === 0 ? <tr><td colSpan={4} className="p-6 text-center text-slate-500">Chưa có giao dịch SePay.</td></tr> : sepayLogs.map((s, i) => (
+                  {sepayLogs.length === 0 ? <tr><td colSpan={4} className="p-6 text-center text-slate-500">Chưa có giao dịch nào.</td></tr> : sepayLogs.map((s, i) => (
                     <tr key={i} className="hover:bg-[#05080E]/60 transition">
                       <td className="p-3.5 font-bold text-white">{s.username}</td>
                       <td className="p-3.5">{s.title || s.content}</td>
-                      <td className="p-3.5 font-black text-emerald-400 font-mono">+{(Number(s.amount) || 0).toLocaleString('vi-VN')}đ</td>
+                      <td className="p-3.5 font-black text-emerald-400 font-mono">{Number(s.amount) > 0 ? `+${Number(s.amount).toLocaleString('vi-VN')}đ` : `${Number(s.amount || 0).toLocaleString('vi-VN')}đ`}</td>
                       <td className="p-3.5 font-mono text-slate-400">{s.created_at ? new Date(s.created_at).toLocaleString('vi-VN') : ''}</td>
                     </tr>
                   ))}
@@ -1525,7 +1591,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 8: ĐÓNG GÓP Ý KIẾN */}
+        {/* ================= TAB 8: ĐÓNG GÓP Ý KIẾN ================= */}
         {activeTab === 'feedback' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
             <h2 className="text-sm font-bold text-white border-b border-slate-800/80 pb-3 uppercase flex items-center gap-2"><MessageSquare className="w-4 h-4 text-cyan-400" /> Ý KIẾN ĐÓNG GÓP TỪ KHÁCH HÀNG</h2>
@@ -1540,18 +1606,61 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 9: THÔNG BÁO CHUNG */}
+        {/* ================= TAB 9: THÔNG BÁO & SỰ KIỆN NẠP TIỀN ================= */}
         {activeTab === 'settings' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* CỤM 1: CẤU HÌNH SỰ KIỆN NẠP TIỀN */}
+            <div className="bg-[#0B1019] border-2 border-emerald-500/40 rounded-3xl p-6 space-y-4 h-fit shadow-xl shadow-emerald-500/5">
+              <h3 className="text-sm font-black text-emerald-400 flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase">
+                <Gift className="w-4 h-4 text-emerald-400" /> SỰ KIỆN KHUYẾN MÃI NẠP TIỀN
+              </h3>
+              <div className="space-y-4">
+                <div className="bg-[#05080E] border border-slate-800 p-4 rounded-xl space-y-2">
+                  <label className="block text-xs font-bold text-slate-300">% Khuyến mãi nạp thưởng (VD: 10 = +10%):</label>
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="number" 
+                      min="1" 
+                      max="100" 
+                      value={bonusEventForm.percent} 
+                      onChange={e => setBonusEventForm({ ...bonusEventForm, percent: Number(e.target.value) })} 
+                      className="w-full bg-[#0B1019] border border-slate-800 rounded-xl p-3 text-xs text-white font-mono font-black focus:border-emerald-400" 
+                    />
+                    <span className="text-emerald-400 font-black text-sm font-mono">%</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 italic">* Ví dụ nạp 20.000đ nhận 22.000đ (20k gốc + 2k thưởng sự kiện).</p>
+                </div>
+
+                <div className="flex items-center justify-between bg-[#05080E] border border-slate-800 p-4 rounded-xl">
+                  <label className="text-xs font-bold text-slate-300">Trạng thái sự kiện nạp:</label>
+                  <button 
+                    onClick={() => setBonusEventForm({ ...bonusEventForm, active: !bonusEventForm.active })} 
+                    className={`px-4 py-2 rounded-xl text-xs font-black border transition cursor-pointer flex items-center gap-2 ${bonusEventForm.active ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
+                  >
+                    {bonusEventForm.active ? <><CheckCircle2 className="w-4 h-4"/> ĐANG BẬT (+{bonusEventForm.percent}%)</> : <><Ban className="w-4 h-4"/> ĐANG TẮT</>}
+                  </button>
+                </div>
+
+                <button 
+                  onClick={handleSaveBonusEvent} 
+                  className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-6 py-3.5 rounded-xl text-xs transition shadow-lg cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Upload className="w-4 h-4" /> LƯU & ÁP DỤNG SỰ KIỆN NẠP TIỀN
+                </button>
+              </div>
+            </div>
+
+            {/* CỤM 2: THÔNG BÁO HỆ THỐNG */}
             <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
               <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase">
-                <Bell className="w-4 h-4 text-amber-400" /> Soạn thảo / Cập nhật thông báo
+                <Bell className="w-4 h-4 text-amber-400" /> Soạn thảo thông báo chung
               </h3>
               <div className="space-y-4">
                 <div className="bg-[#05080E] border border-slate-800 p-4 rounded-xl space-y-3">
                   <label className="block text-xs font-bold text-slate-300">Nội dung thông báo:</label>
                   <textarea 
-                    rows={4}
+                    rows={4} 
                     value={noticeForm.text} 
                     onChange={e => setNoticeForm({ ...noticeForm, text: e.target.value })} 
                     className="w-full bg-[#0B1019] border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-400 transition leading-relaxed" 
@@ -1561,14 +1670,14 @@ export default function AdminPage() {
                 <div className="flex items-center justify-between bg-[#05080E] border border-slate-800 p-4 rounded-xl">
                   <label className="text-xs font-bold text-slate-300">Trạng thái bật/tắt hiển thị:</label>
                   <button 
-                    onClick={() => setNoticeForm({ ...noticeForm, active: !noticeForm.active })}
+                    onClick={() => setNoticeForm({ ...noticeForm, active: !noticeForm.active })} 
                     className={`px-4 py-2 rounded-xl text-xs font-black border transition cursor-pointer flex items-center gap-2 ${noticeForm.active ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
                   >
                     {noticeForm.active ? <><CheckCircle2 className="w-4 h-4"/> ĐANG BẬT</> : <><Ban className="w-4 h-4"/> ĐANG TẮT</>}
                   </button>
                 </div>
                 <button 
-                  onClick={handleSaveNotice}
+                  onClick={handleSaveNotice} 
                   className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-6 py-3.5 rounded-xl text-xs transition shadow-lg shadow-amber-500/20 cursor-pointer flex items-center justify-center gap-2"
                 >
                   <Upload className="w-4 h-4" /> LƯU VÀ PHÁT HÀNH THÔNG BÁO
@@ -1576,42 +1685,95 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div className="bg-[#0B1019] border border-amber-500/40 rounded-2xl p-6 space-y-4 h-fit shadow-xl shadow-amber-500/5">
-              <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase">
-                <CheckCircle2 className="w-4 h-4 text-amber-400" /> Thông báo đang hiển thị thực tế
-              </h3>
-              <div className="bg-[#05080E] border border-slate-800 p-5 rounded-xl space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">TRẠNG THÁI HIỆN TẠI:</span>
-                  <span className={`text-[10px] font-black px-2.5 py-1 rounded border ${currentActiveNotice?.active ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-rose-500/20 text-rose-400 border-rose-500/40'}`}>
-                    {currentActiveNotice?.active ? 'ĐANG HIỂN THỊ' : 'ĐANG ẨN'}
-                  </span>
-                </div>
-                <div className="bg-[#0B1019] border border-slate-800 p-4 rounded-xl text-xs text-slate-200 leading-relaxed whitespace-pre-line min-h-[90px]">
-                  {currentActiveNotice?.text ? currentActiveNotice.text : <span className="text-slate-500 italic">Chưa có thông báo nào được bật.</span>}
-                </div>
-                <button 
-                  onClick={() => {
-                    if (currentActiveNotice) {
-                      setNoticeForm({ text: currentActiveNotice.text, active: currentActiveNotice.active });
-                    }
-                  }}
-                  className="w-full bg-[#05080E] border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
-                >
-                  <Edit className="w-3.5 h-3.5" /> CHỈNH SỬA NỘI DUNG NÀY
-                </button>
-              </div>
-            </div>
           </div>
         )}
 
       </div>
 
+      {/* ================= MODAL GIA HẠN THỜI GIAN CHO KEY ================= */}
+      {extendModalData && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-md rounded-3xl p-6 sm:p-7 space-y-5 relative shadow-[0_0_50px_rgba(6,182,212,0.3)]">
+            <button onClick={() => setExtendModalData(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer hover:border-cyan-400 transition"><X className="w-5 h-5" /></button>
+
+            <div className="flex items-center gap-3 border-b border-slate-800 pb-3.5">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                <Hourglass className="w-5 h-5 animate-spin" style={{ animationDuration: '6s' }} />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider block">GIA HẠN KEY TOOL</span>
+                <h3 className="text-sm font-mono font-black text-white truncate max-w-[240px]">{extendModalData.accountKey}</h3>
+              </div>
+            </div>
+
+            <div className="bg-[#05080E] border border-slate-800 p-3.5 rounded-2xl flex items-center justify-between text-xs">
+              <span className="text-slate-400">Thời hạn hiện tại:</span>
+              <span>{renderRemainingTime(extendModalData.currentExpire)}</span>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <label className="flex items-center gap-2 text-slate-300 font-bold cursor-pointer bg-[#05080E] p-3 rounded-xl border border-slate-800 hover:border-cyan-500/40">
+                <input 
+                  type="checkbox" 
+                  checked={isExtendLifetime} 
+                  onChange={(e) => setIsExtendLifetime(e.target.checked)} 
+                  className="w-4 h-4 accent-cyan-500 rounded cursor-pointer" 
+                />
+                <span>Kích hoạt gói <b>VĨNH VIỄN</b> (Không giới hạn thời gian)</span>
+              </label>
+
+              {!isExtendLifetime && (
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-bold text-slate-400">Cộng thêm Ngày:</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      value={extendDaysInput} 
+                      onChange={e => setExtendDaysInput(Math.max(0, Number(e.target.value)))} 
+                      className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono font-bold focus:border-cyan-400" 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-bold text-slate-400">Cộng thêm Giờ:</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      max="23" 
+                      value={extendHoursInput} 
+                      onChange={e => setExtendHoursInput(Math.max(0, Number(e.target.value)))} 
+                      className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono font-bold focus:border-cyan-400" 
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button 
+                disabled={extendingLoading} 
+                onClick={handleExecuteExtendTime} 
+                className="flex-1 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-slate-950 font-black py-3 rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
+              >
+                {extendingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                <span>XÁC NHẬN CẬP NHẬT</span>
+              </button>
+              <button 
+                onClick={() => setExtendModalData(null)} 
+                className="px-4 bg-[#05080E] border border-slate-800 text-slate-400 font-bold py-3 rounded-xl text-xs cursor-pointer hover:text-white"
+              >
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* POPUP 1: LỊCH SỬ GIAO DỊCH NỔI */}
       {selectedUserHistory && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#0B1019] border-2 border-cyan-500/50 w-full max-w-2xl rounded-3xl p-6 space-y-4 relative shadow-[0_0_50px_rgba(6,182,212,0.25)] max-h-[85vh] flex flex-col">
-            <button onClick={() => setSelectedUserHistory(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 transition"><X className="w-5 h-5" /></button>
+            <button onClick={() => setSelectedUserHistory(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 transition cursor-pointer hover:border-cyan-400"><X className="w-5 h-5" /></button>
 
             <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
               <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400"><History className="w-5 h-5" /></div>
@@ -1650,7 +1812,7 @@ export default function AdminPage() {
       {editUserPass && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#0B1019] border-2 border-cyan-500/50 w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-[0_0_50px_rgba(6,182,212,0.25)]">
-            <button onClick={() => setEditUserPass(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 transition"><X className="w-5 h-5" /></button>
+            <button onClick={() => setEditUserPass(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 transition cursor-pointer hover:border-cyan-400"><X className="w-5 h-5" /></button>
 
             <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
               <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400"><Key className="w-5 h-5" /></div>
@@ -1683,7 +1845,7 @@ export default function AdminPage() {
       {adjustBal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#0B1019] border-2 border-emerald-500/50 w-full max-w-md rounded-3xl p-6 space-y-5 relative shadow-[0_0_50px_rgba(16,185,129,0.25)]">
-            <button onClick={() => setAdjustBal(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 transition"><X className="w-5 h-5" /></button>
+            <button onClick={() => setAdjustBal(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 transition cursor-pointer hover:border-emerald-400"><X className="w-5 h-5" /></button>
 
             <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400"><DollarSign className="w-5 h-5" /></div>

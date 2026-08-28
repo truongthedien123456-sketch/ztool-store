@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || process.env.GITHUB_GIST_TOKEN;
 const GIST_ID = process.env.GIST_ID || '21f0a39cbc434e5033d89f06e2c7d26e';
@@ -6,7 +7,17 @@ const GIST_ID = process.env.GIST_ID || '21f0a39cbc434e5033d89f06e2c7d26e';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { action, accountKey, username, password, durationDays, tool_code } = body;
+    const { 
+      action, 
+      accountKey, 
+      username, 
+      password, 
+      durationDays, 
+      tool_code,
+      addDays,
+      addHours,
+      isLifetime
+    } = body;
 
     if (!GITHUB_TOKEN) {
       return NextResponse.json({ success: false, message: 'Chưa cấu hình GITHUB_TOKEN trên server' }, { status: 500 });
@@ -30,7 +41,87 @@ export async function POST(request: Request) {
     const accountsJson = JSON.parse(currentContentRaw);
 
     // =========================================================================
-    // LUỒNG 1: XỬ LÝ RESET HWID (XÓA MÃ THIẾT BỊ ĐĂNG NHẬP MÁY MỚI)
+    // LUỒNG 1: XỬ LÝ GIA HẠN / CỘNG THÊM THỜI GIAN VÀ GHI LỊCH SỬ
+    // =========================================================================
+    if (action === 'EXTEND_TIME') {
+      const targetKey = accountKey || username;
+      if (!targetKey || !accountsJson[targetKey]) {
+        return NextResponse.json({ 
+          success: false, 
+          message: `Không tìm thấy tài khoản "${targetKey}" trên Gist!` 
+        }, { status: 404 });
+      }
+
+      let newTimestamp = accountsJson[targetKey].expire_timestamp || 0;
+      const nowSec = Math.floor(Date.now() / 1000);
+      let logTitle = '';
+
+      if (isLifetime) {
+        newTimestamp = 0; // Vĩnh viễn
+        logTitle = `Bạn đã được Admin nâng cấp lên gói Vĩnh Viễn (Key: ${targetKey})`;
+      } else {
+        const days = Number(addDays) || 0;
+        const hours = Number(addHours) || 0;
+        const totalAddedSec = (days * 86400) + (hours * 3600);
+
+        if (totalAddedSec <= 0) {
+          return NextResponse.json({ success: false, message: 'Thời gian gia hạn phải lớn hơn 0!' }, { status: 400 });
+        }
+
+        const baseSec = (newTimestamp > nowSec) ? newTimestamp : nowSec;
+        newTimestamp = baseSec + totalAddedSec;
+
+        const timeParts = [];
+        if (days > 0) timeParts.push(`${days} ngày`);
+        if (hours > 0) timeParts.push(`${hours} giờ`);
+        const timeText = timeParts.join(' ');
+
+        logTitle = `Bạn đã được Admin gia hạn thêm ${timeText} (Key: ${targetKey})`;
+      }
+
+      accountsJson[targetKey].expire_timestamp = newTimestamp;
+
+      // Đẩy JSON cập nhật lên GitHub Gist
+      const patchGistRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          files: {
+            'accounts.json': {
+              content: JSON.stringify(accountsJson, null, 2)
+            }
+          }
+        })
+      });
+
+      if (!patchGistRes.ok) {
+        throw new Error(`Lỗi lưu dữ liệu lên Gist: ${patchGistRes.statusText}`);
+      }
+
+      // Tách tên người dùng gốc (ví dụ: abc_caucaluquy -> abc) để ghi lịch sử
+      const baseOwnerUsername = targetKey.split('_')[0];
+
+      await supabase.from('transactions').insert([{
+        username: baseOwnerUsername,
+        type: 'EXTEND',
+        title: logTitle,
+        amount: 0,
+        status: 'Thành công'
+      }]);
+
+      return NextResponse.json({
+        success: true,
+        message: `Đã gia hạn thành công cho tài khoản ${targetKey}!`,
+        newExpireTimestamp: newTimestamp
+      });
+    }
+
+    // =========================================================================
+    // LUỒNG 2: XỬ LÝ RESET HWID (XÓA MÃ THIẾT BỊ)
     // =========================================================================
     if (action === 'RESET_DEVICE') {
       const targetKey = accountKey || username;
@@ -41,10 +132,8 @@ export async function POST(request: Request) {
         }, { status: 404 });
       }
 
-      // Xóa sạch mã thiết bị
       accountsJson[targetKey].device_id = '';
 
-      // Đẩy JSON cập nhật lên GitHub Gist
       const patchGistRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
         method: 'PATCH',
         headers: {
@@ -72,7 +161,7 @@ export async function POST(request: Request) {
     }
 
     // =========================================================================
-    // LUỒNG 2: XỬ LÝ XÓA TÀI KHOẢN KHỎI GIST
+    // LUỒNG 3: XỬ LÝ XÓA TÀI KHOẢN KHỎI GIST
     // =========================================================================
     if (action === 'DELETE_ACCOUNT') {
       const targetKey = accountKey || username;
@@ -83,10 +172,8 @@ export async function POST(request: Request) {
         }, { status: 404 });
       }
 
-      // Xóa tài khoản khỏi object JSON
       delete accountsJson[targetKey];
 
-      // Đẩy JSON cập nhật lên GitHub Gist
       const patchGistRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
         method: 'PATCH',
         headers: {
@@ -114,16 +201,14 @@ export async function POST(request: Request) {
     }
 
     // =========================================================================
-    // LUỒNG 3: XỬ LÝ MUA TOOL / GIA HẠN THỜI HẠN
+    // LUỒNG 4: XỬ LÝ MUA TOOL / GIA HẠN TỪ PHÍA USER
     // =========================================================================
     if (!username || !password) {
       return NextResponse.json({ success: false, message: 'Thiếu username hoặc password' }, { status: 400 });
     }
 
-    // Chuẩn hóa mã tool mới mua
     const targetToolCode = tool_code ? tool_code.trim() : '';
 
-    // Kiểm tra xem user đã sở hữu tài khoản nào có cùng tool_code hay chưa
     let targetAccountKey = username;
     const matchedAccount = Object.keys(accountsJson).find(key => {
       const acc = accountsJson[key];
@@ -133,18 +218,14 @@ export async function POST(request: Request) {
     });
 
     if (matchedAccount) {
-      // Đã có tài khoản mang đúng mã tool này -> Dùng lại để cộng dồn thời gian
       targetAccountKey = matchedAccount;
     } else if (accountsJson[username] && (!accountsJson[username].tool_code && !accountsJson[username].toolCode)) {
-      // Nếu user gốc chưa gán mã tool nào, gán luôn cho user gốc
       targetAccountKey = username;
     } else {
-      // Nếu user gốc đã có mã tool khác -> Tự động tạo tài khoản phụ mới (ví dụ: abc_congtruongf17)
       const cleanToolCode = targetToolCode ? targetToolCode.replace(/[^a-zA-Z0-9]/g, '_') : 'tool';
       targetAccountKey = `${username}_${cleanToolCode}`;
     }
 
-    // KIỂM TRA CHẶN NẾU TÀI KHOẢN ĐÃ LÀ VĨNH VIỄN (expire_timestamp === 0)
     const currentExpire = accountsJson[targetAccountKey]?.expire_timestamp || 0;
     if (currentExpire === 0 && accountsJson[targetAccountKey]) {
       return NextResponse.json({ 
@@ -153,21 +234,18 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    // Tính toán expire_timestamp (0 = Vĩnh Viễn)
     let expireTimestamp = 0;
     const nowSec = Math.floor(Date.now() / 1000);
 
     if (durationDays && Number(durationDays) > 0) {
-      const addedSec = Number(durationDays) * 86400; // 1 ngày = 86400 giây
-
+      const addedSec = Number(durationDays) * 86400;
       if (currentExpire > nowSec) {
-        expireTimestamp = currentExpire + addedSec; // Gia hạn nối tiếp nếu chưa hết hạn
+        expireTimestamp = currentExpire + addedSec;
       } else {
-        expireTimestamp = nowSec + addedSec; // Tính từ thời điểm hiện tại
+        expireTimestamp = nowSec + addedSec;
       }
     }
 
-    // Cập nhật hoặc tạo mới tài khoản vào JSON kèm theo tool_code
     accountsJson[targetAccountKey] = {
       password: password,
       role: accountsJson[targetAccountKey]?.role || 'user',
@@ -176,7 +254,6 @@ export async function POST(request: Request) {
       device_id: accountsJson[targetAccountKey]?.device_id || ''
     };
 
-    // Đẩy JSON mới lên GitHub Gist
     const patchGistRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
       method: 'PATCH',
       headers: {
