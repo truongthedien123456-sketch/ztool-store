@@ -32,7 +32,7 @@ export default function AdminPage() {
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [adminReplyText, setAdminReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
-  const lastProcessedMsgIdRef = useRef<number>(0);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
 
   // State Thông báo & Sự kiện nạp tiền
   const [noticeForm, setNoticeForm] = useState({ text: '', active: false });
@@ -89,6 +89,10 @@ export default function AdminPage() {
     selectedChatUserRef.current = selectedChatUser;
   }, [selectedChatUser]);
 
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
   // Phát chuông thông báo
   const playNotificationSound = () => {
     try {
@@ -123,21 +127,12 @@ export default function AdminPage() {
       loadChatUsers();
     }
 
-    supabase.from('messages').select('id').order('id', { ascending: false }).limit(1).then(({ data }) => {
-      if (data && data.length > 0) {
-        lastProcessedMsgIdRef.current = data[0].id;
-      }
-    });
-
     // Kênh Realtime nghe tin nhắn và giao dịch SePay
     const channel = supabase
-      .channel('admin_unified_channel')
+      .channel('admin_live_chat_channel')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
         const msg = payload.new;
-        if (msg.id > lastProcessedMsgIdRef.current) {
-          lastProcessedMsgIdRef.current = msg.id;
-          handleIncomingMessage(msg);
-        }
+        handleIncomingMessage(msg);
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'transactions' }, (payload) => {
         const newTx = payload.new;
@@ -147,12 +142,21 @@ export default function AdminPage() {
       })
       .subscribe();
 
+    // Cơ chế polling tự động dự phòng 3 giây
+    const pollInterval = setInterval(() => {
+      if (selectedChatUserRef.current) {
+        loadConversation(selectedChatUserRef.current, false);
+      }
+      loadChatUsers(false);
+    }, 3000);
+
     const timer = setInterval(() => { 
       if (!document.hidden) setNowTime(Date.now()); 
     }, 1000);
 
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(pollInterval);
       clearInterval(timer);
     };
   }, []);
@@ -189,12 +193,12 @@ export default function AdminPage() {
     }
   };
 
-  const loadChatUsers = async () => {
+  const loadChatUsers = async (autoSelectFirst = true) => {
     const { data } = await supabase
       .from('messages')
       .select('sender_username, receiver_username')
       .order('id', { ascending: false })
-      .limit(200);
+      .limit(300);
 
     if (data) {
       const unique = Array.from(
@@ -205,25 +209,27 @@ export default function AdminPage() {
         )
       );
       setChatUsers(unique);
-      if (!selectedChatUserRef.current && unique.length > 0) {
+      if (autoSelectFirst && !selectedChatUserRef.current && unique.length > 0) {
         setSelectedChatUser(unique[0]);
         loadConversation(unique[0]);
       }
     }
   };
 
-  const loadConversation = async (targetUser: string) => {
-    setUnreadCounts((prev) => ({
-      ...prev,
-      [targetUser]: 0
-    }));
+  const loadConversation = async (targetUser: string, resetUnread = true) => {
+    if (resetUnread) {
+      setUnreadCounts((prev) => ({
+        ...prev,
+        [targetUser]: 0
+      }));
+    }
 
     const { data } = await supabase
       .from('messages')
       .select('id, sender_username, sender_role, receiver_username, message, created_at')
       .or(`sender_username.eq.${targetUser},receiver_username.eq.${targetUser}`)
       .order('id', { ascending: true })
-      .limit(100);
+      .limit(200);
 
     if (data) {
       setChatMessages(data);
@@ -249,7 +255,6 @@ export default function AdminPage() {
     setSendingReply(false);
 
     if (!error && data) {
-      lastProcessedMsgIdRef.current = Math.max(lastProcessedMsgIdRef.current, data.id);
       setChatMessages((prev) => {
         if (prev.some((m) => m.id === data.id)) return prev;
         return [...prev, data];
@@ -271,6 +276,18 @@ export default function AdminPage() {
       alert('Đã xóa cuộc hội thoại thành công!');
     } else {
       alert('Lỗi xóa hội thoại: ' + error.message);
+    }
+  };
+
+  const formatMsgTime = (timestamp?: string) => {
+    if (!timestamp) return '';
+    try {
+      const d = new Date(timestamp);
+      const timeStr = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      const dateStr = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+      return `${timeStr} - ${dateStr}`;
+    } catch (e) {
+      return '';
     }
   };
 
@@ -902,7 +919,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 2: KHO ACC TOOL (PHÂN TÁCH CÒN HẠN VÀ HẾT HẠN) ================= */}
+        {/* ================= TAB 2: KHO ACC TOOL ================= */}
         {activeTab === 'gist_accounts' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 sm:p-7 space-y-8 shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
@@ -952,7 +969,6 @@ export default function AdminPage() {
               </div>
             ) : (
               <div className="space-y-8">
-                
                 {/* 1. KHU VỰC TÀI KHOẢN ĐANG HOẠT ĐỘNG & VĨNH VIỄN */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -1235,22 +1251,22 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 3: TRUNG TÂM LIVE CHAT ================= */}
+        {/* ================= TAB 3: TRUNG TÂM LIVE CHAT THỜI GIAN THỰC ================= */}
         {activeTab === 'chat' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
               <div>
                 <h2 className="text-sm font-bold text-white uppercase flex items-center gap-2">
-                  <Headset className="w-4 h-4 text-cyan-400" /> TRUNG TÂM CHAT & HỖ TRỢ KHÁCH HÀNG
+                  <Headset className="w-4 h-4 text-cyan-400" /> TRUNG TÂM CHAT & HỖ TRỢ KHÁCH HÀNG (REALTIME)
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">Trò chuyện và hỗ trợ trực tiếp thời gian thực cho từng khách hàng</p>
+                <p className="text-xs text-slate-400 mt-0.5">Tự động nhận và cập nhật tin nhắn tức thì • Hiển thị chi tiết thời gian gửi</p>
               </div>
-              <button onClick={loadChatUsers} className="bg-[#05080E] border border-slate-800 hover:border-cyan-400 text-cyan-300 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer transition">
+              <button onClick={() => { loadChatUsers(); if (selectedChatUser) loadConversation(selectedChatUser); }} className="bg-[#05080E] border border-slate-800 hover:border-cyan-400 text-cyan-300 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer transition">
                 <RefreshCw className="w-3.5 h-3.5" /> Làm mới hội thoại
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-[500px]">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-[530px]">
               <div className="md:col-span-4 bg-[#05080E] border border-slate-800 rounded-2xl p-3 space-y-2 overflow-y-auto">
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block px-2">Khách hàng cần hỗ trợ ({chatUsers.length})</span>
                 {chatUsers.length === 0 ? (
@@ -1306,22 +1322,32 @@ export default function AdminPage() {
                       </button>
                     </div>
 
-                    <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#05080E] text-xs">
-                      {chatMessages.map((m, idx) => {
-                        const isAdmin = m.sender_username === 'admin';
-                        return (
-                          <div key={idx} className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}>
-                            <span className="text-[9px] text-slate-500 mb-0.5 font-mono">{isAdmin ? 'Admin (Bạn)' : m.sender_username}</span>
-                            <div className={`p-3 rounded-2xl max-w-[80%] leading-relaxed ${
-                              isAdmin 
-                                ? 'bg-cyan-500 text-slate-950 font-bold rounded-tr-none shadow-md' 
-                                : 'bg-[#0B1019] border border-slate-800 text-slate-100 rounded-tl-none'
-                            }`}>
-                              {m.message}
+                    <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-[#05080E] text-xs">
+                      {chatMessages.length === 0 ? (
+                        <div className="text-center py-12 text-slate-500 text-xs">
+                          Chưa có tin nhắn nào trong hội thoại này.
+                        </div>
+                      ) : (
+                        chatMessages.map((m, idx) => {
+                          const isAdmin = m.sender_username === 'admin';
+                          return (
+                            <div key={idx} className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}>
+                              <span className="text-[9px] text-slate-500 mb-1 font-mono">{isAdmin ? 'Admin (Bạn)' : m.sender_username}</span>
+                              <div className={`p-3 rounded-2xl max-w-[80%] leading-relaxed ${
+                                isAdmin 
+                                  ? 'bg-cyan-500 text-slate-950 font-bold rounded-tr-none shadow-md' 
+                                  : 'bg-[#0B1019] border border-slate-800 text-slate-100 rounded-tl-none'
+                              }`}>
+                                <p className="whitespace-pre-wrap break-words text-xs">{m.message}</p>
+                              </div>
+                              <span className="text-[9px] text-slate-500 font-mono mt-1 px-1">
+                                {formatMsgTime(m.created_at)}
+                              </span>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })
+                      )}
+                      <div ref={chatBottomRef} />
                     </div>
 
                     <form onSubmit={handleAdminSendReply} className="p-3 bg-[#080D15] border-t border-slate-800 flex items-center gap-2">
@@ -1353,7 +1379,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 4: SẢN PHẨM TOOL ================= */}
+        {/* TAB 4: SẢN PHẨM TOOL */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
@@ -1438,7 +1464,7 @@ export default function AdminPage() {
                 <textarea value={toolForm.description} onChange={e => setToolForm({ ...toolForm, description: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white leading-relaxed" rows={3} placeholder="Mô tả các tính năng chính của tool..." />
               </div>
 
-              {/* KHUNG NHẬP CHANGELOG KÈM BỘ NÚT CHÈN MẪU PHIÊN BẢN */}
+              {/* KHUNG NHẬP CHANGELOG */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] text-cyan-400 font-bold flex items-center gap-1.5">
@@ -1483,7 +1509,7 @@ export default function AdminPage() {
               </button>
             </form>
             
-            {/* DANH SÁCH TOOL VỚI NÚT SỬA NHANH TỪNG SẢN PHẨM */}
+            {/* DANH SÁCH TOOL */}
             <div className="lg:col-span-2 bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <h3 className="text-xs font-bold text-white uppercase">DANH SÁCH TOOL ĐANG BÁN ({tools.length})</h3>
@@ -1570,37 +1596,7 @@ export default function AdminPage() {
                             {t.changelog}
                           </p>
                         </div>
-                      ) : (
-                        <div className="text-[11px] text-slate-500 bg-[#0B1019] border border-slate-800/40 p-2 rounded-xl flex items-center justify-between">
-                          <span className="italic">Chưa nhập nhật ký bản cập nhật cho tool này.</span>
-                          <button 
-                            onClick={() => {
-                              setToolForm({
-                                id: t.id,
-                                name: t.name || '',
-                                toolCode: t.toolCode || '',
-                                image: t.image || '',
-                                status: t.status || 'Đang hoạt động',
-                                priceDay: t.priceDay || '',
-                                priceWeek: t.priceWeek || '',
-                                priceMonth: t.priceMonth || '',
-                                priceLifetime: t.priceLifetime || '',
-                                description: t.description || '',
-                                downloadLink: t.downloadLink || '',
-                                videoLink: t.videoLink || '',
-                                version: t.version || '',
-                                changelog: t.changelog || ''
-                              }); 
-                              setPreviewUrl(t.image); 
-                              setIsEditingTool(true); 
-                              window.scrollTo({ top: 400, behavior: 'smooth' });
-                            }}
-                            className="text-cyan-400 font-bold hover:underline text-[10px] cursor-pointer"
-                          >
-                            + Thêm ngay
-                          </button>
-                        </div>
-                      )}
+                      ) : null}
 
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-[#0B1019] border border-slate-800 p-2.5 rounded-xl text-[11px]">
                         <div><span className="text-slate-500 block">Ngày:</span><b className="text-emerald-400 font-mono">{t.priceDay ? `${Number(t.priceDay).toLocaleString('vi-VN')}đ` : '---'}</b></div>
@@ -1745,8 +1741,6 @@ export default function AdminPage() {
         {/* TAB 9: THÔNG BÁO CHUNG & SỰ KIỆN */}
         {activeTab === 'settings' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            {/* CỤM 1: CẤU HÌNH SỰ KIỆN NẠP TIỀN */}
             <div className="bg-[#0B1019] border-2 border-emerald-500/40 rounded-3xl p-6 space-y-4 h-fit shadow-xl shadow-emerald-500/5">
               <h3 className="text-sm font-black text-emerald-400 flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase">
                 <Gift className="w-4 h-4 text-emerald-400" /> SỰ KIỆN KHUYẾN MÃI NẠP TIỀN
@@ -1787,7 +1781,6 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* CỤM 2: THÔNG BÁO HỆ THỐNG */}
             <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
               <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase">
                 <Bell className="w-4 h-4 text-amber-400" /> Soạn thảo thông báo chung
@@ -1820,13 +1813,12 @@ export default function AdminPage() {
                 </button>
               </div>
             </div>
-
           </div>
         )}
 
       </div>
 
-      {/* ================= MODAL GIA HẠN THỜI GIAN CHO KEY ================= */}
+      {/* MODAL GIA HẠN THỜI GIAN CHO KEY */}
       {extendModalData && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-md rounded-3xl p-6 sm:p-7 space-y-5 relative shadow-[0_0_50px_rgba(6,182,212,0.3)]">
