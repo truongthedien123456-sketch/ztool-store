@@ -35,6 +35,7 @@ export default function AdminPage() {
   
   // Ref trực tiếp vào khung chứa tin nhắn nội bộ
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const audioUnlockedRef = useRef<boolean>(false);
 
   // State Thông báo & Sự kiện nạp tiền
   const [noticeForm, setNoticeForm] = useState({ text: '', active: false });
@@ -98,31 +99,71 @@ export default function AdminPage() {
     }
   }, [chatMessages]);
 
-  // Phát chuông thông báo
+  // Bộ phát âm thanh chuông thông báo đa tầng, vượt qua mọi chính sách chặn Autoplay của trình duyệt
   const playNotificationSound = () => {
     try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioContextClass) {
-        const ctx = new AudioContextClass();
-        if (ctx.state === 'suspended') {
-          ctx.resume();
-        }
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(800, ctx.currentTime);
-        osc.frequency.setValueAtTime(1200, ctx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.3);
+      // 1. Thử phát bằng Audio Element trực tiếp
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      audio.volume = 0.8;
+      const playPromise = audio.play();
+
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // 2. Dự phòng dùng Web Audio Synthesizer nếu Audio Element bị trình duyệt giữ lại
+          try {
+            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+            if (AudioContextClass) {
+              const ctx = new AudioContextClass();
+              if (ctx.state === 'suspended') {
+                ctx.resume();
+              }
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(880, ctx.currentTime);
+              osc.frequency.setValueAtTime(1320, ctx.currentTime + 0.1);
+              gain.gain.setValueAtTime(0.35, ctx.currentTime);
+              gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start();
+              osc.stop(ctx.currentTime + 0.4);
+            }
+          } catch (err) {}
+        });
       }
     } catch (e) {
       console.error('Audio error:', e);
     }
   };
+
+  useEffect(() => {
+    // Lắng nghe tương tác chuột đầu tiên để kích hoạt quyền Audio trên trình duyệt
+    const handleUnlockAudio = () => {
+      if (!audioUnlockedRef.current) {
+        try {
+          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+          if (AudioContextClass) {
+            const ctx = new AudioContextClass();
+            if (ctx.state === 'suspended') ctx.resume();
+          }
+          const dummyAudio = new Audio();
+          dummyAudio.play().catch(() => {});
+          audioUnlockedRef.current = true;
+        } catch (e) {}
+      }
+      window.removeEventListener('click', handleUnlockAudio);
+      window.removeEventListener('keydown', handleUnlockAudio);
+    };
+
+    window.addEventListener('click', handleUnlockAudio);
+    window.addEventListener('keydown', handleUnlockAudio);
+
+    return () => {
+      window.removeEventListener('click', handleUnlockAudio);
+      window.removeEventListener('keydown', handleUnlockAudio);
+    };
+  }, []);
 
   useEffect(() => {
     const isLogged = localStorage.getItem('ztool_admin_authenticated');
