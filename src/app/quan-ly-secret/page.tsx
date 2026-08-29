@@ -33,9 +33,10 @@ export default function AdminPage() {
   const [adminReplyText, setAdminReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
   
-  // Ref trực tiếp vào khung chứa tin nhắn nội bộ
+  // Ref quản lý khung cuộn, AudioContext và bộ nhớ tin nhắn đã quét
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const audioUnlockedRef = useRef<boolean>(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const knownMsgIdsRef = useRef<Set<number>>(new Set());
 
   // State Thông báo & Sự kiện nạp tiền
   const [noticeForm, setNoticeForm] = useState({ text: '', active: false });
@@ -92,66 +93,77 @@ export default function AdminPage() {
     selectedChatUserRef.current = selectedChatUser;
   }, [selectedChatUser]);
 
-  // Cuộn thanh cuộn bên trong khung chat (không làm trượt toàn trang)
+  // Tự động cuộn mượt mà bên trong khung chat
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [chatMessages]);
 
-  // Bộ phát âm thanh chuông thông báo đa tầng, vượt qua mọi chính sách chặn Autoplay của trình duyệt
-  const playNotificationSound = () => {
+  // Khởi tạo AudioContext an toàn và sẵn sàng hoạt động
+  const initAudio = () => {
     try {
-      // 1. Thử phát bằng Audio Element trực tiếp
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-      audio.volume = 0.8;
-      const playPromise = audio.play();
-
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          // 2. Dự phòng dùng Web Audio Synthesizer nếu Audio Element bị trình duyệt giữ lại
-          try {
-            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-            if (AudioContextClass) {
-              const ctx = new AudioContextClass();
-              if (ctx.state === 'suspended') {
-                ctx.resume();
-              }
-              const osc = ctx.createOscillator();
-              const gain = ctx.createGain();
-              osc.type = 'sine';
-              osc.frequency.setValueAtTime(880, ctx.currentTime);
-              osc.frequency.setValueAtTime(1320, ctx.currentTime + 0.1);
-              gain.gain.setValueAtTime(0.35, ctx.currentTime);
-              gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-              osc.connect(gain);
-              gain.connect(ctx.destination);
-              osc.start();
-              osc.stop(ctx.currentTime + 0.4);
-            }
-          } catch (err) {}
-        });
+      if (!audioCtxRef.current) {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContextClass) {
+          audioCtxRef.current = new AudioContextClass();
+        }
+      }
+      if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume().catch(() => {});
       }
     } catch (e) {
-      console.error('Audio error:', e);
+      console.error(e);
     }
   };
 
+  // Phát âm thanh thông báo tin nhắn dịu tai, trong trẻo và sang trọng (Soft Telegram/iOS Chime)
+  const playNotificationSound = () => {
+    try {
+      initAudio();
+      const ctx = audioCtxRef.current;
+      if (!ctx) return;
+
+      const t = ctx.currentTime;
+
+      // Nốt 1: E5 (659.25 Hz) - Âm vang mở đầu êm dịu
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(659.25, t);
+
+      gain1.gain.setValueAtTime(0, t);
+      gain1.gain.linearRampToValueAtTime(0.2, t + 0.02);
+      gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(t);
+      osc1.stop(t + 0.35);
+
+      // Nốt 2: B5 (987.77 Hz) - Âm ngân cao thanh tao
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(987.77, t + 0.09);
+
+      gain2.gain.setValueAtTime(0, t + 0.09);
+      gain2.gain.linearRampToValueAtTime(0.25, t + 0.11);
+      gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(t + 0.09);
+      osc2.stop(t + 0.55);
+    } catch (e) {
+      console.error('Lỗi phát chuông:', e);
+    }
+  };
+
+  // Mở khóa âm thanh ngay khi người dùng click chuột bất kỳ đâu
   useEffect(() => {
-    // Lắng nghe tương tác chuột đầu tiên để kích hoạt quyền Audio trên trình duyệt
     const handleUnlockAudio = () => {
-      if (!audioUnlockedRef.current) {
-        try {
-          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-          if (AudioContextClass) {
-            const ctx = new AudioContextClass();
-            if (ctx.state === 'suspended') ctx.resume();
-          }
-          const dummyAudio = new Audio();
-          dummyAudio.play().catch(() => {});
-          audioUnlockedRef.current = true;
-        } catch (e) {}
-      }
+      initAudio();
       window.removeEventListener('click', handleUnlockAudio);
       window.removeEventListener('keydown', handleUnlockAudio);
     };
@@ -171,14 +183,25 @@ export default function AdminPage() {
       setIsAuthenticated(true);
       loadAllSyncData();
       loadChatUsers();
+      initAudio();
     }
 
-    // Kênh Realtime nghe tin nhắn và giao dịch SePay
+    // Nạp trước các ID tin nhắn cũ để không kêu khi vừa tải trang
+    supabase.from('messages').select('id').order('id', { ascending: false }).limit(300).then(({ data }) => {
+      if (data) {
+        data.forEach(m => knownMsgIdsRef.current.add(m.id));
+      }
+    });
+
+    // Kênh Realtime lắng nghe tin nhắn mới tức thời
     const channel = supabase
       .channel('admin_live_chat_channel')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
         const msg = payload.new;
-        handleIncomingMessage(msg);
+        if (!knownMsgIdsRef.current.has(msg.id)) {
+          knownMsgIdsRef.current.add(msg.id);
+          handleIncomingMessage(msg);
+        }
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'transactions' }, (payload) => {
         const newTx = payload.new;
@@ -188,7 +211,7 @@ export default function AdminPage() {
       })
       .subscribe();
 
-    // Cơ chế polling tự động dự phòng 3 giây
+    // Polling ngầm 3 giây quét tin nhắn đề phòng mạng mất kết nối socket
     const pollInterval = setInterval(() => {
       if (selectedChatUserRef.current) {
         loadConversation(selectedChatUserRef.current, false);
@@ -278,6 +301,20 @@ export default function AdminPage() {
       .limit(200);
 
     if (data) {
+      let hasNewUserMsg = false;
+      data.forEach(m => {
+        if (!knownMsgIdsRef.current.has(m.id)) {
+          knownMsgIdsRef.current.add(m.id);
+          if (m.sender_role === 'user') {
+            hasNewUserMsg = true;
+          }
+        }
+      });
+
+      if (hasNewUserMsg) {
+        playNotificationSound();
+      }
+
       setChatMessages(data);
     }
   };
@@ -301,6 +338,7 @@ export default function AdminPage() {
     setSendingReply(false);
 
     if (!error && data) {
+      knownMsgIdsRef.current.add(data.id);
       setChatMessages((prev) => {
         if (prev.some((m) => m.id === data.id)) return prev;
         return [...prev, data];
@@ -560,6 +598,7 @@ export default function AdminPage() {
       localStorage.setItem('ztool_admin_authenticated', 'true');
       setIsAuthenticated(true);
       setLoginError('');
+      initAudio();
       loadAllSyncData();
       loadChatUsers();
       playNotificationSound();
@@ -857,7 +896,7 @@ export default function AdminPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={playNotificationSound} className="bg-[#05080E] border border-slate-800 hover:border-cyan-400 text-slate-400 hover:text-cyan-300 p-2.5 rounded-xl transition cursor-pointer" title="Test âm thanh"><Volume2 className="w-4 h-4" /></button>
+          <button onClick={playNotificationSound} className="bg-[#05080E] border border-slate-800 hover:border-cyan-400 text-slate-400 hover:text-cyan-300 p-2.5 rounded-xl transition cursor-pointer" title="Thử chuông thông báo"><Volume2 className="w-4 h-4" /></button>
           <button onClick={loadAllSyncData} className="bg-[#05080E] border border-slate-800 hover:border-cyan-400 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition cursor-pointer shadow-sm"><RefreshCw className="w-3.5 h-3.5 text-cyan-400" /> Tải lại dữ liệu Cloud</button>
           <button onClick={handleAdminLogout} className="bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-400 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-2 transition cursor-pointer shadow-sm"><LogOut className="w-3.5 h-3.5" /> Đăng xuất</button>
         </div>
