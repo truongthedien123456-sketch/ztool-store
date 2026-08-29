@@ -32,7 +32,9 @@ export default function AdminPage() {
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [adminReplyText, setAdminReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
-  const chatBottomRef = useRef<HTMLDivElement>(null);
+  
+  // Ref trực tiếp vào khung chứa tin nhắn nội bộ
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // State Thông báo & Sự kiện nạp tiền
   const [noticeForm, setNoticeForm] = useState({ text: '', active: false });
@@ -89,8 +91,11 @@ export default function AdminPage() {
     selectedChatUserRef.current = selectedChatUser;
   }, [selectedChatUser]);
 
+  // Cuộn thanh cuộn bên trong khung chat (không làm trượt toàn trang)
   useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, [chatMessages]);
 
   // Phát chuông thông báo
@@ -919,7 +924,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 2: KHO ACC TOOL ================= */}
+        {/* ================= TAB 2: KHO ACC TOOL (PHÂN TÁCH CÒN HẠN VÀ HẾT HẠN) ================= */}
         {activeTab === 'gist_accounts' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 sm:p-7 space-y-8 shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
@@ -969,6 +974,7 @@ export default function AdminPage() {
               </div>
             ) : (
               <div className="space-y-8">
+                
                 {/* 1. KHU VỰC TÀI KHOẢN ĐANG HOẠT ĐỘNG & VĨNH VIỄN */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -1251,7 +1257,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 3: TRUNG TÂM LIVE CHAT THỜI GIAN THỰC ================= */}
+        {/* ================= TAB 3: TRUNG TÂM LIVE CHAT ================= */}
         {activeTab === 'chat' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
@@ -1322,7 +1328,11 @@ export default function AdminPage() {
                       </button>
                     </div>
 
-                    <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-[#05080E] text-xs">
+                    {/* VÙNG HIỂN THỊ TIN NHẮN TỰ ĐỘNG CUỘN NỘI BỘ */}
+                    <div 
+                      ref={chatContainerRef}
+                      className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-[#05080E] text-xs"
+                    >
                       {chatMessages.length === 0 ? (
                         <div className="text-center py-12 text-slate-500 text-xs">
                           Chưa có tin nhắn nào trong hội thoại này.
@@ -1332,7 +1342,10 @@ export default function AdminPage() {
                           const isAdmin = m.sender_username === 'admin';
                           return (
                             <div key={idx} className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}>
-                              <span className="text-[9px] text-slate-500 mb-1 font-mono">{isAdmin ? 'Admin (Bạn)' : m.sender_username}</span>
+                              <span className="text-[9px] text-slate-500 mb-1 font-mono">
+                                {isAdmin ? 'Admin (Bạn)' : m.sender_username}
+                              </span>
+
                               <div className={`p-3 rounded-2xl max-w-[80%] leading-relaxed ${
                                 isAdmin 
                                   ? 'bg-cyan-500 text-slate-950 font-bold rounded-tr-none shadow-md' 
@@ -1340,6 +1353,7 @@ export default function AdminPage() {
                               }`}>
                                 <p className="whitespace-pre-wrap break-words text-xs">{m.message}</p>
                               </div>
+
                               <span className="text-[9px] text-slate-500 font-mono mt-1 px-1">
                                 {formatMsgTime(m.created_at)}
                               </span>
@@ -1347,7 +1361,6 @@ export default function AdminPage() {
                           );
                         })
                       )}
-                      <div ref={chatBottomRef} />
                     </div>
 
                     <form onSubmit={handleAdminSendReply} className="p-3 bg-[#080D15] border-t border-slate-800 flex items-center gap-2">
@@ -1509,7 +1522,7 @@ export default function AdminPage() {
               </button>
             </form>
             
-            {/* DANH SÁCH TOOL */}
+            {/* DANH SÁCH TOOL VỚI NÚT SỬA NHANH TỪNG SẢN PHẨM */}
             <div className="lg:col-span-2 bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <h3 className="text-xs font-bold text-white uppercase">DANH SÁCH TOOL ĐANG BÁN ({tools.length})</h3>
@@ -1596,7 +1609,37 @@ export default function AdminPage() {
                             {t.changelog}
                           </p>
                         </div>
-                      ) : null}
+                      ) : (
+                        <div className="text-[11px] text-slate-500 bg-[#0B1019] border border-slate-800/40 p-2 rounded-xl flex items-center justify-between">
+                          <span className="italic">Chưa nhập nhật ký bản cập nhật cho tool này.</span>
+                          <button 
+                            onClick={() => {
+                              setToolForm({
+                                id: t.id,
+                                name: t.name || '',
+                                toolCode: t.toolCode || '',
+                                image: t.image || '',
+                                status: t.status || 'Đang hoạt động',
+                                priceDay: t.priceDay || '',
+                                priceWeek: t.priceWeek || '',
+                                priceMonth: t.priceMonth || '',
+                                priceLifetime: t.priceLifetime || '',
+                                description: t.description || '',
+                                downloadLink: t.downloadLink || '',
+                                videoLink: t.videoLink || '',
+                                version: t.version || '',
+                                changelog: t.changelog || ''
+                              }); 
+                              setPreviewUrl(t.image); 
+                              setIsEditingTool(true); 
+                              window.scrollTo({ top: 400, behavior: 'smooth' });
+                            }}
+                            className="text-cyan-400 font-bold hover:underline text-[10px] cursor-pointer"
+                          >
+                            + Thêm ngay
+                          </button>
+                        </div>
+                      )}
 
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-[#0B1019] border border-slate-800 p-2.5 rounded-xl text-[11px]">
                         <div><span className="text-slate-500 block">Ngày:</span><b className="text-emerald-400 font-mono">{t.priceDay ? `${Number(t.priceDay).toLocaleString('vi-VN')}đ` : '---'}</b></div>
@@ -1741,6 +1784,8 @@ export default function AdminPage() {
         {/* TAB 9: THÔNG BÁO CHUNG & SỰ KIỆN */}
         {activeTab === 'settings' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* CỤM 1: CẤU HÌNH SỰ KIỆN NẠP TIỀN */}
             <div className="bg-[#0B1019] border-2 border-emerald-500/40 rounded-3xl p-6 space-y-4 h-fit shadow-xl shadow-emerald-500/5">
               <h3 className="text-sm font-black text-emerald-400 flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase">
                 <Gift className="w-4 h-4 text-emerald-400" /> SỰ KIỆN KHUYẾN MÃI NẠP TIỀN
@@ -1781,6 +1826,7 @@ export default function AdminPage() {
               </div>
             </div>
 
+            {/* CỤM 2: THÔNG BÁO HỆ THỐNG */}
             <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
               <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-800/80 pb-3 uppercase">
                 <Bell className="w-4 h-4 text-amber-400" /> Soạn thảo thông báo chung
@@ -1813,12 +1859,13 @@ export default function AdminPage() {
                 </button>
               </div>
             </div>
+
           </div>
         )}
 
       </div>
 
-      {/* MODAL GIA HẠN THỜI GIAN CHO KEY */}
+      {/* ================= MODAL GIA HẠN THỜI GIAN CHO KEY ================= */}
       {extendModalData && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-md rounded-3xl p-6 sm:p-7 space-y-5 relative shadow-[0_0_50px_rgba(6,182,212,0.3)]">
