@@ -1400,7 +1400,7 @@ export default function Navbar() {
 
                   <ul className="space-y-1.5 text-[11px] text-slate-300">
                     {nextTierData.benefits.map((benefit, i) => (
-                      <li key={i} className="flex items-start gap-2">
+                      <li key={i} className="flex items-start gap-2 leading-relaxed">
                         <CheckCircle className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${nextTierData.color}`} />
                         <span>{benefit}</span>
                       </li>
@@ -1497,12 +1497,12 @@ export default function Navbar() {
                   </label>
                   <div className="flex gap-2">
                     <input 
-                      type="email"
-                      placeholder="example@gmail.com..."
-                      value={accountEmailInput}
-                      onChange={(e) => setAccountEmailInput(e.target.value)}
-                      disabled={isVerified}
-                      className="flex-1 bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition disabled:opacity-60 font-mono"
+                      type="email" 
+                      placeholder="example@gmail.com..." 
+                      value={accountEmailInput} 
+                      onChange={(e) => setAccountEmailInput(e.target.value)} 
+                      disabled={isVerified} 
+                      className="flex-1 bg-[#05080E] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition disabled:opacity-60 font-mono" 
                     />
                     {!isVerified && (
                       <button
@@ -1522,12 +1522,12 @@ export default function Navbar() {
                     <label className="block text-xs font-bold text-cyan-300">Nhập mã OTP 6 số từ Gmail:</label>
                     <div className="flex gap-2">
                       <input 
-                        type="text"
-                        maxLength={6}
-                        placeholder="6 số OTP..."
-                        value={otpInput}
-                        onChange={(e) => setOtpInput(e.target.value)}
-                        className="flex-1 bg-[#0B1019] border border-cyan-500/50 rounded-xl px-3.5 py-2.5 text-xs text-center font-mono font-black text-cyan-300 tracking-widest focus:outline-none focus:border-cyan-400"
+                        type="text" 
+                        maxLength={6} 
+                        placeholder="6 số OTP..." 
+                        value={otpInput} 
+                        onChange={(e) => setOtpInput(e.target.value)} 
+                        className="flex-1 bg-[#0B1019] border border-cyan-500/50 rounded-xl px-3.5 py-2.5 text-xs text-center font-mono font-black text-cyan-300 tracking-widest focus:outline-none focus:border-cyan-400" 
                       />
                       <button
                         disabled={emailActionLoading}
@@ -1821,7 +1821,7 @@ export default function Navbar() {
                                   className="text-slate-400 hover:text-white transition cursor-pointer" 
                                   title={isShowPass ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                                 >
-                                  {isShowPass ? <EyeOff className="w-3.5 h-3.5" />} : <Eye className="w-3.5 h-3.5" />}
+                                  {isShowPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                                 </button>
                                 <button 
                                   onClick={() => copyTextToClipboard(toolAcc.appPassword, `pass_${idx}`)} 
@@ -1959,7 +1959,29 @@ export default function Navbar() {
               <button type="submit" disabled={loading} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition cursor-pointer mt-2 shadow-[0_0_15px_rgba(6,182,212,0.3)]">{loading ? 'ĐANG XỬ LÝ...' : authMode === 'login' ? 'ĐĂNG NHẬP NGAY' : 'TẠO TÀI KHOẢN NGAY'}</button>
             </form>
             <div className="text-center pt-2 border-t border-slate-800">
-              {authMode === 'login' ? <p className="text-xs text-slate-400">Chưa có tài khoản? <button onClick={() => { setAuthModalMode('register'); resetForm(); }} className="text-cyan-400 font-bold hover:underline cursor-pointer">Đăng ký ngay</button></p> : <p className="text-xs text-slate-400">Đã có tài khoản? <button onClick={() => { setAuthModalMode('login'); resetForm(); }} className="text-cyan-400 font-bold hover:underline cursor-pointer">Đăng nhập</button></p>}
+              {authMode === 'login' ? (
+                <p className="text-xs text-slate-400">
+                  Chưa có tài khoản?{' '}
+                  <button 
+                    type="button" 
+                    onClick={() => { setAuthModalMode('register'); resetForm(); }} 
+                    className="text-cyan-400 font-bold hover:underline cursor-pointer"
+                  >
+                    Đăng ký ngay
+                  </button>
+                </p>
+              ) : (
+                <p className="text-xs text-slate-400">
+                  Đã có tài khoản?{' '}
+                  <button 
+                    type="button" 
+                    onClick={() => { setAuthModalMode('login'); resetForm(); }} 
+                    className="text-cyan-400 font-bold hover:underline cursor-pointer"
+                  >
+                    Đăng nhập
+                  </button>
+                </p>
+              )}
             </div>
           </div>
         </div>
