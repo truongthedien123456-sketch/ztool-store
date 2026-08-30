@@ -68,7 +68,9 @@ export default function Footer() {
 
               {/* Discord */}
               <a
-                href="#"
+                href="https://discord.gg/sf8pXrMhPb"
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label="Discord"
                 className="
                   flex h-10 w-10 items-center justify-center
@@ -78,11 +80,12 @@ export default function Footer() {
                   text-slate-400
                   transition-all duration-300
                   hover:-translate-y-1
-                  hover:border-cyan-400/60
-                  hover:bg-cyan-500/10
-                  hover:text-cyan-300
-                  hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]
+                  hover:border-indigo-400/80
+                  hover:bg-indigo-600/20
+                  hover:text-indigo-300
+                  hover:shadow-[0_0_20px_rgba(99,102,241,0.55)]
                 "
+                title="Tham gia Discord Server ZTool"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -194,6 +197,25 @@ export default function Footer() {
                 </span>
                 Liên hệ Admin (Zalo)
               </button>
+
+              {/* Link Discord trực tiếp */}
+              <a
+                href="https://discord.gg/sf8pXrMhPb"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="
+                  group flex items-center
+                  text-xs font-bold text-slate-400
+                  transition-all duration-200
+                  hover:translate-x-1.5
+                  hover:text-indigo-300
+                "
+              >
+                <span className="mr-2 text-[10px] text-indigo-400/50 transition-colors group-hover:text-indigo-400">
+                  •
+                </span>
+                Cộng đồng Discord
+              </a>
             </div>
           </div>
 
