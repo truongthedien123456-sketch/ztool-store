@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     }
 
     // 2. Tự động đọc đa dạng tên biến môi trường
-    const GIST_ID = process.env.GITHUB_GIST_ID || process.env.GIST_ID;
+    const GIST_ID = process.env.GITHUB_GIST_ID || process.env.GIST_ID || '21f0a39cbc434e5033d89f06e2c7d26e';
     const GITHUB_TOKEN = process.env.GITHUB_GIST_TOKEN || process.env.GITHUB_TOKEN || process.env.GIST_TOKEN;
 
     if (!GIST_ID) {
@@ -36,10 +36,9 @@ export async function POST(req: Request) {
       }, { status: 500 });
     }
 
-    // Tạo Header linh hoạt (dùng Token nếu có, không có Token vẫn tải được nếu Gist public)
     const headers: Record<string, string> = {
       'User-Agent': 'ZTool-Automation-App',
-      Accept: 'application/vnd.github.v3+json'
+      'Accept': 'application/vnd.github.v3+json'
     };
     if (GITHUB_TOKEN) {
       headers['Authorization'] = `token ${GITHUB_TOKEN}`;
@@ -60,7 +59,7 @@ export async function POST(req: Request) {
     }
 
     const gistData = await gistRes.json();
-    const accounts = JSON.parse(gistData.files['accounts.json'].content || '{}');
+    const accounts = JSON.parse(gistData.files['accounts.json']?.content || '{}');
     const acc = accounts[accountKey];
 
     if (!acc) {
@@ -77,16 +76,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Tài khoản đã hết hạn sử dụng' });
     }
 
-    // 4. Kiểm tra & Cập nhật HWID + Nhịp tim thời gian thực
+    // 4. Kiểm tra & Cập nhật HWID + Nhịp tim thời gian thực (Timeout: 30 giây)
     const now = Date.now();
     const lastActive = acc.last_active || 0;
-    const isOldDeviceTimeout = (now - lastActive) > 180000; // 3 phút không gửi nhịp tim -> Tự giải phóng HWID
+    const isOldDeviceTimeout = (now - lastActive) > 30000; // Quá 30 giây không gửi nhịp tim -> Tự giải phóng HWID
 
     if (acc.device_id && acc.device_id !== '' && acc.device_id !== 'Chưa liên kết') {
       if (acc.device_id !== hwid && !isOldDeviceTimeout) {
         return NextResponse.json({
           success: false,
-          message: `Tài khoản đang chạy trên thiết bị khác (${acc.device_id}). Hãy tắt tool ở máy cũ hoặc đợi 3 phút.`
+          message: `Tài khoản đang chạy trên thiết bị khác (${acc.device_id}). Hãy tắt tool ở máy cũ hoặc đợi 30 giây.`
         });
       }
     }
@@ -100,7 +99,7 @@ export async function POST(req: Request) {
       fetch(`https://api.github.com/gists/${GIST_ID}`, {
         method: 'PATCH',
         headers: {
-          Authorization: `token ${GITHUB_TOKEN}`,
+          'Authorization': `token ${GITHUB_TOKEN}`,
           'User-Agent': 'ZTool-Automation-App',
           'Content-Type': 'application/json',
         },

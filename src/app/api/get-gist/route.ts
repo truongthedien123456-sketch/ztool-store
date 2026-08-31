@@ -18,7 +18,7 @@ export async function GET() {
     };
 
     if (GITHUB_TOKEN) {
-      headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+      headers['Authorization'] = `token ${GITHUB_TOKEN}`;
     }
 
     const res = await fetch(`https://api.github.com/gists/${GIST_ID}?t=${Date.now()}`, {
@@ -40,13 +40,13 @@ export async function GET() {
     const now = Date.now();
     let hasCleaned = false;
 
-    // Tự động giải phóng HWID nếu tool offline quá 2 phút (120 giây)
+    // Tự động giải phóng HWID nếu tool offline quá 30 giây (30000ms)
     for (const key of Object.keys(parsed)) {
       const acc = parsed[key];
       const lastActive = acc.last_active || 0;
       
       if (acc.device_id && acc.device_id !== '' && acc.device_id !== 'Chưa liên kết') {
-        if ((now - lastActive) > 120000) {
+        if ((now - lastActive) > 30000) {
           acc.device_id = 'Chưa liên kết';
           hasCleaned = true;
         }
@@ -58,7 +58,7 @@ export async function GET() {
       fetch(`https://api.github.com/gists/${GIST_ID}`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'Authorization': `token ${GITHUB_TOKEN}`,
           'User-Agent': 'ZTool-Automation-App',
           'Accept': 'application/vnd.github+json',
           'Content-Type': 'application/json',
