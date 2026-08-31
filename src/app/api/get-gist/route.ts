@@ -21,6 +21,7 @@ export async function GET() {
       headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
     }
 
+    // Luôn lấy dữ liệu mới nhất, không cache
     const res = await fetch(`https://api.github.com/gists/${GIST_ID}?t=${Date.now()}`, {
       method: 'GET',
       headers,
@@ -37,37 +38,7 @@ export async function GET() {
     const contentRaw = data.files['accounts.json']?.content || '{}';
     const parsed = JSON.parse(contentRaw);
 
-    const now = Date.now();
-    let hasCleaned = false;
-
-    // Tự động gỡ HWID sau 10 giây mất kết nối nhịp tim
-    for (const key of Object.keys(parsed)) {
-      const acc = parsed[key];
-      const lastActive = Number(acc.last_active) || 0;
-      
-      if (acc.device_id && acc.device_id !== '' && acc.device_id !== 'Chưa liên kết') {
-        if (lastActive > 0 && (now - lastActive) > 10000) {
-          acc.device_id = 'Chưa liên kết';
-          hasCleaned = true;
-        }
-      }
-    }
-
-    if (hasCleaned && GITHUB_TOKEN) {
-      await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${GITHUB_TOKEN}`,
-          'User-Agent': 'ZTool-Automation-App',
-          'Accept': 'application/vnd.github+json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          files: { 'accounts.json': { content: JSON.stringify(parsed, null, 2) } }
-        })
-      });
-    }
-
+    // Trả về trực tiếp dữ liệu chính xác trên Gist mà không can thiệp reset
     return NextResponse.json({ success: true, data: parsed }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
