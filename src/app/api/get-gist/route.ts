@@ -33,14 +33,26 @@ export async function GET() {
     // 3. Hợp nhất dữ liệu hiển thị lên Admin Panel
     for (const key of Object.keys(parsed)) {
       const dbInfo = sessionMap.get(key.toLowerCase());
+      let lastActive = 0;
+      let dbHWID = '';
+
       if (dbInfo) {
-        const lastActive = Number(dbInfo.last_active) || 0;
-        const isOnline = (now - lastActive) <= 30000; // Online nếu trong 30s có gửi nhịp
-        
-        parsed[key].is_online = isOnline;
-        if (dbInfo.device_id && dbInfo.device_id !== 'Chưa liên kết') {
-          parsed[key].device_id = dbInfo.device_id;
-        }
+        lastActive = Number(dbInfo.last_active) || 0;
+        dbHWID = dbInfo.device_id || '';
+      } else {
+        lastActive = Number(parsed[key].last_active) || 0;
+        dbHWID = parsed[key].device_id || '';
+      }
+
+      // Online nếu trong 15 giây gần nhất có gửi nhịp tim
+      const isOnline = lastActive > 0 && (now - lastActive) <= 15000;
+      parsed[key].is_online = isOnline;
+
+      if (isOnline) {
+        parsed[key].device_id = (dbHWID && dbHWID !== 'Chưa liên kết') ? dbHWID : (parsed[key].device_id || 'Chưa liên kết');
+      } else {
+        // Nếu Offline -> Tự động chuyển về Chưa liên kết
+        parsed[key].device_id = 'Chưa liên kết';
       }
     }
 
