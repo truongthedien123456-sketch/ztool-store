@@ -6,7 +6,7 @@ import {
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
   Ban, CheckCircle, CheckCircle2, CreditCard, KeyRound, Search, DollarSign, Settings,
-  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent, Crown, Gem, Flame, Star, Award, Video, Send, Headset, Volume2, FileText, Check, Gift, Hourglass, AlertTriangle
+  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent, Crown, Gem, Flame, Star, Award, Video, Send, Headset, Volume2, FileText, Check, Gift, Hourglass, AlertTriangle, PauseCircle, PlayCircle
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -48,6 +48,7 @@ export default function AdminPage() {
   const [resettingHwid, setResettingHwid] = useState<string | null>(null);
   const [deletingGistKey, setDeletingGistKey] = useState<string | null>(null);
   const [nowTime, setNowTime] = useState(Date.now());
+  const [togglingToolId, setTogglingToolId] = useState<number | null>(null);
 
   // Modal Gia hạn Key Tool
   const [extendModalData, setExtendModalData] = useState<{ accountKey: string; currentExpire: number } | null>(null);
@@ -491,6 +492,40 @@ export default function AdminPage() {
     } catch (err: any) {
       setExtendingLoading(false);
       alert(`Lỗi kết nối: ${err.message}`);
+    }
+  };
+
+  // Bật / Tắt Tạm ngưng và Đóng băng thời gian
+  const handleToggleToolStatus = async (tool: any) => {
+    const nextStatus = tool.status === 'Đang hoạt động' ? 'Tạm ngưng' : 'Đang hoạt động';
+    const confirmMsg = nextStatus === 'Tạm ngưng' 
+      ? `TẠM NGƯNG Tool "${tool.name}"?\n\n• Tool sẽ chặn khách đăng nhập.\n• Toàn bộ thời gian bản quyền của khách sẽ được ĐÓNG BĂNG tự động!`
+      : `MỞ LẠI HOẠT ĐỘNG cho Tool "${tool.name}"?\n\n• Hệ thống sẽ TỰ ĐỘNG BÙ LẠI toàn bộ thời gian đã bảo trì cho tất cả khách hàng.`;
+
+    if (!confirm(confirmMsg)) return;
+
+    setTogglingToolId(tool.id);
+    try {
+      const res = await fetch('/api/toggle-tool-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toolId: tool.id,
+          toolCode: tool.toolCode,
+          newStatus: nextStatus
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        loadAllSyncData();
+      } else {
+        alert('Lỗi: ' + data.message);
+      }
+    } catch (e: any) {
+      alert('Lỗi kết nối máy chủ: ' + e.message);
+    } finally {
+      setTogglingToolId(null);
     }
   };
 
@@ -1004,7 +1039,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 2: KHO ACC TOOL (PHÂN TÁCH CÒN HẠN VÀ HẾT HẠN) ================= */}
+        {/* ================= TAB 2: KHO ACC TOOL ================= */}
         {activeTab === 'gist_accounts' && (
           <div className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 sm:p-7 space-y-8 shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
@@ -1602,133 +1637,157 @@ export default function AdminPage() {
               </button>
             </form>
             
-            {/* DANH SÁCH TOOL VỚI NÚT SỬA NHANH TỪNG SẢN PHẨM */}
+            {/* DANH SÁCH TOOL VỚI NÚT SỬA & TẠM NGƯNG ĐÓNG BĂNG */}
             <div className="lg:col-span-2 bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <h3 className="text-xs font-bold text-white uppercase">DANH SÁCH TOOL ĐANG BÁN ({tools.length})</h3>
-                <span className="text-[11px] text-slate-400">Bấm nút Sửa để cập nhật phiên bản & lịch sử</span>
+                <span className="text-[11px] text-slate-400">Bấm nút "Tạm ngưng" để đóng băng & tự động bù giờ cho khách</span>
               </div>
 
               <div className="space-y-3">
                 {tools.length === 0 ? (
                   <p className="text-xs text-slate-500">Chưa có sản phẩm Tool nào.</p>
                 ) : (
-                  tools.map((t) => (
-                    <div key={t.id} className="bg-[#05080E] border border-slate-800 p-4 rounded-2xl space-y-3 hover:border-cyan-500/40 transition">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-4 flex-1">
-                          {t.image && (
-                            <div className="w-16 h-16 bg-[#0B1019] border border-slate-800 rounded-xl overflow-hidden shrink-0">
-                              <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
+                  tools.map((t) => {
+                    const isPaused = t.status === 'Tạm ngưng';
+
+                    return (
+                      <div key={t.id} className={`bg-[#05080E] border p-4 rounded-2xl space-y-3 transition duration-300 ${isPaused ? 'border-rose-500/40 bg-rose-500/[0.02]' : 'border-slate-800 hover:border-cyan-500/40'}`}>
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-4 flex-1">
+                            {t.image && (
+                              <div className="w-16 h-16 bg-[#0B1019] border border-slate-800 rounded-xl overflow-hidden shrink-0">
+                                <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
+                              </div>
+                            )}
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-bold text-white text-xs">{t.name}</h4>
+                                {t.version ? (
+                                  <span className="text-[10px] font-mono font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2 py-0.2 rounded-md">
+                                    {t.version}
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-mono text-slate-500 bg-slate-800/50 px-2 py-0.2 rounded-md italic">
+                                    Chưa có ver
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[10px] font-mono text-cyan-300 block mt-0.5">Mã Tool: {t.toolCode}</span>
+                              <span className={`inline-block mt-1 text-[9px] font-extrabold px-2 py-0.5 rounded border ${isPaused ? 'bg-rose-500/20 border-rose-500/40 text-rose-400 animate-pulse' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'}`}>
+                                {isPaused ? '⏸️ TẠM NGƯNG (ĐÓNG BĂNG)' : '🟢 ĐANG HOẠT ĐỘNG'}
+                              </span>
                             </div>
-                          )}
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-bold text-white text-xs">{t.name}</h4>
-                              {t.version ? (
-                                <span className="text-[10px] font-mono font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2 py-0.2 rounded-md">
-                                  {t.version}
-                                </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            {/* NÚT BẬT / TẠM NGƯNG ĐÓNG BĂNG */}
+                            <button
+                              disabled={togglingToolId === t.id}
+                              onClick={() => handleToggleToolStatus(t)}
+                              className={`px-3 py-1.5 rounded-xl border text-xs font-black transition cursor-pointer flex items-center gap-1.5 shadow-sm ${
+                                isPaused
+                                  ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950'
+                                  : 'bg-rose-500/20 border-rose-500/40 text-rose-300 hover:bg-rose-500 hover:text-white'
+                              }`}
+                              title={isPaused ? "Mở lại và tự động bù giờ cho khách" : "Tạm ngưng và đóng băng thời gian dùng"}
+                            >
+                              {togglingToolId === t.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : isPaused ? (
+                                <><PlayCircle className="w-3.5 h-3.5" /> Mở lại</>
                               ) : (
-                                <span className="text-[10px] font-mono text-slate-500 bg-slate-800/50 px-2 py-0.2 rounded-md italic">
-                                  Chưa có ver
-                                </span>
+                                <><PauseCircle className="w-3.5 h-3.5" /> Tạm ngưng</>
                               )}
-                            </div>
-                            <span className="text-[10px] font-mono text-cyan-300 block mt-0.5">Mã Tool: {t.toolCode}</span>
-                            <span className={`inline-block mt-1 text-[9px] font-extrabold px-2 py-0.5 rounded border ${t.status === 'Tạm ngưng' ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'}`}>
-                              {t.status ? t.status.toUpperCase() : 'ĐANG HOẠT ĐỘNG'}
-                            </span>
+                            </button>
+
+                            <button 
+                              onClick={() => { 
+                                setToolForm({
+                                  id: t.id,
+                                  name: t.name || '',
+                                  toolCode: t.toolCode || '',
+                                  image: t.image || '',
+                                  status: t.status || 'Đang hoạt động',
+                                  priceDay: t.priceDay || '',
+                                  priceWeek: t.priceWeek || '',
+                                  priceMonth: t.priceMonth || '',
+                                  priceLifetime: t.priceLifetime || '',
+                                  description: t.description || '',
+                                  downloadLink: t.downloadLink || '',
+                                  videoLink: t.videoLink || '',
+                                  version: t.version || '',
+                                  changelog: t.changelog || ''
+                                }); 
+                                setPreviewUrl(t.image); 
+                                setIsEditingTool(true); 
+                                window.scrollTo({ top: 400, behavior: 'smooth' });
+                              }} 
+                              className="bg-cyan-500/10 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 p-2 rounded-xl cursor-pointer transition flex items-center gap-1.5 text-xs font-bold" 
+                              title="Sửa thông tin và cập nhật phiên bản"
+                            >
+                              <Edit className="w-3.5 h-3.5" /> Sửa
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteTool(t.id)} 
+                              className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-xl cursor-pointer transition" 
+                              title="Xóa Tool"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
-                        
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={() => { 
-                              setToolForm({
-                                id: t.id,
-                                name: t.name || '',
-                                toolCode: t.toolCode || '',
-                                image: t.image || '',
-                                status: t.status || 'Đang hoạt động',
-                                priceDay: t.priceDay || '',
-                                priceWeek: t.priceWeek || '',
-                                priceMonth: t.priceMonth || '',
-                                priceLifetime: t.priceLifetime || '',
-                                description: t.description || '',
-                                downloadLink: t.downloadLink || '',
-                                videoLink: t.videoLink || '',
-                                version: t.version || '',
-                                changelog: t.changelog || ''
-                              }); 
-                              setPreviewUrl(t.image); 
-                              setIsEditingTool(true); 
-                              window.scrollTo({ top: 400, behavior: 'smooth' });
-                            }} 
-                            className="bg-cyan-500/10 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 p-2 rounded-xl cursor-pointer transition flex items-center gap-1.5 text-xs font-bold" 
-                            title="Sửa thông tin và cập nhật phiên bản"
-                          >
-                            <Edit className="w-3.5 h-3.5" /> Sửa
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteTool(t.id)} 
-                            className="text-rose-400 p-2 hover:bg-rose-500/10 rounded-xl cursor-pointer transition" 
-                            title="Xóa Tool"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+
+                        {t.changelog ? (
+                          <div className="text-[11px] text-slate-300 bg-[#0B1019] border border-slate-800/80 p-2.5 rounded-xl space-y-1">
+                            <span className="text-[10px] font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1">
+                              <Sparkles className="w-3 h-3" /> Nhật ký cập nhật:
+                            </span>
+                            <p className="whitespace-pre-line leading-relaxed font-mono text-slate-400 pl-1 text-[11px]">
+                              {t.changelog}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="text-[11px] text-slate-500 bg-[#0B1019] border border-slate-800/40 p-2 rounded-xl flex items-center justify-between">
+                            <span className="italic">Chưa nhập nhật ký bản cập nhật cho tool này.</span>
+                            <button 
+                              onClick={() => {
+                                setToolForm({
+                                  id: t.id,
+                                  name: t.name || '',
+                                  toolCode: t.toolCode || '',
+                                  image: t.image || '',
+                                  status: t.status || 'Đang hoạt động',
+                                  priceDay: t.priceDay || '',
+                                  priceWeek: t.priceWeek || '',
+                                  priceMonth: t.priceMonth || '',
+                                  priceLifetime: t.priceLifetime || '',
+                                  description: t.description || '',
+                                  downloadLink: t.downloadLink || '',
+                                  videoLink: t.videoLink || '',
+                                  version: t.version || '',
+                                  changelog: t.changelog || ''
+                                }); 
+                                setPreviewUrl(t.image); 
+                                setIsEditingTool(true); 
+                                window.scrollTo({ top: 400, behavior: 'smooth' });
+                              }}
+                              className="text-cyan-400 font-bold hover:underline text-[10px] cursor-pointer"
+                            >
+                              + Thêm ngay
+                            </button>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-[#0B1019] border border-slate-800 p-2.5 rounded-xl text-[11px]">
+                          <div><span className="text-slate-500 block">Ngày:</span><b className="text-emerald-400 font-mono">{t.priceDay ? `${Number(t.priceDay).toLocaleString('vi-VN')}đ` : '---'}</b></div>
+                          <div><span className="text-slate-500 block">Tuần:</span><b className="text-emerald-400 font-mono">{t.priceWeek ? `${Number(t.priceWeek).toLocaleString('vi-VN')}đ` : '---'}</b></div>
+                          <div><span className="text-slate-500 block">Tháng:</span><b className="text-emerald-400 font-mono">{t.priceMonth ? `${Number(t.priceMonth).toLocaleString('vi-VN')}đ` : '---'}</b></div>
+                          <div><span className="text-slate-500 block">Vĩnh viễn:</span><b className="text-cyan-300 font-mono">{t.priceLifetime ? `${Number(t.priceLifetime).toLocaleString('vi-VN')}đ` : '---'}</b></div>
                         </div>
                       </div>
-
-                      {t.changelog ? (
-                        <div className="text-[11px] text-slate-300 bg-[#0B1019] border border-slate-800/80 p-2.5 rounded-xl space-y-1">
-                          <span className="text-[10px] font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1">
-                            <Sparkles className="w-3 h-3" /> Nhật ký cập nhật:
-                          </span>
-                          <p className="whitespace-pre-line leading-relaxed font-mono text-slate-400 pl-1 text-[11px]">
-                            {t.changelog}
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="text-[11px] text-slate-500 bg-[#0B1019] border border-slate-800/40 p-2 rounded-xl flex items-center justify-between">
-                          <span className="italic">Chưa nhập nhật ký bản cập nhật cho tool này.</span>
-                          <button 
-                            onClick={() => {
-                              setToolForm({
-                                id: t.id,
-                                name: t.name || '',
-                                toolCode: t.toolCode || '',
-                                image: t.image || '',
-                                status: t.status || 'Đang hoạt động',
-                                priceDay: t.priceDay || '',
-                                priceWeek: t.priceWeek || '',
-                                priceMonth: t.priceMonth || '',
-                                priceLifetime: t.priceLifetime || '',
-                                description: t.description || '',
-                                downloadLink: t.downloadLink || '',
-                                videoLink: t.videoLink || '',
-                                version: t.version || '',
-                                changelog: t.changelog || ''
-                              }); 
-                              setPreviewUrl(t.image); 
-                              setIsEditingTool(true); 
-                              window.scrollTo({ top: 400, behavior: 'smooth' });
-                            }}
-                            className="text-cyan-400 font-bold hover:underline text-[10px] cursor-pointer"
-                          >
-                            + Thêm ngay
-                          </button>
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-[#0B1019] border border-slate-800 p-2.5 rounded-xl text-[11px]">
-                        <div><span className="text-slate-500 block">Ngày:</span><b className="text-emerald-400 font-mono">{t.priceDay ? `${Number(t.priceDay).toLocaleString('vi-VN')}đ` : '---'}</b></div>
-                        <div><span className="text-slate-500 block">Tuần:</span><b className="text-emerald-400 font-mono">{t.priceWeek ? `${Number(t.priceWeek).toLocaleString('vi-VN')}đ` : '---'}</b></div>
-                        <div><span className="text-slate-500 block">Tháng:</span><b className="text-emerald-400 font-mono">{t.priceMonth ? `${Number(t.priceMonth).toLocaleString('vi-VN')}đ` : '---'}</b></div>
-                        <div><span className="text-slate-500 block">Vĩnh viễn:</span><b className="text-cyan-300 font-mono">{t.priceLifetime ? `${Number(t.priceLifetime).toLocaleString('vi-VN')}đ` : '---'}</b></div>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
