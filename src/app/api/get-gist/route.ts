@@ -5,11 +5,12 @@ export const revalidate = 0;
 
 export async function GET() {
   try {
-    const GIST_ID = process.env.GIST_ID || '21f0a39cbc434e5033d89f06e2c7d26e';
-    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    const GIST_ID = process.env.GITHUB_GIST_ID || process.env.GIST_ID || '21f0a39cbc434e5033d89f06e2c7d26e';
+    const GITHUB_TOKEN = process.env.GITHUB_GIST_TOKEN || process.env.GITHUB_TOKEN || process.env.GIST_TOKEN;
 
-    const headers: HeadersInit = {
-      'Accept': 'vnd.github+json',
+    const headers: Record<string, string> = {
+      'User-Agent': 'ZTool-Automation-App',
+      'Accept': 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Pragma': 'no-cache',
@@ -35,6 +36,38 @@ export async function GET() {
     const data = await res.json();
     const contentRaw = data.files['accounts.json']?.content || '{}';
     const parsed = JSON.parse(contentRaw);
+
+    const now = Date.now();
+    let hasCleaned = false;
+
+    // Tự động giải phóng HWID nếu tool offline quá 2 phút (120 giây)
+    for (const key of Object.keys(parsed)) {
+      const acc = parsed[key];
+      const lastActive = acc.last_active || 0;
+      
+      if (acc.device_id && acc.device_id !== '' && acc.device_id !== 'Chưa liên kết') {
+        if ((now - lastActive) > 120000) {
+          acc.device_id = 'Chưa liên kết';
+          hasCleaned = true;
+        }
+      }
+    }
+
+    // Cập nhật ngầm lên Gist nếu có tài khoản vừa được tự động gỡ HWID
+    if (hasCleaned && GITHUB_TOKEN) {
+      fetch(`https://api.github.com/gists/${GIST_ID}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'User-Agent': 'ZTool-Automation-App',
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          files: { 'accounts.json': { content: JSON.stringify(parsed, null, 2) } }
+        })
+      }).catch(() => {});
+    }
 
     return NextResponse.json({ success: true, data: parsed }, { status: 200 });
   } catch (error: any) {
