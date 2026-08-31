@@ -28,12 +28,12 @@ export async function POST(req: Request) {
         return NextResponse.json({
           success: false,
           code: 'TOOL_MAINTENANCE',
-          message: `Tool [${toolData.name}] đang tạm ngưng bảo trì. Thời gian dùng của bạn đã được đóng băng tự động!`
+          message: `Tool [${toolData.name}] đang tạm ngưng bảo trì.`
         });
       }
     }
 
-    // 2. Đọc dữ liệu từ GitHub Gist
+    // 2. Lấy dữ liệu Gist
     const GIST_ID = process.env.GITHUB_GIST_ID || process.env.GIST_ID || '21f0a39cbc434e5033d89f06e2c7d26e';
     const GITHUB_TOKEN = process.env.GITHUB_GIST_TOKEN || process.env.GITHUB_TOKEN || process.env.GIST_TOKEN;
 
@@ -65,39 +65,49 @@ export async function POST(req: Request) {
     const gistData = await gistRes.json();
     const accounts = JSON.parse(gistData.files['accounts.json']?.content || '{}');
 
-    // 3. Tìm kiếm linh hoạt key tài khoản trong Gist (hỗ trợ cả 'admin', 'admin_caucaluquy',...)
-    let foundKey = null;
-    for (const k of Object.keys(accounts)) {
-      if (k === rawKey || k.startsWith(`${rawKey}_`) || k.includes(rawKey)) {
-        foundKey = k;
-        break;
-      }
-    }
+    // 3. Tìm tài khoản trong JSON
+    let foundKey = Object.keys(accounts).find(
+      k => k === rawKey || k.startsWith(`${rawKey}_`)
+    );
 
     if (!foundKey) {
-      return NextResponse.json({ success: false, message: `Tài khoản [${rawKey}] không tồn tại trên hệ thống` });
+      return NextResponse.json({ success: false, message: `Tài khoản [${rawKey}] không tồn tại` });
     }
 
     const acc = accounts[foundKey];
 
+    // Kiểm tra mật khẩu
     if (password && acc.password && acc.password !== password) {
       return NextResponse.json({ success: false, message: 'Mật khẩu không chính xác' });
     }
 
-    // 4. Kiểm tra hạn dùng
+    // 4. Kiểm tra quyền tool (tài khoản không có tool_code hoặc tool_code là "Chung"/"all" đều hợp lệ)
+    const accTool = (acc.tool_code || acc.toolCode || '').trim().toLowerCase();
+    const reqTool = toolCode.toLowerCase();
+    const isGeneralAccount = !accTool || accTool === 'chung' || accTool === 'all' || acc.role === 'admin';
+
+    if (!isGeneralAccount && reqTool !== '' && accTool !== reqTool) {
+      return NextResponse.json({
+        success: false,
+        message: `Tài khoản chỉ dùng cho tool [${acc.tool_code || acc.toolCode}]`
+      });
+    }
+
+    // 5. Kiểm tra hạn sử dụng
     const nowSec = Math.floor(Date.now() / 1000);
     if (acc.expire_timestamp && acc.expire_timestamp > 0 && acc.expire_timestamp <= nowSec) {
       return NextResponse.json({ success: false, message: 'Tài khoản đã hết hạn sử dụng' });
     }
 
-    // 5. Cập nhật HWID và thời gian nhịp tim chính xác vào đúng key tìm được
-    if (hwid && hwid.trim() !== "") {
+    // 6. Ghi nhận HWID và nhịp tim
+    const now = Date.now();
+    if (hwid && hwid.trim() !== '') {
       acc.device_id = hwid;
     }
-    acc.last_active = Date.now();
+    acc.last_active = now;
     accounts[foundKey] = acc;
 
-    // 6. Ghi đè trực tiếp lên Gist
+    // 7. Ghi đè lên Gist
     if (GITHUB_TOKEN) {
       await fetch(`https://api.github.com/gists/${GIST_ID}`, {
         method: 'PATCH',
