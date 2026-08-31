@@ -12,8 +12,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Thiếu tên tài khoản' }, { status: 400 });
     }
 
-    // 1. Kiểm tra trạng thái Tool trên Supabase
-    if (toolCode) {
+    // 1. Kiểm tra trạng thái Tool trên Supabase nếu có toolCode cụ thể
+    if (toolCode && toolCode.toLowerCase() !== 'chung') {
       const { data: toolData } = await supabase
         .from('tools')
         .select('status, name')
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
     });
 
     if (!gistRes.ok) {
-      return NextResponse.json({ success: false, message: `Lỗi kết nối Gist: ${gistRes.status}` }, { status: 500 });
+      return NextResponse.json({ success: false, message: `Lỗi đọc Gist: ${gistRes.status}` }, { status: 500 });
     }
 
     const gistData = await gistRes.json();
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Tài khoản đã hết hạn sử dụng' });
     }
 
-    // 4. Kiểm tra thiết bị & nhịp tim (Timeout: 30s)
+    // 4. Kiểm tra thiết bị
     const now = Date.now();
     const lastActive = Number(acc.last_active) || 0;
     const isOldDeviceTimeout = lastActive === 0 || (now - lastActive) > 30000;
@@ -95,9 +95,9 @@ export async function POST(req: Request) {
     acc.last_active = now;
     accounts[accountKey] = acc;
 
-    // 6. BẮT BUỘC DÙNG AWAIT ĐỂ GHI TRỰC TIẾP LÊN GITHUB TRƯỚC KHI TRẢ VỀ PHẢN HỒI
+    // 6. Ghi đè trực tiếp lên Gist (bắt buộc await)
     if (GITHUB_TOKEN) {
-      const patchRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      await fetch(`https://api.github.com/gists/${GIST_ID}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${GITHUB_TOKEN}`,
@@ -109,10 +109,6 @@ export async function POST(req: Request) {
           files: { 'accounts.json': { content: JSON.stringify(accounts, null, 2) } }
         })
       });
-
-      if (!patchRes.ok) {
-        console.error('Lỗi khi ghi đè HWID lên Gist:', await patchRes.text());
-      }
     }
 
     return NextResponse.json({
