@@ -21,7 +21,7 @@ export async function GET() {
       headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
     }
 
-    // 1. Đọc dữ liệu mới nhất từ Gist (không cache)
+    // 1. Đọc dữ liệu mới nhất từ Gist (ép bỏ Cache)
     const res = await fetch(`https://api.github.com/gists/${GIST_ID}?t=${Date.now()}`, {
       method: 'GET',
       headers,
@@ -40,23 +40,26 @@ export async function GET() {
     const now = Date.now();
     let hasChanges = false;
 
-    // 2. Kiểm tra nhịp tim: nếu quá 10 giây không gửi heartbeat -> Tự động xóa HWID
+    // 2. Chỉ kiểm tra và cập nhật trạng thái is_online (KHÔNG tự xóa device_id)
     for (const key of Object.keys(parsed)) {
       const acc = parsed[key];
-      const lastActive = Number(acc.last_active) || 0;
-      const isOnline = lastActive > 0 && (now - lastActive) <= 10000;
+      let lastActive = Number(acc.last_active) || 0;
       
-      acc.is_online = isOnline;
+      // Chuẩn hóa nếu last_active đang là giây (10 chữ số) sang mili-giây
+      if (lastActive > 0 && lastActive < 10000000000) {
+        lastActive = lastActive * 1000;
+      }
 
-      // Nếu đã liên kết thiết bị nhưng offline quá 10 giây -> Reset về Chưa liên kết
-      if (!isOnline && acc.device_id && acc.device_id !== '' && acc.device_id !== 'Chưa liên kết') {
-        acc.device_id = 'Chưa liên kết';
-        acc.last_active = 0;
+      // Offline nếu quá 60 giây không gửi heartbeat
+      const isOnline = lastActive > 0 && Math.abs(now - lastActive) <= 60000;
+      
+      if (acc.is_online !== isOnline) {
+        acc.is_online = isOnline;
         hasChanges = true;
       }
     }
 
-    // 3. Nếu có tài khoản vừa bị timeout, tự động ghi đè lại vào Gist
+    // 3. Cập nhật lại cờ is_online nếu có thay đổi
     if (hasChanges && GITHUB_TOKEN) {
       await fetch(`https://api.github.com/gists/${GIST_ID}`, {
         method: 'PATCH',
@@ -72,7 +75,16 @@ export async function GET() {
       });
     }
 
-    return NextResponse.json({ success: true, data: parsed }, { status: 200 });
+    return NextResponse.json(
+      { success: true, data: parsed },
+      { 
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      }
+    );
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
