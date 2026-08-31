@@ -13,20 +13,17 @@ export async function GET() {
       'Accept': 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
       'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
+      'Pragma': 'no-cache'
     };
 
     if (GITHUB_TOKEN) {
       headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
     }
 
-    // 1. Đọc dữ liệu mới nhất từ Gist (ép bỏ Cache)
     const res = await fetch(`https://api.github.com/gists/${GIST_ID}?t=${Date.now()}`, {
       method: 'GET',
       headers,
-      cache: 'no-store',
-      next: { revalidate: 0 }
+      cache: 'no-store'
     });
 
     if (!res.ok) {
@@ -40,26 +37,26 @@ export async function GET() {
     const now = Date.now();
     let hasChanges = false;
 
-    // 2. Chỉ kiểm tra và cập nhật trạng thái is_online (KHÔNG tự xóa device_id)
+    // Tự động kiểm tra: Nếu không có nhịp tim quá 15 giây -> Đổi về "Chưa liên kết"
     for (const key of Object.keys(parsed)) {
       const acc = parsed[key];
       let lastActive = Number(acc.last_active) || 0;
       
-      // Chuẩn hóa nếu last_active đang là giây (10 chữ số) sang mili-giây
       if (lastActive > 0 && lastActive < 10000000000) {
         lastActive = lastActive * 1000;
       }
 
-      // Offline nếu quá 60 giây không gửi heartbeat
-      const isOnline = lastActive > 0 && Math.abs(now - lastActive) <= 60000;
-      
-      if (acc.is_online !== isOnline) {
-        acc.is_online = isOnline;
+      const isOnline = lastActive > 0 && (now - lastActive) <= 15000;
+      acc.is_online = isOnline;
+
+      // Không mở tool -> Reset về Chưa liên kết
+      if (!isOnline && acc.device_id && acc.device_id !== '' && acc.device_id !== 'Chưa liên kết') {
+        acc.device_id = 'Chưa liên kết';
+        acc.last_active = 0;
         hasChanges = true;
       }
     }
 
-    // 3. Cập nhật lại cờ is_online nếu có thay đổi
     if (hasChanges && GITHUB_TOKEN) {
       await fetch(`https://api.github.com/gists/${GIST_ID}`, {
         method: 'PATCH',
@@ -67,6 +64,7 @@ export async function GET() {
           'Authorization': `Bearer ${GITHUB_TOKEN}`,
           'User-Agent': 'ZTool-Automation-App',
           'Accept': 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
