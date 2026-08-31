@@ -21,7 +21,6 @@ export async function GET() {
       headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
     }
 
-    // Luôn lấy dữ liệu mới nhất, không cache
     const res = await fetch(`https://api.github.com/gists/${GIST_ID}?t=${Date.now()}`, {
       method: 'GET',
       headers,
@@ -37,8 +36,15 @@ export async function GET() {
     const data = await res.json();
     const contentRaw = data.files['accounts.json']?.content || '{}';
     const parsed = JSON.parse(contentRaw);
+    const now = Date.now();
 
-    // Trả về trực tiếp dữ liệu chính xác trên Gist mà không can thiệp reset
+    // Thêm cờ is_online dựa vào nhịp tim (nếu > 10 giây không có heartbeat thì xem như đã tắt tool)
+    for (const key of Object.keys(parsed)) {
+      const acc = parsed[key];
+      const lastActive = Number(acc.last_active) || 0;
+      acc.is_online = lastActive > 0 && (now - lastActive) <= 10000;
+    }
+
     return NextResponse.json({ success: true, data: parsed }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

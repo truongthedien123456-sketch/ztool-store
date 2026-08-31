@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN || process.env.GITHUB_GIST_TOKEN;
-const GIST_ID = process.env.GIST_ID || '21f0a39cbc434e5033d89f06e2c7d26e';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || process.env.GITHUB_GIST_TOKEN || process.env.GIST_TOKEN;
+const GIST_ID = process.env.GIST_ID || process.env.GITHUB_GIST_ID || '21f0a39cbc434e5033d89f06e2c7d26e';
 
 export async function POST(request: Request) {
   try {
@@ -28,6 +31,9 @@ export async function POST(request: Request) {
       headers: {
         'Authorization': `Bearer ${GITHUB_TOKEN}`,
         'Accept': 'application/vnd.github+json',
+        'User-Agent': 'ZTool-Automation-App',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
       },
       cache: 'no-store'
     });
@@ -44,11 +50,13 @@ export async function POST(request: Request) {
     // LUỒNG 1: XỬ LÝ GIA HẠN / CỘNG THÊM THỜI GIAN VÀ GHI LỊCH SỬ
     // =========================================================================
     if (action === 'EXTEND_TIME') {
-      const targetKey = accountKey || username;
+      const rawKey = (accountKey || username || '').trim();
+      const targetKey = Object.keys(accountsJson).find(k => k === rawKey || k.startsWith(`${rawKey}_`));
+
       if (!targetKey || !accountsJson[targetKey]) {
         return NextResponse.json({ 
           success: false, 
-          message: `Không tìm thấy tài khoản "${targetKey}" trên Gist!` 
+          message: `Không tìm thấy tài khoản "${rawKey}" trên Gist!` 
         }, { status: 404 });
       }
 
@@ -87,6 +95,7 @@ export async function POST(request: Request) {
         headers: {
           'Authorization': `Bearer ${GITHUB_TOKEN}`,
           'Accept': 'application/vnd.github+json',
+          'User-Agent': 'ZTool-Automation-App',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -102,9 +111,8 @@ export async function POST(request: Request) {
         throw new Error(`Lỗi lưu dữ liệu lên Gist: ${patchGistRes.statusText}`);
       }
 
-      // Tách tên người dùng gốc (ví dụ: abc_caucaluquy -> abc) để ghi lịch sử
+      // Ghi log Supabase
       const baseOwnerUsername = targetKey.split('_')[0];
-
       await supabase.from('transactions').insert([{
         username: baseOwnerUsername,
         type: 'EXTEND',
@@ -124,21 +132,25 @@ export async function POST(request: Request) {
     // LUỒNG 2: XỬ LÝ RESET HWID (XÓA MÃ THIẾT BỊ)
     // =========================================================================
     if (action === 'RESET_DEVICE') {
-      const targetKey = accountKey || username;
+      const rawKey = (accountKey || username || '').trim();
+      const targetKey = Object.keys(accountsJson).find(k => k === rawKey || k.startsWith(`${rawKey}_`));
+
       if (!targetKey || !accountsJson[targetKey]) {
         return NextResponse.json({ 
           success: false, 
-          message: `Không tìm thấy tài khoản "${targetKey}" trên Gist!` 
+          message: `Không tìm thấy tài khoản "${rawKey}" trên Gist!` 
         }, { status: 404 });
       }
 
-      accountsJson[targetKey].device_id = '';
+      accountsJson[targetKey].device_id = 'Chưa liên kết';
+      accountsJson[targetKey].last_active = 0;
 
       const patchGistRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${GITHUB_TOKEN}`,
           'Accept': 'application/vnd.github+json',
+          'User-Agent': 'ZTool-Automation-App',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -164,11 +176,13 @@ export async function POST(request: Request) {
     // LUỒNG 3: XỬ LÝ XÓA TÀI KHOẢN KHỎI GIST
     // =========================================================================
     if (action === 'DELETE_ACCOUNT') {
-      const targetKey = accountKey || username;
+      const rawKey = (accountKey || username || '').trim();
+      const targetKey = Object.keys(accountsJson).find(k => k === rawKey || k.startsWith(`${rawKey}_`));
+
       if (!targetKey || !accountsJson[targetKey]) {
         return NextResponse.json({ 
           success: false, 
-          message: `Không tìm thấy tài khoản "${targetKey}" trên Gist!` 
+          message: `Không tìm thấy tài khoản "${rawKey}" trên Gist!` 
         }, { status: 404 });
       }
 
@@ -179,6 +193,7 @@ export async function POST(request: Request) {
         headers: {
           'Authorization': `Bearer ${GITHUB_TOKEN}`,
           'Accept': 'application/vnd.github+json',
+          'User-Agent': 'ZTool-Automation-App',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -251,7 +266,8 @@ export async function POST(request: Request) {
       role: accountsJson[targetAccountKey]?.role || 'user',
       tool_code: targetToolCode,
       expire_timestamp: expireTimestamp,
-      device_id: accountsJson[targetAccountKey]?.device_id || ''
+      device_id: accountsJson[targetAccountKey]?.device_id || 'Chưa liên kết',
+      last_active: accountsJson[targetAccountKey]?.last_active || 0
     };
 
     const patchGistRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
@@ -259,6 +275,7 @@ export async function POST(request: Request) {
       headers: {
         'Authorization': `Bearer ${GITHUB_TOKEN}`,
         'Accept': 'application/vnd.github+json',
+        'User-Agent': 'ZTool-Automation-App',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
