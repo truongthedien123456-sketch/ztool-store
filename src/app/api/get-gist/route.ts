@@ -21,6 +21,7 @@ export async function GET() {
       headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
     }
 
+    // 1. Đọc dữ liệu mới nhất từ Gist (không cache)
     const res = await fetch(`https://api.github.com/gists/${GIST_ID}?t=${Date.now()}`, {
       method: 'GET',
       headers,
@@ -37,12 +38,38 @@ export async function GET() {
     const contentRaw = data.files['accounts.json']?.content || '{}';
     const parsed = JSON.parse(contentRaw);
     const now = Date.now();
+    let hasChanges = false;
 
-    // Thêm cờ is_online dựa vào nhịp tim (nếu > 10 giây không có heartbeat thì xem như đã tắt tool)
+    // 2. Kiểm tra nhịp tim: nếu quá 10 giây không gửi heartbeat -> Tự động xóa HWID
     for (const key of Object.keys(parsed)) {
       const acc = parsed[key];
       const lastActive = Number(acc.last_active) || 0;
-      acc.is_online = lastActive > 0 && (now - lastActive) <= 10000;
+      const isOnline = lastActive > 0 && (now - lastActive) <= 10000;
+      
+      acc.is_online = isOnline;
+
+      // Nếu đã liên kết thiết bị nhưng offline quá 10 giây -> Reset về Chưa liên kết
+      if (!isOnline && acc.device_id && acc.device_id !== '' && acc.device_id !== 'Chưa liên kết') {
+        acc.device_id = 'Chưa liên kết';
+        acc.last_active = 0;
+        hasChanges = true;
+      }
+    }
+
+    // 3. Nếu có tài khoản vừa bị timeout, tự động ghi đè lại vào Gist
+    if (hasChanges && GITHUB_TOKEN) {
+      await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'User-Agent': 'ZTool-Automation-App',
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          files: { 'accounts.json': { content: JSON.stringify(parsed, null, 2) } }
+        })
+      });
     }
 
     return NextResponse.json({ success: true, data: parsed }, { status: 200 });
