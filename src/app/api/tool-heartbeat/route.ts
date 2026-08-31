@@ -25,17 +25,21 @@ export async function POST(req: Request) {
       });
     }
 
-    // 2. Lấy dữ liệu tài khoản từ GitHub Gist
+    // 2. Lấy dữ liệu tài khoản từ GitHub Gist (Bổ sung User-Agent và Accept headers)
     const GIST_ID = process.env.GITHUB_GIST_ID;
     const GITHUB_TOKEN = process.env.GITHUB_GIST_TOKEN;
 
     const gistRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-      headers: { Authorization: `Bearer ${GITHUB_TOKEN}` },
+      headers: {
+        Authorization: `Bearer ${GITHUB_TOKEN}`,
+        'User-Agent': 'ZTool-Automation-App',
+        Accept: 'application/vnd.github.v3+json'
+      },
       cache: 'no-store'
     });
 
     if (!gistRes.ok) {
-      return NextResponse.json({ success: false, message: 'Lỗi kết nối kho dữ liệu' }, { status: 500 });
+      return NextResponse.json({ success: false, message: 'Lỗi kết nối kho dữ liệu Gist' }, { status: 500 });
     }
 
     const gistData = await gistRes.json();
@@ -59,7 +63,7 @@ export async function POST(req: Request) {
     // 4. Kiểm tra & Cập nhật HWID + Nhịp tim thời gian thực
     const now = Date.now();
     const lastActive = acc.last_active || 0;
-    const isOldDeviceTimeout = (now - lastActive) > 180000; // Quá 3 phút không gửi tín hiệu -> Tự giải phóng HWID
+    const isOldDeviceTimeout = (now - lastActive) > 180000; // Quá 3 phút không hoạt động -> Tự giải phóng HWID
 
     if (acc.device_id && acc.device_id !== '' && acc.device_id !== 'Chưa liên kết') {
       if (acc.device_id !== hwid && !isOldDeviceTimeout) {
@@ -74,11 +78,12 @@ export async function POST(req: Request) {
     acc.device_id = hwid;
     acc.last_active = now;
 
-    // Lưu ngầm lên Gist (không chặn response)
+    // Cập nhật ngầm lên Gist
     fetch(`https://api.github.com/gists/${GIST_ID}`, {
       method: 'PATCH',
       headers: {
         Authorization: `Bearer ${GITHUB_TOKEN}`,
+        'User-Agent': 'ZTool-Automation-App',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
