@@ -18,7 +18,7 @@ export async function GET() {
     };
 
     if (GITHUB_TOKEN) {
-      headers['Authorization'] = `token ${GITHUB_TOKEN}`;
+      headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
     }
 
     const res = await fetch(`https://api.github.com/gists/${GIST_ID}?t=${Date.now()}`, {
@@ -40,25 +40,24 @@ export async function GET() {
     const now = Date.now();
     let hasCleaned = false;
 
-    // Tự động giải phóng HWID nếu tool offline quá 30 giây (30000ms)
+    // Chỉ giải phóng HWID khi tài khoản ĐÃ CÓ last_active và không gửi nhịp tim > 30 giây
     for (const key of Object.keys(parsed)) {
       const acc = parsed[key];
-      const lastActive = acc.last_active || 0;
+      const lastActive = Number(acc.last_active) || 0;
       
       if (acc.device_id && acc.device_id !== '' && acc.device_id !== 'Chưa liên kết') {
-        if ((now - lastActive) > 30000) {
+        if (lastActive > 0 && (now - lastActive) > 30000) {
           acc.device_id = 'Chưa liên kết';
           hasCleaned = true;
         }
       }
     }
 
-    // Cập nhật ngầm lên Gist nếu có tài khoản vừa được tự động gỡ HWID
     if (hasCleaned && GITHUB_TOKEN) {
-      fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      await fetch(`https://api.github.com/gists/${GIST_ID}`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `token ${GITHUB_TOKEN}`,
+          'Authorization': `Bearer ${GITHUB_TOKEN}`,
           'User-Agent': 'ZTool-Automation-App',
           'Accept': 'application/vnd.github+json',
           'Content-Type': 'application/json',
@@ -66,7 +65,7 @@ export async function GET() {
         body: JSON.stringify({
           files: { 'accounts.json': { content: JSON.stringify(parsed, null, 2) } }
         })
-      }).catch(() => {});
+      });
     }
 
     return NextResponse.json({ success: true, data: parsed }, { status: 200 });
