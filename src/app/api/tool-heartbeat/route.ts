@@ -46,6 +46,7 @@ export async function POST(req: Request) {
         'Authorization': `Bearer ${GITHUB_TOKEN}`,
         'User-Agent': 'ZTool-Automation-App',
         'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache'
       },
@@ -62,12 +63,12 @@ export async function POST(req: Request) {
     // 3. Tìm chính xác tài khoản (ưu tiên khớp chính xác key trước)
     let foundKey = Object.keys(accounts).find(k => k.toLowerCase() === rawKey.toLowerCase());
     
-    // Nếu không khớp chính xác, tìm theo tiền tố tool
+    // Nếu không khớp chính xác, tìm theo tiền tố tool (vd: gõ "abc" tìm "abc_caucaluquy")
     if (!foundKey) {
       foundKey = Object.keys(accounts).find(k => {
         const isPrefix = k.toLowerCase().startsWith(`${rawKey.toLowerCase()}_`);
         const accTool = (accounts[k].tool_code || accounts[k].toolCode || '').toLowerCase();
-        return isPrefix && (accTool === toolCode.toLowerCase() || accTool === 'chung');
+        return isPrefix && (accTool === toolCode.toLowerCase() || accTool === 'chung' || accTool === '');
       });
     }
 
@@ -102,32 +103,32 @@ export async function POST(req: Request) {
 
     // 6. Ghi nhận HWID và cập nhật trạng thái trực tuyến
     const now = Date.now();
-    let isChanged = false;
-
     if (hwid && hwid !== '' && hwid !== 'Chưa liên kết') {
-      if (acc.device_id !== hwid) {
-        acc.device_id = hwid;
-        isChanged = true;
-      }
+      acc.device_id = hwid;
     }
-
     acc.last_active = now;
     acc.is_online = true;
     accounts[foundKey] = acc;
 
-    // 7. Ghi đè cập nhật lên Gist
-    await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+    // 7. Ghi đè cập nhật lên Gist (đầy đủ header xác thực GitHub)
+    const patchRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
       method: 'PATCH',
       headers: {
         'Authorization': `Bearer ${GITHUB_TOKEN}`,
         'User-Agent': 'ZTool-Automation-App',
         'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         files: { 'accounts.json': { content: JSON.stringify(accounts, null, 2) } }
       })
     });
+
+    if (!patchRes.ok) {
+      const errText = await patchRes.text();
+      return NextResponse.json({ success: false, message: `Lỗi ghi Gist: ${errText}` }, { status: 500 });
+    }
 
     return NextResponse.json({
       success: true,
