@@ -16,7 +16,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Thiếu tên tài khoản' }, { status: 400 });
     }
 
-    // 1. Kiểm tra trạng thái Tool trên Supabase
+    // 1. Kiểm tra trạng thái Tool
     if (toolCode && toolCode.toLowerCase() !== 'chung' && toolCode.toLowerCase() !== 'all') {
       const { data: toolData } = await supabase
         .from('tools')
@@ -33,45 +33,34 @@ export async function POST(req: Request) {
       }
     }
 
-    // 2. Lấy dữ liệu Gist & Token
+    // 2. Lấy dữ liệu Accounts qua RAW URL (Bỏ qua GitHub API Limit)
     const GIST_ID = process.env.GITHUB_GIST_ID || process.env.GIST_ID || '21f0a39cbc434e5033d89f06e2c7d26e';
-    const GITHUB_TOKEN = process.env.GITHUB_GIST_TOKEN || process.env.GITHUB_TOKEN || process.env.GIST_TOKEN || process.env.GH_TOKEN;
+    const GITHUB_TOKEN = process.env.GITHUB_GIST_TOKEN || process.env.GITHUB_TOKEN || process.env.GIST_TOKEN;
 
-    const headers: Record<string, string> = {
-      'User-Agent': 'ZTool-Automation-App',
-      'Accept': 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache'
-    };
-
-    if (GITHUB_TOKEN) {
-      headers['Authorization'] = `Bearer ${GITHUB_TOKEN.trim()}`;
-    }
-
-    const gistRes = await fetch(`https://api.github.com/gists/${GIST_ID}?t=${Date.now()}`, {
-      headers,
+    let accounts: Record<string, any> = {};
+    const rawRes = await fetch(`https://gist.githubusercontent.com/raw/${GIST_ID}/accounts.json?t=${Date.now()}`, {
       cache: 'no-store'
     });
 
-    let accounts: Record<string, any> = {};
-    if (gistRes.ok) {
-      const gistData = await gistRes.json();
-      accounts = JSON.parse(gistData.files['accounts.json']?.content || '{}');
+    if (rawRes.ok) {
+      accounts = await rawRes.json();
     } else {
-      const rawRes = await fetch(`https://gist.githubusercontent.com/raw/${GIST_ID}/accounts.json?t=${Date.now()}`, {
+      // Fallback nếu RAW cache
+      const gistRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+        headers: {
+          'Authorization': GITHUB_TOKEN ? `Bearer ${GITHUB_TOKEN.trim()}` : '',
+          'User-Agent': 'ZTool-Automation-App'
+        },
         cache: 'no-store'
       });
-      if (rawRes.ok) {
-        accounts = await rawRes.json();
-      } else {
-        return NextResponse.json({ success: false, message: 'Lỗi nạp danh sách tài khoản Gist' }, { status: 500 });
+      if (gistRes.ok) {
+        const d = await gistRes.json();
+        accounts = JSON.parse(d.files['accounts.json']?.content || '{}');
       }
     }
 
-    // 3. Khớp chính xác Key (Ưu tiên đúng key abc_caucaluquy trước)
+    // 3. Khớp Key tài khoản
     let foundKey = Object.keys(accounts).find(k => k.toLowerCase() === rawKey.toLowerCase());
-    
     if (!foundKey) {
       foundKey = Object.keys(accounts).find(k => {
         const isPrefix = k.toLowerCase().startsWith(`${rawKey.toLowerCase()}_`);
@@ -91,7 +80,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Mật khẩu không chính xác' });
     }
 
-    // 4. Kiểm tra quyền tool
+    // 4. Kiểm tra quyền Tool
     const accTool = (acc.tool_code || acc.toolCode || '').trim().toLowerCase();
     const reqTool = toolCode.toLowerCase();
     const isGeneralAccount = !accTool || accTool === 'chung' || accTool === 'all' || acc.role === 'admin';
@@ -103,45 +92,51 @@ export async function POST(req: Request) {
       });
     }
 
-    // 5. Kiểm tra hạn sử dụng
+    // 5. Kiểm tra hạn dùng
     const nowSec = Math.floor(Date.now() / 1000);
     if (acc.expire_timestamp && acc.expire_timestamp > 0 && acc.expire_timestamp <= nowSec) {
       return NextResponse.json({ success: false, message: 'Tài khoản đã hết hạn sử dụng' });
     }
 
-    // 6. Ghi đè HWID và trạng thái vào Object
     const now = Date.now();
-    let hasChanged = false;
+    const activeHWID = (hwid && hwid !== 'Chưa liên kết') ? hwid : (acc.device_id || 'Chưa liên kết');
 
-    if (hwid && hwid !== '' && hwid !== 'Chưa liên kết' && acc.device_id !== hwid) {
+    // 6. GHI NHẬN VÀO SUPABASE (Không giới hạn lượt gọi / Tốc độ thời gian thực)
+    await supabase.from('tool_accounts').upsert({
+      account_key: foundKey,
+      device_id: activeHWID,
+      tool_code: toolCode,
+      last_active: now,
+      is_online: true
+    }, { onConflict: 'account_key' }).select();
+
+    // 7. Ghi đè vào Gist (Chỉ chạy khi thiết bị thay đổi lần đầu và có Token)
+    if (hwid && hwid !== 'Chưa liên kết' && acc.device_id !== hwid && GITHUB_TOKEN) {
       acc.device_id = hwid;
-      hasChanged = true;
-    }
-
-    if (!acc.is_online) {
+      acc.last_active = now;
       acc.is_online = true;
-      hasChanged = true;
-    }
+      accounts[foundKey] = acc;
 
-    acc.last_active = now;
-    accounts[foundKey] = acc;
-
-    // 7. Lưu đè trực tiếp lên Gist nếu có thay đổi và có cấu hình Token
-    if (hasChanged && GITHUB_TOKEN) {
-      await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      fetch(`https://api.github.com/gists/${GIST_ID}`, {
         method: 'PATCH',
-        headers,
+        headers: {
+          'Authorization': `Bearer ${GITHUB_TOKEN.trim()}`,
+          'User-Agent': 'ZTool-Automation-App',
+          'Accept': 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           files: { 'accounts.json': { content: JSON.stringify(accounts, null, 2) } }
         })
-      });
+      }).catch(() => {});
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Xác thực và ghi nhận thiết bị thành công',
+      message: 'Xác thực thành công',
       expire_timestamp: acc.expire_timestamp || 0,
-      device_id: acc.device_id || hwid || 'Chưa liên kết',
+      device_id: activeHWID,
       is_online: true
     });
 
