@@ -16,7 +16,7 @@ export async function POST(req: Request) {
       .ilike('toolCode', toolCode)
       .single();
 
-    // Nếu Tool đang Tạm ngưng -> Chặn và báo mã TOOL_MAINTENANCE
+    // Chặn nếu Tool đang Tạm ngưng
     if (toolData && toolData.status === 'Tạm ngưng') {
       return NextResponse.json({
         success: false,
@@ -25,21 +25,38 @@ export async function POST(req: Request) {
       });
     }
 
-    // 2. Lấy dữ liệu tài khoản từ GitHub Gist (Bổ sung User-Agent và Accept headers)
-    const GIST_ID = process.env.GITHUB_GIST_ID;
-    const GITHUB_TOKEN = process.env.GITHUB_GIST_TOKEN;
+    // 2. Tự động đọc đa dạng tên biến môi trường
+    const GIST_ID = process.env.GITHUB_GIST_ID || process.env.GIST_ID;
+    const GITHUB_TOKEN = process.env.GITHUB_GIST_TOKEN || process.env.GITHUB_TOKEN || process.env.GIST_TOKEN;
+
+    if (!GIST_ID) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Chưa cấu hình GIST_ID trong biến môi trường Vercel/.env.local' 
+      }, { status: 500 });
+    }
+
+    // Tạo Header linh hoạt (dùng Token nếu có, không có Token vẫn tải được nếu Gist public)
+    const headers: Record<string, string> = {
+      'User-Agent': 'ZTool-Automation-App',
+      Accept: 'application/vnd.github.v3+json'
+    };
+    if (GITHUB_TOKEN) {
+      headers['Authorization'] = `token ${GITHUB_TOKEN}`;
+    }
 
     const gistRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-      headers: {
-        Authorization: `Bearer ${GITHUB_TOKEN}`,
-        'User-Agent': 'ZTool-Automation-App',
-        Accept: 'application/vnd.github.v3+json'
-      },
+      headers,
       cache: 'no-store'
     });
 
     if (!gistRes.ok) {
-      return NextResponse.json({ success: false, message: 'Lỗi kết nối kho dữ liệu Gist' }, { status: 500 });
+      const errText = await gistRes.text();
+      console.error('Lỗi Gist API:', gistRes.status, errText);
+      return NextResponse.json({ 
+        success: false, 
+        message: `Lỗi kết nối GitHub Gist (Mã lỗi: ${gistRes.status})` 
+      }, { status: 500 });
     }
 
     const gistData = await gistRes.json();
@@ -47,7 +64,7 @@ export async function POST(req: Request) {
     const acc = accounts[accountKey];
 
     if (!acc) {
-      return NextResponse.json({ success: false, message: 'Tài khoản không tồn tại' });
+      return NextResponse.json({ success: false, message: 'Tài khoản không tồn tại trên hệ thống' });
     }
 
     if (password && acc.password !== password) {
@@ -63,7 +80,7 @@ export async function POST(req: Request) {
     // 4. Kiểm tra & Cập nhật HWID + Nhịp tim thời gian thực
     const now = Date.now();
     const lastActive = acc.last_active || 0;
-    const isOldDeviceTimeout = (now - lastActive) > 180000; // Quá 3 phút không hoạt động -> Tự giải phóng HWID
+    const isOldDeviceTimeout = (now - lastActive) > 180000; // 3 phút không gửi nhịp tim -> Tự giải phóng HWID
 
     if (acc.device_id && acc.device_id !== '' && acc.device_id !== 'Chưa liên kết') {
       if (acc.device_id !== hwid && !isOldDeviceTimeout) {
@@ -74,26 +91,28 @@ export async function POST(req: Request) {
       }
     }
 
-    // Cập nhật thiết bị hiện tại & thời gian hoạt động mới nhất
+    // Cập nhật thiết bị và thời gian hoạt động mới nhất
     acc.device_id = hwid;
     acc.last_active = now;
 
-    // Cập nhật ngầm lên Gist
-    fetch(`https://api.github.com/gists/${GIST_ID}`, {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${GITHUB_TOKEN}`,
-        'User-Agent': 'ZTool-Automation-App',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        files: { 'accounts.json': { content: JSON.stringify(accounts, null, 2) } }
-      })
-    }).catch(() => {});
+    // Gửi cập nhật ngầm lên Gist
+    if (GITHUB_TOKEN) {
+      fetch(`https://api.github.com/gists/${GIST_ID}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `token ${GITHUB_TOKEN}`,
+          'User-Agent': 'ZTool-Automation-App',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          files: { 'accounts.json': { content: JSON.stringify(accounts, null, 2) } }
+        })
+      }).catch(() => {});
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Xác thực phiên hoạt động thành công',
+      message: 'Xác thực thành công',
       expire_timestamp: acc.expire_timestamp
     });
 
