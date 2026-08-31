@@ -19,7 +19,10 @@ export async function POST(request: Request) {
       tool_code,
       addDays,
       addHours,
-      isLifetime
+      isLifetime,
+      device_id,
+      hwid,
+      is_online
     } = body;
 
     if (!GITHUB_TOKEN) {
@@ -47,11 +50,64 @@ export async function POST(request: Request) {
     const accountsJson = JSON.parse(currentContentRaw);
 
     // =========================================================================
+    // LUỒNG MỚI: XỬ LÝ CẬP NHẬT THIẾT BỊ (UPDATE_DEVICE / BIND_DEVICE) TỪ TOOL
+    // =========================================================================
+    if (action === 'UPDATE_DEVICE' || action === 'BIND_DEVICE') {
+      const rawKey = (accountKey || username || '').trim();
+      let targetKey = Object.keys(accountsJson).find(k => k.toLowerCase() === rawKey.toLowerCase());
+
+      if (!targetKey) {
+        targetKey = Object.keys(accountsJson).find(k => k.toLowerCase().startsWith(`${rawKey.toLowerCase()}_`));
+      }
+
+      if (!targetKey || !accountsJson[targetKey]) {
+        return NextResponse.json({ 
+          success: false, 
+          message: `Không tìm thấy tài khoản "${rawKey}" trên Gist!` 
+        }, { status: 404 });
+      }
+
+      const clientHWID = (device_id || hwid || '').trim();
+      if (clientHWID && clientHWID !== '') {
+        accountsJson[targetKey].device_id = clientHWID;
+      }
+      accountsJson[targetKey].last_active = Date.now();
+      accountsJson[targetKey].is_online = is_online !== undefined ? is_online : true;
+
+      const patchGistRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github+json',
+          'User-Agent': 'ZTool-Automation-App',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          files: {
+            'accounts.json': {
+              content: JSON.stringify(accountsJson, null, 2)
+            }
+          }
+        })
+      });
+
+      if (!patchGistRes.ok) {
+        throw new Error(`Lỗi lưu dữ liệu lên Gist: ${patchGistRes.statusText}`);
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Đã cập nhật HWID [${accountsJson[targetKey].device_id}] cho ${targetKey}!`,
+        device_id: accountsJson[targetKey].device_id
+      });
+    }
+
+    // =========================================================================
     // LUỒNG 1: XỬ LÝ GIA HẠN / CỘNG THÊM THỜI GIAN VÀ GHI LỊCH SỬ
     // =========================================================================
     if (action === 'EXTEND_TIME') {
       const rawKey = (accountKey || username || '').trim();
-      const targetKey = Object.keys(accountsJson).find(k => k === rawKey || k.startsWith(`${rawKey}_`));
+      const targetKey = Object.keys(accountsJson).find(k => k.toLowerCase() === rawKey.toLowerCase() || k.toLowerCase().startsWith(`${rawKey.toLowerCase()}_`));
 
       if (!targetKey || !accountsJson[targetKey]) {
         return NextResponse.json({ 
@@ -89,7 +145,6 @@ export async function POST(request: Request) {
 
       accountsJson[targetKey].expire_timestamp = newTimestamp;
 
-      // Đẩy JSON cập nhật lên GitHub Gist
       const patchGistRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
         method: 'PATCH',
         headers: {
@@ -133,7 +188,7 @@ export async function POST(request: Request) {
     // =========================================================================
     if (action === 'RESET_DEVICE') {
       const rawKey = (accountKey || username || '').trim();
-      const targetKey = Object.keys(accountsJson).find(k => k === rawKey || k.startsWith(`${rawKey}_`));
+      const targetKey = Object.keys(accountsJson).find(k => k.toLowerCase() === rawKey.toLowerCase() || k.toLowerCase().startsWith(`${rawKey.toLowerCase()}_`));
 
       if (!targetKey || !accountsJson[targetKey]) {
         return NextResponse.json({ 
@@ -144,6 +199,7 @@ export async function POST(request: Request) {
 
       accountsJson[targetKey].device_id = 'Chưa liên kết';
       accountsJson[targetKey].last_active = 0;
+      accountsJson[targetKey].is_online = false;
 
       const patchGistRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
         method: 'PATCH',
@@ -177,7 +233,7 @@ export async function POST(request: Request) {
     // =========================================================================
     if (action === 'DELETE_ACCOUNT') {
       const rawKey = (accountKey || username || '').trim();
-      const targetKey = Object.keys(accountsJson).find(k => k === rawKey || k.startsWith(`${rawKey}_`));
+      const targetKey = Object.keys(accountsJson).find(k => k.toLowerCase() === rawKey.toLowerCase() || k.toLowerCase().startsWith(`${rawKey.toLowerCase()}_`));
 
       if (!targetKey || !accountsJson[targetKey]) {
         return NextResponse.json({ 
@@ -267,7 +323,8 @@ export async function POST(request: Request) {
       tool_code: targetToolCode,
       expire_timestamp: expireTimestamp,
       device_id: accountsJson[targetAccountKey]?.device_id || 'Chưa liên kết',
-      last_active: accountsJson[targetAccountKey]?.last_active || 0
+      last_active: accountsJson[targetAccountKey]?.last_active || 0,
+      is_online: false
     };
 
     const patchGistRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {

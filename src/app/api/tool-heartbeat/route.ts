@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     const rawKey = (body.accountKey || body.username || '').trim();
     const password = body.password;
     const toolCode = (body.toolCode || 'caucaluquy').trim();
-    const hwid = body.hwid || body.device_id || body.deviceId || '';
+    const hwid = (body.hwid || body.device_id || body.deviceId || '').trim();
 
     if (!rawKey) {
       return NextResponse.json({ success: false, message: 'Thiếu tên tài khoản' }, { status: 400 });
@@ -37,24 +37,18 @@ export async function POST(req: Request) {
     const GIST_ID = process.env.GITHUB_GIST_ID || process.env.GIST_ID || '21f0a39cbc434e5033d89f06e2c7d26e';
     const GITHUB_TOKEN = process.env.GITHUB_GIST_TOKEN || process.env.GITHUB_TOKEN || process.env.GIST_TOKEN;
 
-    if (!GIST_ID) {
-      return NextResponse.json({ success: false, message: 'Chưa cấu hình GIST_ID' }, { status: 500 });
-    }
-
-    const headers: Record<string, string> = {
-      'User-Agent': 'ZTool-Automation-App',
-      'Accept': 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache'
-    };
-
-    if (GITHUB_TOKEN) {
-      headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+    if (!GIST_ID || !GITHUB_TOKEN) {
+      return NextResponse.json({ success: false, message: 'Chưa cấu hình GIST_ID hoặc GITHUB_TOKEN' }, { status: 500 });
     }
 
     const gistRes = await fetch(`https://api.github.com/gists/${GIST_ID}?t=${Date.now()}`, {
-      headers,
+      headers: {
+        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+        'User-Agent': 'ZTool-Automation-App',
+        'Accept': 'application/vnd.github+json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      },
       cache: 'no-store'
     });
 
@@ -65,23 +59,30 @@ export async function POST(req: Request) {
     const gistData = await gistRes.json();
     const accounts = JSON.parse(gistData.files['accounts.json']?.content || '{}');
 
-    // 3. Tìm tài khoản trong JSON
-    let foundKey = Object.keys(accounts).find(
-      k => k === rawKey || k.startsWith(`${rawKey}_`)
-    );
-
+    // 3. Tìm chính xác tài khoản (ưu tiên khớp chính xác key trước)
+    let foundKey = Object.keys(accounts).find(k => k.toLowerCase() === rawKey.toLowerCase());
+    
+    // Nếu không khớp chính xác, tìm theo tiền tố tool
     if (!foundKey) {
+      foundKey = Object.keys(accounts).find(k => {
+        const isPrefix = k.toLowerCase().startsWith(`${rawKey.toLowerCase()}_`);
+        const accTool = (accounts[k].tool_code || accounts[k].toolCode || '').toLowerCase();
+        return isPrefix && (accTool === toolCode.toLowerCase() || accTool === 'chung');
+      });
+    }
+
+    if (!foundKey || !accounts[foundKey]) {
       return NextResponse.json({ success: false, message: `Tài khoản [${rawKey}] không tồn tại` });
     }
 
     const acc = accounts[foundKey];
 
-    // Kiểm tra mật khẩu
-    if (password && acc.password && acc.password !== password) {
+    // Kiểm tra mật khẩu (nếu có gửi mật khẩu lên)
+    if (password && acc.password && String(acc.password) !== String(password)) {
       return NextResponse.json({ success: false, message: 'Mật khẩu không chính xác' });
     }
 
-    // 4. Kiểm tra quyền tool (tài khoản không có tool_code hoặc tool_code là "Chung"/"all" đều hợp lệ)
+    // 4. Kiểm tra quyền tool
     const accTool = (acc.tool_code || acc.toolCode || '').trim().toLowerCase();
     const reqTool = toolCode.toLowerCase();
     const isGeneralAccount = !accTool || accTool === 'chung' || accTool === 'all' || acc.role === 'admin';
@@ -99,35 +100,41 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Tài khoản đã hết hạn sử dụng' });
     }
 
-    // 6. Ghi nhận HWID và nhịp tim
+    // 6. Ghi nhận HWID và cập nhật trạng thái trực tuyến
     const now = Date.now();
-    if (hwid && hwid.trim() !== '') {
-      acc.device_id = hwid;
+    let isChanged = false;
+
+    if (hwid && hwid !== '' && hwid !== 'Chưa liên kết') {
+      if (acc.device_id !== hwid) {
+        acc.device_id = hwid;
+        isChanged = true;
+      }
     }
+
     acc.last_active = now;
+    acc.is_online = true;
     accounts[foundKey] = acc;
 
-    // 7. Ghi đè lên Gist
-    if (GITHUB_TOKEN) {
-      await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${GITHUB_TOKEN}`,
-          'User-Agent': 'ZTool-Automation-App',
-          'Accept': 'application/vnd.github+json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          files: { 'accounts.json': { content: JSON.stringify(accounts, null, 2) } }
-        })
-      });
-    }
+    // 7. Ghi đè cập nhật lên Gist
+    await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+        'User-Agent': 'ZTool-Automation-App',
+        'Accept': 'application/vnd.github+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        files: { 'accounts.json': { content: JSON.stringify(accounts, null, 2) } }
+      })
+    });
 
     return NextResponse.json({
       success: true,
       message: 'Xác thực và cập nhật thiết bị thành công',
-      expire_timestamp: acc.expire_timestamp,
-      device_id: acc.device_id
+      expire_timestamp: acc.expire_timestamp || 0,
+      device_id: acc.device_id || 'Chưa liên kết',
+      is_online: true
     });
 
   } catch (error: any) {
