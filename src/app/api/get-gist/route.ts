@@ -40,13 +40,13 @@ export async function GET() {
     const now = Date.now();
     let hasCleaned = false;
 
-    // Chỉ giải phóng HWID khi tài khoản ĐÃ CÓ last_active và không gửi nhịp tim > 30 giây
+    // Tự động gỡ HWID sau 10 giây mất kết nối nhịp tim
     for (const key of Object.keys(parsed)) {
       const acc = parsed[key];
       const lastActive = Number(acc.last_active) || 0;
       
       if (acc.device_id && acc.device_id !== '' && acc.device_id !== 'Chưa liên kết') {
-        if (lastActive > 0 && (now - lastActive) > 30000) {
+        if (lastActive > 0 && (now - lastActive) > 10000) {
           acc.device_id = 'Chưa liên kết';
           hasCleaned = true;
         }

@@ -12,8 +12,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Thiếu tên tài khoản' }, { status: 400 });
     }
 
-    // 1. Kiểm tra trạng thái Tool trên Supabase nếu có toolCode cụ thể
-    if (toolCode && toolCode.toLowerCase() !== 'chung') {
+    // 1. Kiểm tra trạng thái Tool trên Supabase
+    if (toolCode && toolCode.toLowerCase() !== 'chung' && toolCode.toLowerCase() !== 'all') {
       const { data: toolData } = await supabase
         .from('tools')
         .select('status, name')
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // 2. Đọc biến môi trường Gist
+    // 2. Lấy dữ liệu tài khoản từ GitHub Gist
     const GIST_ID = process.env.GITHUB_GIST_ID || process.env.GIST_ID || '21f0a39cbc434e5033d89f06e2c7d26e';
     const GITHUB_TOKEN = process.env.GITHUB_GIST_TOKEN || process.env.GITHUB_TOKEN || process.env.GIST_TOKEN;
 
@@ -70,32 +70,45 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Mật khẩu không chính xác' });
     }
 
-    // 3. Kiểm tra hạn dùng
+    // 3. Kiểm tra Mã Tool (Quyền sử dụng)
+    const accTool = (acc.tool_code || acc.toolCode || '').trim().toLowerCase();
+    const reqTool = (toolCode || '').trim().toLowerCase();
+
+    // Nếu tài khoản không phải là "chung", "all" hoặc rỗng thì phải khớp với tool hiện tại
+    const isGeneralAccount = accTool === '' || accTool === 'chung' || accTool === 'all';
+    if (!isGeneralAccount && reqTool !== '' && accTool !== reqTool) {
+      return NextResponse.json({
+        success: false,
+        message: `Tài khoản này chỉ dành riêng cho tool [${acc.tool_code || acc.toolCode}]`
+      });
+    }
+
+    // 4. Kiểm tra hạn dùng
     const nowSec = Math.floor(Date.now() / 1000);
     if (acc.expire_timestamp && acc.expire_timestamp > 0 && acc.expire_timestamp <= nowSec) {
       return NextResponse.json({ success: false, message: 'Tài khoản đã hết hạn sử dụng' });
     }
 
-    // 4. Kiểm tra thiết bị
+    // 5. Kiểm tra thiết bị & nhịp tim (Timeout: 10 giây)
     const now = Date.now();
     const lastActive = Number(acc.last_active) || 0;
-    const isOldDeviceTimeout = lastActive === 0 || (now - lastActive) > 30000;
+    const isOldDeviceTimeout = lastActive === 0 || (now - lastActive) > 10000;
 
     if (acc.device_id && acc.device_id !== '' && acc.device_id !== 'Chưa liên kết') {
       if (acc.device_id !== hwid && !isOldDeviceTimeout) {
         return NextResponse.json({
           success: false,
-          message: `Tài khoản đang chạy trên thiết bị khác (${acc.device_id}). Hãy tắt tool ở máy cũ hoặc đợi 30 giây.`
+          message: `Tài khoản đang chạy trên thiết bị khác (${acc.device_id}). Hãy tắt tool ở máy cũ hoặc đợi 10 giây.`
         });
       }
     }
 
-    // 5. Cập nhật HWID và nhịp tim mới nhất
+    // 6. Cập nhật HWID và nhịp tim mới nhất
     acc.device_id = hwid || 'Chưa liên kết';
     acc.last_active = now;
     accounts[accountKey] = acc;
 
-    // 6. Ghi đè trực tiếp lên Gist (bắt buộc await)
+    // Ghi đè trực tiếp lên Gist (bắt buộc await để hoàn thành trên Vercel)
     if (GITHUB_TOKEN) {
       await fetch(`https://api.github.com/gists/${GIST_ID}`, {
         method: 'PATCH',
@@ -113,7 +126,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Xác thực và cập nhật thiết bị thành công',
+      message: 'Xác thực thành công',
       expire_timestamp: acc.expire_timestamp,
       device_id: acc.device_id
     });
