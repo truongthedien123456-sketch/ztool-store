@@ -6,7 +6,7 @@ import {
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
   Ban, CheckCircle, CheckCircle2, CreditCard, KeyRound, Search, DollarSign, Settings,
-  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent, Crown, Gem, Flame, Star, Award, Video, Send, Headset, Volume2, FileText, Check, Gift, Hourglass, AlertTriangle, PauseCircle, PlayCircle
+  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent, Crown, Gem, Flame, Star, Award, Video, Send, Headset, Volume2, FileText, Check, Gift, Hourglass, AlertTriangle, PauseCircle, PlayCircle, ChevronDown, ChevronUp
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -49,6 +49,9 @@ export default function AdminPage() {
   const [deletingGistKey, setDeletingGistKey] = useState<string | null>(null);
   const [nowTime, setNowTime] = useState(Date.now());
   const [togglingToolId, setTogglingToolId] = useState<number | null>(null);
+
+  // State mở rộng changelog cho từng tool
+  const [expandedChangelogs, setExpandedChangelogs] = useState<{ [key: number]: boolean }>({});
 
   // Modal Gia hạn Key Tool
   const [extendModalData, setExtendModalData] = useState<{ accountKey: string; currentExpire: number } | null>(null);
@@ -94,14 +97,12 @@ export default function AdminPage() {
     selectedChatUserRef.current = selectedChatUser;
   }, [selectedChatUser]);
 
-  // Tự động cuộn mượt mà bên trong khung chat
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [chatMessages]);
 
-  // Khởi tạo AudioContext an toàn và sẵn sàng hoạt động
   const initAudio = () => {
     try {
       if (!audioCtxRef.current) {
@@ -118,7 +119,6 @@ export default function AdminPage() {
     }
   };
 
-  // Phát âm thanh thông báo tin nhắn dịu tai, trong trẻo và sang trọng (Soft Telegram/iOS Chime)
   const playNotificationSound = () => {
     try {
       initAudio();
@@ -127,7 +127,6 @@ export default function AdminPage() {
 
       const t = ctx.currentTime;
 
-      // Nốt 1: E5 (659.25 Hz) - Âm vang mở đầu êm dịu
       const osc1 = ctx.createOscillator();
       const gain1 = ctx.createGain();
       osc1.type = 'sine';
@@ -142,7 +141,6 @@ export default function AdminPage() {
       osc1.start(t);
       osc1.stop(t + 0.35);
 
-      // Nốt 2: B5 (987.77 Hz) - Âm ngân cao thanh tao
       const osc2 = ctx.createOscillator();
       const gain2 = ctx.createGain();
       osc2.type = 'sine';
@@ -161,7 +159,6 @@ export default function AdminPage() {
     }
   };
 
-  // Mở khóa âm thanh ngay khi người dùng click chuột bất kỳ đâu
   useEffect(() => {
     const handleUnlockAudio = () => {
       initAudio();
@@ -187,14 +184,12 @@ export default function AdminPage() {
       initAudio();
     }
 
-    // Nạp trước các ID tin nhắn cũ để không kêu khi vừa tải trang
     supabase.from('messages').select('id').order('id', { ascending: false }).limit(300).then(({ data }) => {
       if (data) {
         data.forEach(m => knownMsgIdsRef.current.add(m.id));
       }
     });
 
-    // Kênh Realtime lắng nghe tin nhắn mới tức thời
     const channel = supabase
       .channel('admin_live_chat_channel')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
@@ -212,7 +207,6 @@ export default function AdminPage() {
       })
       .subscribe();
 
-    // Polling ngầm 3 giây quét tin nhắn đề phòng mạng mất kết nối socket
     const pollInterval = setInterval(() => {
       if (selectedChatUserRef.current) {
         loadConversation(selectedChatUserRef.current, false);
@@ -461,7 +455,6 @@ export default function AdminPage() {
     }
   };
 
-  // Xử lý gọi API Gia Hạn Thời Gian
   const handleExecuteExtendTime = async () => {
     if (!extendModalData) return;
     setExtendingLoading(true);
@@ -495,7 +488,6 @@ export default function AdminPage() {
     }
   };
 
-  // Bật / Tắt Tạm ngưng và Đóng băng thời gian
   const handleToggleToolStatus = async (tool: any) => {
     const nextStatus = tool.status === 'Đang hoạt động' ? 'Tạm ngưng' : 'Đang hoạt động';
     const confirmMsg = nextStatus === 'Tạm ngưng' 
@@ -718,7 +710,7 @@ export default function AdminPage() {
   const handleSaveUserPassword = async () => { 
     if (!editUserPass || !editUserPass.newPass.trim()) return alert('Vui lòng nhập mật khẩu mới!'); 
     const { error } = await supabase.from('users').update({ password: editUserPass.newPass.trim() }).eq('username', editUserPass.username); 
-    if (error) alert('Lỗi đổi mật khẩu: ' + error.message);
+    if (error) alert('Lỗi đổi mật khẩu: ' + error.message); 
     else { 
       setUsers(prev => prev.map(user => user.username === editUserPass.username ? { ...user, password: editUserPass.newPass.trim() } : user));
       setEditUserPass(null); 
@@ -735,7 +727,6 @@ export default function AdminPage() {
     const changeAmt = Number(adjustBal.amount); 
     const next = isAddMode ? cur + changeAmt : Math.max(0, cur - changeAmt);
     
-    // Cập nhật cả total_deposited của user
     const curDeposited = Number(targetUser.total_deposited) || 0;
     const nextDeposited = isAddMode ? curDeposited + changeAmt : Math.max(0, curDeposited - changeAmt);
 
@@ -832,6 +823,7 @@ export default function AdminPage() {
   };
   
   const handleDeleteFeedback = async (id: number) => { 
+    if (!confirm('Xóa đóng góp này?')) return; 
     const { error } = await supabase.from('feedbacks').delete().eq('id', id); 
     if (!error) setFeedbacks(prev => prev.filter(f => f.id !== id)); 
   };
@@ -864,7 +856,6 @@ export default function AdminPage() {
     else { setCurrentActiveNotice({ text: noticeForm.text, active: noticeForm.active }); alert('Đã lưu và cập nhật thông báo thành công!'); }
   };
 
-  // Lưu cấu hình Sự Kiện Nạp Tiền
   const handleSaveBonusEvent = async () => {
     const { error } = await supabase.from('settings').upsert({ 
       id: 1, 
@@ -911,10 +902,19 @@ export default function AdminPage() {
 
   const totalUserBalance = users.reduce((acc, u) => acc + (Number(u.balance) || 0), 0);
 
-  // Phân loại tài khoản Gist còn hạn & hết hạn
   const nowSec = Math.floor(nowTime / 1000);
   const activeGistAccounts = gistAccounts.filter(acc => !acc.expire_timestamp || acc.expire_timestamp === 0 || acc.expire_timestamp > nowSec);
   const expiredGistAccounts = gistAccounts.filter(acc => acc.expire_timestamp && acc.expire_timestamp > 0 && acc.expire_timestamp <= nowSec);
+
+  // Sắp xếp danh sách Tool: Ưu tiên "Đang hoạt động" lên đầu, "Tạm ngưng" xuống dưới
+  const sortedTools = [...tools].sort((a, b) => {
+    const aActive = a.status === 'Đang hoạt động' ? 1 : 0;
+    const bActive = b.status === 'Đang hoạt động' ? 1 : 0;
+    if (aActive !== bActive) {
+      return bActive - aActive; // Đang hoạt động đứng trước
+    }
+    return (b.id || 0) - (a.id || 0);
+  });
 
   return (
     <main className="min-h-screen bg-[#05070D] text-slate-200 font-sans flex flex-col pb-20 relative">
@@ -1637,22 +1637,28 @@ export default function AdminPage() {
               </button>
             </form>
             
-            {/* DANH SÁCH TOOL VỚI NÚT SỬA & TẠM NGƯNG ĐÓNG BĂNG */}
+            {/* DANH SÁCH TOOL ĐÃ SẮP XẾP ƯU TIÊN HOẠT ĐỘNG TRÊN ĐẦU & CHANGELOG TỐI ĐA 5 DÒNG */}
             <div className="lg:col-span-2 bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                <h3 className="text-xs font-bold text-white uppercase">DANH SÁCH TOOL ĐANG BÁN ({tools.length})</h3>
-                <span className="text-[11px] text-slate-400">Bấm nút "Tạm ngưng" để đóng băng & tự động bù giờ cho khách</span>
+                <h3 className="text-xs font-bold text-white uppercase">DANH SÁCH TOOL ĐANG BÁN ({sortedTools.length})</h3>
+                <span className="text-[11px] text-slate-400">Ưu tiên Tool hoạt động ở trên • Bấm "Tạm ngưng" để đóng băng giờ</span>
               </div>
 
               <div className="space-y-3">
-                {tools.length === 0 ? (
+                {sortedTools.length === 0 ? (
                   <p className="text-xs text-slate-500">Chưa có sản phẩm Tool nào.</p>
                 ) : (
-                  tools.map((t) => {
+                  sortedTools.map((t) => {
                     const isPaused = t.status === 'Tạm ngưng';
+                    
+                    // Xử lý đếm và cắt 5 dòng changelog
+                    const changelogLines = (t.changelog || '').split('\n');
+                    const hasMoreLines = changelogLines.length > 5;
+                    const isExpanded = expandedChangelogs[t.id] === true;
+                    const displayChangelog = isExpanded ? t.changelog : changelogLines.slice(0, 5).join('\n');
 
                     return (
-                      <div key={t.id} className={`bg-[#05080E] border p-4 rounded-2xl space-y-3 transition duration-300 ${isPaused ? 'border-rose-500/40 bg-rose-500/[0.02]' : 'border-slate-800 hover:border-cyan-500/40'}`}>
+                      <div key={t.id} className={`bg-[#05080E] border p-4 rounded-2xl space-y-3 transition duration-300 ${isPaused ? 'border-rose-500/40 bg-rose-500/[0.02] opacity-90' : 'border-slate-800 hover:border-cyan-500/40'}`}>
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex items-center gap-4 flex-1">
                             {t.image && (
@@ -1738,13 +1744,30 @@ export default function AdminPage() {
                           </div>
                         </div>
 
+                        {/* KHUNG NHẬT KÝ CẬP NHẬT TỐI ĐA 5 DÒNG GỌN GÀNG */}
                         {t.changelog ? (
                           <div className="text-[11px] text-slate-300 bg-[#0B1019] border border-slate-800/80 p-2.5 rounded-xl space-y-1">
-                            <span className="text-[10px] font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1">
-                              <Sparkles className="w-3 h-3" /> Nhật ký cập nhật:
-                            </span>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1">
+                                <Sparkles className="w-3 h-3" /> Nhật ký cập nhật:
+                              </span>
+                              {hasMoreLines && (
+                                <button
+                                  onClick={() => setExpandedChangelogs(prev => ({ ...prev, [t.id]: !prev[t.id] }))}
+                                  className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-0.5 cursor-pointer"
+                                >
+                                  {isExpanded ? (
+                                    <>Thu gọn <ChevronUp className="w-3 h-3" /></>
+                                  ) : (
+                                    <>Xem thêm ({changelogLines.length} dòng) <ChevronDown className="w-3 h-3" /></>
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                            
                             <p className="whitespace-pre-line leading-relaxed font-mono text-slate-400 pl-1 text-[11px]">
-                              {t.changelog}
+                              {displayChangelog}
+                              {!isExpanded && hasMoreLines && '\n...'}
                             </p>
                           </div>
                         ) : (
