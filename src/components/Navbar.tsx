@@ -47,6 +47,8 @@ export default function Navbar() {
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [rePasswordInput, setRePasswordInput] = useState('');
+  const [showAuthPass, setShowAuthPass] = useState(false);
+  const [showAuthRePass, setShowAuthRePass] = useState(false);
   const [authMsg, setAuthMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -658,11 +660,26 @@ export default function Navbar() {
     setTimeout(() => setCopiedField(null), 1800);
   };
 
+  // Tính điểm độ mạnh mật khẩu khi đăng ký (0 - 100)
+  const getPasswordStrength = () => {
+    if (!passwordInput) return 0;
+    let score = 0;
+    if (passwordInput.length >= 6) score += 25;
+    if (/[A-Z]/.test(passwordInput)) score += 25;
+    if (/[0-9]/.test(passwordInput)) score += 25;
+    if (/[^A-Za-z0-9]/.test(passwordInput)) score += 25;
+    return score;
+  };
+
+  const authPassStrength = getPasswordStrength();
+
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthMsg(null);
 
-    if (!usernameInput.trim() || !passwordInput.trim()) {
+    const cleanUser = usernameInput.trim().toLowerCase();
+
+    if (!cleanUser || !passwordInput.trim()) {
       setAuthMsg({ type: 'error', text: 'Vui lòng điền đầy đủ tài khoản và mật khẩu!' });
       return;
     }
@@ -670,9 +687,27 @@ export default function Navbar() {
     setLoading(true);
 
     if (authMode === 'register') {
+      if (cleanUser.length < 4) {
+        setLoading(false);
+        setAuthMsg({ type: 'error', text: 'Tên tài khoản phải từ 4 ký tự trở lên!' });
+        return;
+      }
+
+      if (!/^[a-z0-9_]+$/.test(cleanUser)) {
+        setLoading(false);
+        setAuthMsg({ type: 'error', text: 'Tên tài khoản chỉ được chứa chữ cái không dấu, số và dấu gạch dưới (_)' });
+        return;
+      }
+
       if (!emailInput.trim() || !emailInput.includes('@')) {
         setLoading(false);
         setAuthMsg({ type: 'error', text: 'Vui lòng nhập địa chỉ Gmail hợp lệ!' });
+        return;
+      }
+
+      if (passwordInput.length < 6) {
+        setLoading(false);
+        setAuthMsg({ type: 'error', text: 'Mật khẩu phải từ 6 ký tự trở lên!' });
         return;
       }
 
@@ -685,7 +720,7 @@ export default function Navbar() {
       const { data: existingUser } = await supabase
         .from('users')
         .select('username')
-        .eq('username', usernameInput.trim())
+        .eq('username', cleanUser)
         .single();
 
       if (existingUser) {
@@ -709,7 +744,7 @@ export default function Navbar() {
       const { data: newUser, error } = await supabase
         .from('users')
         .insert([{ 
-          username: usernameInput.trim(), 
+          username: cleanUser, 
           email: emailInput.trim().toLowerCase(), 
           is_verified: false, 
           is_exempt: false, 
@@ -746,7 +781,7 @@ export default function Navbar() {
       const { data: user, error } = await supabase
         .from('users')
         .select('id, username, email, password, balance, is_verified, is_exempt, isBanned, total_deposited')
-        .eq('username', usernameInput.trim())
+        .eq('username', cleanUser)
         .eq('password', passwordInput)
         .single();
 
@@ -913,6 +948,8 @@ export default function Navbar() {
     setEmailInput('');
     setPasswordInput('');
     setRePasswordInput('');
+    setShowAuthPass(false);
+    setShowAuthRePass(false);
     setAuthMsg(null);
   };
 
@@ -1565,7 +1602,6 @@ export default function Navbar() {
               <X className="w-5 h-5" />
             </button>
 
-            {/* Header Modal VIP */}
             <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-5">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500/20 via-rose-500/20 to-purple-500/20 border border-amber-400/50 flex items-center justify-center text-amber-300 shrink-0 shadow-[0_0_20px_rgba(251,191,36,0.3)]">
                 <Crown className="w-6 h-6 animate-pulse" />
@@ -1578,7 +1614,6 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Grid Thẻ VIP Từng Cấp */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {VIP_TIERS_DATA.map((tier) => {
                 const TierIcon = tier.icon;
@@ -1630,7 +1665,6 @@ export default function Navbar() {
               })}
             </div>
 
-            {/* Nút hành động nạp tiền */}
             <div className="bg-[#05080E] border border-slate-800 p-4.5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-inner">
               <div>
                 <span className="text-xs font-bold text-white block">Tích lũy nạp hiện tại của bạn: <b className="text-emerald-400 font-mono font-black">{totalDeposited.toLocaleString('vi-VN')} VNĐ</b></span>
@@ -1652,320 +1686,164 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* ================= MODAL LỊCH SỬ GIAO DỊCH ================= */}
-      {showHistoryModal && currentUser && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
-            <button onClick={() => setShowHistoryModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
-            
-            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-400/50 flex items-center justify-center text-emerald-300 shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                <History className="w-6 h-6 animate-pulse" />
-              </div>
-              <div>
-                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block">NHẬT KÝ TÀI CHÍNH</span>
-                <h3 className="text-lg font-black text-white tracking-wide">LỊCH SỬ GIAO DỊCH</h3>
-              </div>
-            </div>
-
-            {loadingHistory ? (
-              <div className="flex items-center justify-center gap-2 py-12 text-xs text-slate-400">
-                <Loader2 className="w-5 h-5 animate-spin text-cyan-400" /> Đang tải lịch sử giao dịch...
-              </div>
-            ) : (
-              <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
-                {userTransactions.length === 0 ? (
-                  <div className="bg-[#05080E] border border-slate-800/80 p-8 rounded-2xl text-center text-xs text-slate-500">
-                    Chưa có lịch sử biến động số dư.
-                  </div>
-                ) : (
-                  userTransactions.map((log: any, idx: number) => {
-                    const isBonus = log.type === 'BONUS';
-                    const isExtend = log.type === 'EXTEND';
-                    const isPositive = log.amount > 0;
-                    const isCheckin = log.type === 'CHECKIN';
-                    const isBuy = log.type === 'BUY' || log.amount < 0;
-
-                    return (
-                      <div 
-                        key={idx} 
-                        className={`bg-[#05080E] border p-4 rounded-2xl flex items-center justify-between gap-3 text-xs transition duration-300 hover:-translate-y-0.5 ${
-                          isBonus 
-                            ? 'border-amber-500/40 bg-amber-500/5 hover:border-amber-400' 
-                            : isExtend
-                            ? 'border-cyan-500/40 bg-cyan-500/5 hover:border-cyan-400'
-                            : isBuy 
-                            ? 'border-slate-800/90 hover:border-rose-500/40 hover:shadow-[0_0_15px_rgba(244,63,94,0.12)]' 
-                            : isCheckin 
-                            ? 'border-slate-800/90 hover:border-cyan-500/40 hover:shadow-[0_0_15px_rgba(6,182,212,0.12)]'
-                            : 'border-slate-800/90 hover:border-emerald-500/40 hover:shadow-[0_0_15px_rgba(16,185,129,0.12)]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
-                            isBonus
-                              ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-                              : isExtend
-                              ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
-                              : isBuy 
-                              ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' 
-                              : isCheckin 
-                              ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
-                              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                          }`}>
-                            {isBonus ? <Gift className="w-5 h-5" /> : isExtend ? <Hourglass className="w-5 h-5" /> : isBuy ? <ShoppingBag className="w-5 h-5" /> : isCheckin ? <Gift className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
-                          </div>
-
-                          <div className="space-y-0.5 min-w-0">
-                            <span className="font-extrabold text-slate-100 block truncate text-xs sm:text-sm">
-                              {log.title}
-                            </span>
-                            <span className="text-[10px] font-mono font-bold text-slate-500 block">
-                              {log.created_at ? new Date(log.created_at).toLocaleString('vi-VN') : ''}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="text-right shrink-0">
-                          <span className={`text-sm font-mono font-black block ${
-                            isBonus
-                              ? 'text-amber-300'
-                              : isExtend
-                              ? 'text-cyan-300'
-                              : isPositive 
-                              ? 'text-emerald-400' 
-                              : 'text-rose-400'
-                          }`}>
-                            {isExtend ? '0đ' : `${isPositive ? '+' : ''}${(log.amount || 0).toLocaleString('vi-VN')}đ`}
-                          </span>
-                          <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider block mt-0.5">
-                            {log.status || 'Thành công'}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ================= MODAL TOOL ĐÃ MUA ================= */}
-      {showPurchasedToolsModal && currentUser && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
-            <button onClick={() => setShowPurchasedToolsModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
-            
-            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
-                <Wrench className="w-6 h-6 animate-pulse" />
-              </div>
-              <div>
-                <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">QUẢN LÝ BẢN QUYỀN</span>
-                <h3 className="text-lg font-black text-white tracking-wide">DANH SÁCH TOOL ĐÃ MUA</h3>
-              </div>
-            </div>
-
-            {loadingPurchasedTools ? (
-              <div className="flex items-center justify-center gap-2 py-12 text-xs text-slate-400">
-                <Loader2 className="w-5 h-5 animate-spin text-cyan-400" /> Đang kiểm tra dữ liệu bản quyền...
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {!userGistData || userGistData.length === 0 ? (
-                  <div className="bg-[#05080E] border border-slate-800/80 p-8 rounded-2xl text-center text-xs text-slate-400 space-y-2">
-                    <p className="font-bold text-slate-300 text-sm">Bạn chưa sở hữu bản quyền Tool nào.</p>
-                    <p className="text-slate-500">Hãy truy cập mục "TOOL AUTO" để chọn mua và kích hoạt ứng dụng.</p>
-                  </div>
-                ) : (
-                  userGistData.map((toolAcc: any, idx: number) => {
-                    const isLifetime = !toolAcc.expire_timestamp || toolAcc.expire_timestamp === 0;
-                    const isShowPass = showToolPasswords[toolAcc.accountKey] || false;
-
-                    return (
-                      <div key={idx} className="bg-[#05080E] border border-slate-800/90 p-5 rounded-2xl space-y-4 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.12)] hover:-translate-y-0.5 transition duration-300">
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3.5">
-                          <div>
-                            <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">BẢN QUYỀN HOẠT ĐỘNG</span>
-                            <h4 className="font-black text-white text-base mt-0.5">{toolAcc.toolName}</h4>
-                          </div>
-                          <div>
-                            {renderRemainingTime(toolAcc.expire_timestamp)}
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#0B1019] border border-slate-800/80 p-3.5 rounded-xl text-xs">
-                          <div className="space-y-1">
-                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Tài khoản tool</span>
-                            <div className="flex items-center justify-between bg-[#05080E] border border-slate-800/90 focus-within:border-cyan-400/60 px-3 py-2 rounded-lg font-mono font-bold text-cyan-300 transition">
-                              <span className="truncate pr-2">{toolAcc.appUsername}</span>
-                              <button 
-                                onClick={() => copyTextToClipboard(toolAcc.appUsername, `user_${idx}`)} 
-                                className="text-slate-400 hover:text-cyan-400 transition cursor-pointer flex items-center gap-1" 
-                                title="Sao chép tài khoản"
-                              >
-                                {copiedKey === `user_${idx}` ? <span className="text-[10px] text-emerald-400 font-sans">Đã chép!</span> : <Copy className="w-3.5 h-3.5" />}
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Mật khẩu tool</span>
-                            <div className="flex items-center justify-between bg-[#05080E] border border-slate-800/90 focus-within:border-cyan-400/60 px-3 py-2 rounded-lg font-mono font-bold text-slate-200 transition">
-                              <span>{isShowPass ? toolAcc.appPassword : '••••••••'}</span>
-                              <div className="flex items-center gap-2">
-                                <button 
-                                  onClick={() => setShowToolPasswords(prev => ({ ...prev, [toolAcc.accountKey]: !prev[toolAcc.accountKey] }))} 
-                                  className="text-slate-400 hover:text-white transition cursor-pointer" 
-                                  title={isShowPass ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                                >
-                                  {isShowPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                                </button>
-                                <button 
-                                  onClick={() => copyTextToClipboard(toolAcc.appPassword, `pass_${idx}`)} 
-                                  className="text-slate-400 hover:text-cyan-400 transition cursor-pointer flex items-center gap-1" 
-                                  title="Sao chép mật khẩu"
-                                >
-                                  {copiedKey === `pass_${idx}` ? <span className="text-[10px] text-emerald-400 font-sans">Đã chép!</span> : <Copy className="w-3.5 h-3.5" />}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between gap-3 pt-1">
-                          {!isLifetime ? (
-                            <button
-                              onClick={() => handleOpenRenewModal(toolAcc.toolCode)}
-                              className="bg-amber-500/10 border border-amber-500/40 text-amber-400 font-black px-4 py-2.5 rounded-xl text-xs transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-sm hover:scale-[1.03] hover:bg-amber-500/25 hover:border-amber-400 hover:text-amber-300 hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]"
-                            >
-                              <RefreshCw className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '10s' }} /> GIA HẠN THỜI HẠN
-                            </button>
-                          ) : (
-                            <div className="text-[11px] text-slate-500 font-bold italic flex items-center gap-1">
-                              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" /> Sở hữu vĩnh viễn (Không cần gia hạn)
-                            </div>
-                          )}
-
-                          {toolAcc.downloadLink && (
-                            <a 
-                              href={toolAcc.downloadLink} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-black px-4 py-2.5 rounded-xl text-xs transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-sm hover:scale-[1.03] hover:bg-cyan-500/35 hover:border-cyan-300 hover:text-white hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]"
-                            >
-                              <Download className="w-3.5 h-3.5 text-cyan-400" /> Tải Tool về máy
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ================= MODAL ĐIỂM DANH ================= */}
-      {checkInModalShow && currentUser && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-md rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)]">
-            <button onClick={() => setCheckInModalShow(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
-            
-            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
-                <CalendarCheck className="w-6 h-6 animate-pulse" />
-              </div>
-              <div>
-                <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">ƯU ĐÃI THÀNH VIÊN</span>
-                <h3 className="text-lg font-black text-white tracking-wide">ĐIỂM DANH MỖI NGÀY</h3>
-              </div>
-            </div>
-
-            <div className="bg-[#05080E] border border-slate-800/90 p-6 rounded-2xl flex flex-col items-center space-y-4 text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-2 border-cyan-400 rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(6,182,212,0.4)] animate-pulse">
-                <Gift className="w-10 h-10 text-cyan-300" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="text-sm font-bold text-slate-300 uppercase tracking-wider">
-                  Phần thưởng điểm danh hôm nay
-                </h4>
-                <p className="text-3xl font-black text-emerald-400 font-mono tracking-tight">
-                  +1.000 VNĐ
-                </p>
-              </div>
-            </div>
-
-            {checkInMsg && (
-              <div className={`p-4 rounded-xl text-xs font-bold flex items-start gap-2.5 ${checkInMsg.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'}`}>
-                {checkInMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />}
-                <span className="leading-relaxed">{checkInMsg.text}</span>
-              </div>
-            )}
-
-            <button 
-              disabled={checkInLoading || checkInMsg?.type === 'success' || hasCheckedInToday}
-              onClick={handleDailyCheckIn} 
-              className={`w-full font-black py-4 rounded-2xl text-xs shadow-lg transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${
-                (checkInMsg?.type === 'success' || hasCheckedInToday) 
-                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' 
-                  : 'bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 shadow-[0_0_25px_rgba(6,182,212,0.35)] hover:scale-[1.02]'
-              }`}
-            >
-              {checkInLoading ? (
-                <><Loader2 className="w-4 h-4 animate-spin text-slate-950" /> ĐANG XỬ LÝ HỆ THỐNG...</>
-              ) : (checkInMsg?.type === 'success' || hasCheckedInToday) ? (
-                <><CheckCircle2 className="w-4 h-4" /> ĐÃ ĐIỂM DANH HÔM NAY</>
-              ) : (
-                <><Gift className="w-4 h-4" /> BẤM ĐỂ ĐIỂM DANH NHẬN 1.000đ</>
-              )}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ================= MODAL ĐĂNG NHẬP / ĐĂNG KÝ ================= */}
+      {/* ================= MODAL ĐĂNG NHẬP / ĐĂNG KÝ (THIẾT KẾ MỚI CHUYÊN NGHIỆP CÓ MẮT ẨN HIỆN & ĐỘ MẠNH PASS) ================= */}
       {showAuthModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0D121D] border border-cyan-400/80 w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_30px_rgba(6,182,212,0.25)]">
-            <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl bg-[#06090E] border border-slate-800 cursor-pointer"><X className="w-5 h-5" /></button>
-            <div className="text-center space-y-2"><h2 className="text-xl font-black text-white">{authMode === 'login' ? 'Đăng Nhập Tài Khoản' : 'Tạo Tài Khoản Mới'}</h2></div>
-            {authMsg && <div className={`p-3.5 rounded-xl text-xs font-bold ${authMsg.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'}`}><span>{authMsg.text}</span></div>}
-            <form onSubmit={handleAuthSubmit} className="space-y-4">
-              <div><label className="block text-xs font-bold text-slate-300 mb-1">Tên tài khoản (Username)</label><input type="text" required placeholder="Nhập username..." value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} className="w-full bg-[#06090E] border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-cyan-400 transition" /></div>
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4 animate-fade-in">
+          <div className="bg-[#0B1019] border-2 border-cyan-500/50 w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.25)]">
+            <button 
+              onClick={() => setShowAuthModal(false)} 
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 transition hover:border-cyan-400 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header Modal */}
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 bg-cyan-500/10 border border-cyan-400/50 rounded-2xl flex items-center justify-center mx-auto text-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+                {authMode === 'login' ? <LogIn className="w-6 h-6" /> : <Sparkles className="w-6 h-6 animate-pulse" />}
+              </div>
+              <h2 className="text-xl font-black text-white tracking-wide uppercase mt-1">
+                {authMode === 'login' ? 'ĐĂNG NHẬP TÀI KHOẢN' : 'TẠO TÀI KHOẢN MỚI'}
+              </h2>
+              <p className="text-xs text-slate-400">
+                {authMode === 'login' ? 'Truy cập để quản lý key và sử dụng đầy đủ tiện ích ZTool' : 'Tham gia cộng đồng FiveM Automation uy tín số 1'}
+              </p>
+            </div>
+
+            {/* Thông báo kết quả */}
+            {authMsg && (
+              <div className={`p-3.5 rounded-xl text-xs font-bold flex items-center gap-2 ${authMsg.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'}`}>
+                {authMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                <span>{authMsg.text}</span>
+              </div>
+            )}
+
+            {/* Form thao tác */}
+            <form onSubmit={handleAuthSubmit} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-300 mb-1.5">Tên tài khoản (Username)</label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                  <input 
+                    type="text" 
+                    required 
+                    placeholder="VD: gamer_fivem99" 
+                    value={usernameInput} 
+                    onChange={(e) => setUsernameInput(e.target.value)} 
+                    className="w-full bg-[#05080E] border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-cyan-400 transition font-mono" 
+                  />
+                </div>
+              </div>
               
               {authMode === 'register' && (
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1 flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-cyan-400" /> Địa chỉ Gmail (Mỗi Email chỉ dùng cho 1 tài khoản)
+                  <label className="block font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-cyan-400" /> Địa chỉ Gmail <span className="text-slate-500 font-normal">(để nhận OTP / khôi phục)</span>
                   </label>
-                  <input 
-                    type="email" 
-                    required 
-                    placeholder="example@gmail.com..." 
-                    value={emailInput} 
-                    onChange={(e) => setEmailInput(e.target.value)} 
-                    className="w-full bg-[#06090E] border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-cyan-400 transition" 
-                  />
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                    <input 
+                      type="email" 
+                      required 
+                      placeholder="example@gmail.com..." 
+                      value={emailInput} 
+                      onChange={(e) => setEmailInput(e.target.value)} 
+                      className="w-full bg-[#05080E] border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-cyan-400 transition font-mono" 
+                    />
+                  </div>
                 </div>
               )}
 
-              <div><label className="block text-xs font-bold text-slate-300 mb-1">Mật khẩu</label><input type="password" required placeholder="Nhập mật khẩu..." value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full bg-[#06090E] border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-cyan-400 transition" /></div>
-              {authMode === 'register' && <div><label className="block text-xs font-bold text-slate-300 mb-1">Nhập lại mật khẩu</label><input type="password" required placeholder="Xác nhận mật khẩu..." value={rePasswordInput} onChange={(e) => setRePasswordInput(e.target.value)} className="w-full bg-[#06090E] border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-cyan-400 transition" /></div>}
-              <button type="submit" disabled={loading} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition cursor-pointer mt-2 shadow-[0_0_15px_rgba(6,182,212,0.3)]">{loading ? 'ĐANG XỬ LÝ...' : authMode === 'login' ? 'ĐĂNG NHẬP NGAY' : 'TẠO TÀI KHOẢN NGAY'}</button>
+              <div>
+                <label className="block font-bold text-slate-300 mb-1.5">Mật khẩu bảo mật</label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                  <input 
+                    type={showAuthPass ? 'text' : 'password'} 
+                    required 
+                    placeholder="Nhập mật khẩu..." 
+                    value={passwordInput} 
+                    onChange={(e) => setPasswordInput(e.target.value)} 
+                    className="w-full bg-[#05080E] border border-slate-800 rounded-xl pl-10 pr-11 py-3 text-white focus:outline-none focus:border-cyan-400 transition font-mono" 
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowAuthPass(!showAuthPass)}
+                    className="absolute right-3.5 top-3.5 text-slate-500 hover:text-slate-200 transition cursor-pointer"
+                  >
+                    {showAuthPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {/* Thanh đo độ mạnh mật khẩu lúc đăng ký */}
+                {authMode === 'register' && passwordInput && (
+                  <div className="mt-2 space-y-1">
+                    <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-300 ${
+                          authPassStrength <= 25 ? 'bg-rose-500 w-1/4' :
+                          authPassStrength <= 50 ? 'bg-amber-500 w-2/4' :
+                          authPassStrength <= 75 ? 'bg-cyan-400 w-3/4' : 'bg-emerald-400 w-full'
+                        }`}
+                      />
+                    </div>
+                    <div className="flex justify-between text-[10px] text-slate-500">
+                      <span>Độ an toàn:</span>
+                      <span className={authPassStrength >= 75 ? 'text-emerald-400 font-bold' : 'text-slate-400'}>
+                        {authPassStrength <= 25 ? 'Yếu' : authPassStrength <= 50 ? 'Trung bình' : authPassStrength <= 75 ? 'Tốt' : 'Rất an toàn'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {authMode === 'register' && (
+                <div>
+                  <label className="block font-bold text-slate-300 mb-1.5">Xác nhận lại mật khẩu</label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                    <input 
+                      type={showAuthRePass ? 'text' : 'password'} 
+                      required 
+                      placeholder="Xác nhận mật khẩu..." 
+                      value={rePasswordInput} 
+                      onChange={(e) => setRePasswordInput(e.target.value)} 
+                      className="w-full bg-[#05080E] border border-slate-800 rounded-xl pl-10 pr-11 py-3 text-white focus:outline-none focus:border-cyan-400 transition font-mono" 
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowAuthRePass(!showAuthRePass)}
+                      className="absolute right-3.5 top-3.5 text-slate-500 hover:text-slate-200 transition cursor-pointer"
+                    >
+                      {showAuthRePass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <button 
+                type="submit" 
+                disabled={loading} 
+                className="w-full bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 font-black py-3.5 rounded-xl transition cursor-pointer mt-2 shadow-[0_0_20px_rgba(6,182,212,0.35)] flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> ĐANG XỬ LÝ...</>
+                ) : authMode === 'login' ? (
+                  <><LogIn className="w-4 h-4" /> ĐĂNG NHẬP NGAY</>
+                ) : (
+                  <><ShieldCheck className="w-4 h-4" /> HOÀN TẤT ĐĂNG KÝ</>
+                )}
+              </button>
             </form>
-            <div className="text-center pt-2 border-t border-slate-800">
+
+            <div className="text-center pt-2 border-t border-slate-800/80">
               {authMode === 'login' ? (
                 <p className="text-xs text-slate-400">
                   Chưa có tài khoản?{' '}
                   <button 
                     type="button" 
                     onClick={() => { setAuthModalMode('register'); resetForm(); }} 
-                    className="text-cyan-400 font-bold hover:underline cursor-pointer"
+                    className="text-cyan-400 font-bold hover:underline cursor-pointer ml-1"
                   >
                     Đăng ký ngay
                   </button>
@@ -1976,7 +1854,7 @@ export default function Navbar() {
                   <button 
                     type="button" 
                     onClick={() => { setAuthModalMode('login'); resetForm(); }} 
-                    className="text-cyan-400 font-bold hover:underline cursor-pointer"
+                    className="text-cyan-400 font-bold hover:underline cursor-pointer ml-1"
                   >
                     Đăng nhập
                   </button>
