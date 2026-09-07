@@ -95,16 +95,15 @@ export default function Navbar() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // Trạng thái điểm danh từ localStorage
-  const [hasCheckedInToday, setHasCheckedInToday] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-      const savedStatus = localStorage.getItem(`ztool_checkin_${todayStr}`);
-      return savedStatus === 'true';
-    }
-    return false;
-  });
+  // Hàm tiện ích chuẩn hóa ngày ISO theo múi giờ Việt Nam
+  const getTodayVNDate = () => {
+    const d = new Date();
+    const vnTime = new Date(d.getTime() + (7 * 60 + d.getTimezoneOffset()) * 60000);
+    return vnTime.toISOString().slice(0, 10);
+  };
 
+  // Trạng thái điểm danh
+  const [hasCheckedInToday, setHasCheckedInToday] = useState<boolean>(false);
   const [checkInModalShow, setCheckInModalShow] = useState(false);
   const [checkInLoading, setCheckInLoading] = useState(false);
   const [checkInMsg, setCheckInMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -133,7 +132,6 @@ export default function Navbar() {
     loadAllToolsMeta();
     loadRechargeEventSettings();
 
-    // Lắng nghe sự kiện mở modal Tool đã mua từ trang Home / Tools
     const handleOpenPurchasedModalEvent = () => {
       const savedUser = localStorage.getItem('ztool_current_user');
       if (savedUser) {
@@ -143,7 +141,6 @@ export default function Navbar() {
     };
     window.addEventListener('open-purchased-tools', handleOpenPurchasedModalEvent);
 
-    // Lắng nghe thay đổi số dư theo thời gian thực (Realtime)
     const savedUser = localStorage.getItem('ztool_current_user');
     let userChannel: any = null;
 
@@ -175,14 +172,14 @@ export default function Navbar() {
         setShowUserDropdown(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('click', handleClickOutside);
     
     const timer = setInterval(() => setNowTime(Date.now()), 1000);
 
     return () => {
       window.removeEventListener('open-purchased-tools', handleOpenPurchasedModalEvent);
       if (userChannel) supabase.removeChannel(userChannel);
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside);
       clearInterval(timer);
     };
   }, []);
@@ -207,12 +204,8 @@ export default function Navbar() {
   };
 
   const checkTodayCheckInStatus = async (username: string) => {
-    const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-    const localChecked = localStorage.getItem(`ztool_checkin_${todayStr}`);
-    if (localChecked === 'true') {
-      setHasCheckedInToday(true);
-      return;
-    }
+    if (!username) return;
+    const todayStr = getTodayVNDate();
 
     try {
       const { data: lastCheckIn } = await supabase
@@ -224,24 +217,18 @@ export default function Navbar() {
         .limit(1);
 
       if (lastCheckIn && lastCheckIn.length > 0) {
-        const lastCheckInDate = new Date(lastCheckIn[0].created_at).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-        const checkedIn = lastCheckInDate === todayStr;
-        setHasCheckedInToday(checkedIn);
-        if (checkedIn) {
-          localStorage.setItem(`ztool_checkin_${todayStr}`, 'true');
-        } else {
-          localStorage.removeItem(`ztool_checkin_${todayStr}`);
-        }
+        const checkinDate = new Date(lastCheckIn[0].created_at);
+        const checkinVnDate = new Date(checkinDate.getTime() + (7 * 60 + checkinDate.getTimezoneOffset()) * 60000).toISOString().slice(0, 10);
+        const isChecked = checkinVnDate === todayStr;
+        setHasCheckedInToday(isChecked);
       } else {
         setHasCheckedInToday(false);
-        localStorage.removeItem(`ztool_checkin_${todayStr}`);
       }
     } catch (err) {
       console.error('Lỗi kiểm tra trạng thái điểm danh:', err);
     }
   };
 
-  // Đồng bộ tài khoản và lấy số dư mới nhất từ Supabase
   const checkLoggedInUser = async () => {
     const savedUser = localStorage.getItem('ztool_current_user');
     if (!savedUser) {
@@ -249,7 +236,6 @@ export default function Navbar() {
       return;
     }
 
-    // 1. Tạm thời đọc cache để hiển thị 0ms
     const cachedData = localStorage.getItem('ztool_user_data');
     if (cachedData) {
       try {
@@ -262,7 +248,6 @@ export default function Navbar() {
       } catch (e) {}
     }
 
-    // 2. Luôn truy vấn dữ liệu mới nhất từ Supabase
     const { data, error } = await supabase
       .from('users')
       .select('id, username, email, password, balance, is_verified, is_exempt, isBanned, total_deposited')
@@ -283,7 +268,6 @@ export default function Navbar() {
     }
   };
 
-  // Cấu hình Bậc VIP
   const getVipInfo = (amount: number) => {
     if (amount >= 5000000) {
       return {
@@ -469,13 +453,14 @@ export default function Navbar() {
   const NextTierIcon = nextTierData.icon;
 
   const handleDailyCheckIn = async () => {
-    if (!currentUser) return;
+    if (!currentUser?.username || checkInLoading) return;
     setCheckInMsg(null);
     setCheckInLoading(true);
 
     try {
-      const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+      const todayStr = getTodayVNDate();
 
+      // 1. Kiểm tra trực tiếp trên DB để đảm bảo không bị lỗi ngày
       const { data: checkinLogs } = await supabase
         .from('transactions')
         .select('created_at')
@@ -485,19 +470,31 @@ export default function Navbar() {
         .limit(1);
 
       if (checkinLogs && checkinLogs.length > 0) {
-        const lastCheckInDate = new Date(checkinLogs[0].created_at).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-        if (lastCheckInDate === todayStr) {
+        const checkinDate = new Date(checkinLogs[0].created_at);
+        const checkinVnDate = new Date(checkinDate.getTime() + (7 * 60 + checkinDate.getTimezoneOffset()) * 60000).toISOString().slice(0, 10);
+        
+        if (checkinVnDate === todayStr) {
           setHasCheckedInToday(true);
-          localStorage.setItem(`ztool_checkin_${todayStr}`, 'true');
-          setCheckInMsg({ type: 'error', text: 'Bạn đã điểm danh hôm nay rồi. Hãy quay lại vào ngày mai nhé!' });
+          setCheckInMsg({ type: 'error', text: 'Bạn đã điểm danh hôm nay rồi! Hãy quay lại vào ngày mai nhé.' });
           setCheckInLoading(false);
           return;
         }
       }
 
+      // 2. Lấy số dư mới nhất từ DB
+      const { data: userData, error: fetchErr } = await supabase
+        .from('users')
+        .select('balance')
+        .eq('username', currentUser.username)
+        .single();
+
+      if (fetchErr) throw fetchErr;
+
       const rewardAmount = 1000;
-      const newBalance = Number(currentUser.balance || 0) + rewardAmount;
-      
+      const currentBal = Number(userData?.balance) || 0;
+      const newBalance = currentBal + rewardAmount;
+
+      // 3. Cập nhật số dư vào DB
       const { error: updateErr } = await supabase
         .from('users')
         .update({ balance: newBalance })
@@ -505,6 +502,7 @@ export default function Navbar() {
 
       if (updateErr) throw updateErr;
 
+      // 4. Ghi nhận giao dịch
       await supabase.from('transactions').insert([{ 
         username: currentUser.username, 
         type: 'CHECKIN', 
@@ -517,7 +515,6 @@ export default function Navbar() {
       setCurrentUser(updatedUser);
       localStorage.setItem('ztool_user_data', JSON.stringify(updatedUser));
       setHasCheckedInToday(true);
-      localStorage.setItem(`ztool_checkin_${todayStr}`, 'true');
       setCheckInMsg({ type: 'success', text: `Điểm danh thành công! Bạn nhận được +1,000 VNĐ vào ví.` });
 
     } catch (err: any) {
@@ -648,6 +645,24 @@ export default function Navbar() {
     }
   };
 
+  const handleOpenPurchasedTools = () => {
+    setShowUserDropdown(false);
+    const user = currentUser?.username || localStorage.getItem('ztool_current_user');
+    if (user) {
+      loadUserGistData(user);
+    }
+    setShowPurchasedToolsModal(true);
+  };
+
+  const handleOpenHistoryModal = () => {
+    setShowUserDropdown(false);
+    const user = currentUser?.username || localStorage.getItem('ztool_current_user');
+    if (user) {
+      loadUserTransactionsFromCloud(user);
+    }
+    setShowHistoryModal(true);
+  };
+
   const copyTextToClipboard = (text: string, keyName: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(keyName);
@@ -660,7 +675,6 @@ export default function Navbar() {
     setTimeout(() => setCopiedField(null), 1800);
   };
 
-  // Tính điểm độ mạnh mật khẩu khi đăng ký (0 - 100)
   const getPasswordStrength = () => {
     if (!passwordInput) return 0;
     let score = 0;
@@ -934,10 +948,8 @@ export default function Navbar() {
   };
 
   const handleLogout = () => {
-    const todayStr = new Date().toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
     localStorage.removeItem('ztool_current_user');
     localStorage.removeItem('ztool_user_data');
-    localStorage.removeItem(`ztool_checkin_${todayStr}`);
     setCurrentUser(null);
     setShowUserDropdown(false);
     setHasCheckedInToday(false);
@@ -956,7 +968,6 @@ export default function Navbar() {
   const isExempt = currentUser?.is_exempt === true;
   const isVerified = currentUser?.is_verified === true || isExempt;
 
-  // Tính số tiền thực nhận sau khuyến mãi
   const bonusMultiplier = (rechargeEvent.active && rechargeEvent.percent > 0) ? (1 + rechargeEvent.percent / 100) : 1;
   const actualReceivedAmount = Math.round(Number(rechargeAmount) * bonusMultiplier);
 
@@ -1027,6 +1038,7 @@ export default function Navbar() {
                 
                 {/* NÚT ĐIỂM DANH */}
                 <button
+                  type="button"
                   onClick={() => { setCheckInModalShow(true); setCheckInMsg(null); }}
                   className={`relative group overflow-hidden border px-3.5 py-2.5 rounded-xl text-xs flex items-center gap-2 transition-all duration-300 cursor-pointer ${
                     hasCheckedInToday
@@ -1048,6 +1060,7 @@ export default function Navbar() {
 
                 {/* NÚT NẠP TIỀN */}
                 <button
+                  type="button"
                   onClick={() => { loadRechargeEventSettings(); setShowRechargeModal(true); }}
                   className="relative overflow-hidden bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 hover:brightness-110 text-slate-950 font-black px-4 sm:px-5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 shadow-[0_0_20px_rgba(16,185,129,0.35)] hover:shadow-[0_0_25px_rgba(16,185,129,0.55)] transition duration-300 hover:scale-[1.03] cursor-pointer border border-emerald-300/50"
                 >
@@ -1062,7 +1075,11 @@ export default function Navbar() {
                 {/* Ô THÔNG TIN KHÁCH HÀNG */}
                 <div className="relative" ref={dropdownRef}>
                   <button
-                    onClick={() => setShowUserDropdown(!showUserDropdown)}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowUserDropdown(!showUserDropdown);
+                    }}
                     className={`flex items-center gap-3 bg-[#0D131F]/95 p-1.5 pr-3.5 rounded-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer group backdrop-blur-md relative ${vipInfo.border}`}
                   >
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs uppercase shadow-inner relative ${vipInfo.avatarBg}`}>
@@ -1093,45 +1110,41 @@ export default function Navbar() {
                   {showUserDropdown && (
                     <div className="absolute right-0 mt-2.5 w-64 bg-[#0D121D] border border-slate-800 rounded-3xl p-2.5 shadow-2xl space-y-1 z-50 backdrop-blur-2xl">
                       <button 
+                        type="button"
                         onClick={() => { 
                           setShowUserDropdown(false); 
                           setProfileTab('info'); 
                           setShowAccountInfoModal(true); 
                         }} 
-                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer"
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer text-left"
                       >
                         <User className="w-4 h-4 text-cyan-400" /> Thông tin & Cấp bậc VIP
                       </button>
 
                       <button 
-                        onClick={() => { 
-                          setShowUserDropdown(false); 
-                          if (currentUser) loadUserGistData(currentUser.username); 
-                          setShowPurchasedToolsModal(true); 
-                        }} 
-                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer"
+                        type="button"
+                        onClick={handleOpenPurchasedTools} 
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer text-left"
                       >
                         <Wrench className="w-4 h-4 text-cyan-300" /> Tool đã mua
                       </button>
 
                       <button 
-                        onClick={() => { 
-                          setShowUserDropdown(false); 
-                          if (currentUser) loadUserTransactionsFromCloud(currentUser.username); 
-                          setShowHistoryModal(true); 
-                        }} 
-                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer"
+                        type="button"
+                        onClick={handleOpenHistoryModal} 
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer text-left"
                       >
                         <History className="w-4 h-4 text-emerald-400" /> Lịch sử giao dịch
                       </button>
 
                       <div className="border-t border-slate-800/80 my-1" />
                       <button 
+                        type="button"
                         onClick={() => {
                           setShowUserDropdown(false);
                           handleLogout();
                         }} 
-                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-rose-400 hover:bg-rose-500/10 transition cursor-pointer text-left"
                       >
                         <LogOut className="w-4 h-4" /> Đăng xuất
                       </button>
@@ -1686,7 +1699,284 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* ================= MODAL ĐĂNG NHẬP / ĐĂNG KÝ (THIẾT KẾ MỚI CHUYÊN NGHIỆP CÓ MẮT ẨN HIỆN & ĐỘ MẠNH PASS) ================= */}
+      {/* ================= MODAL LỊCH SỬ GIAO DỊCH ================= */}
+      {showHistoryModal && currentUser && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
+            <button onClick={() => setShowHistoryModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
+            
+            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-400/50 flex items-center justify-center text-emerald-300 shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                <History className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block">NHẬT KÝ TÀI CHÍNH</span>
+                <h3 className="text-lg font-black text-white tracking-wide">LỊCH SỬ GIAO DỊCH</h3>
+              </div>
+            </div>
+
+            {loadingHistory ? (
+              <div className="flex items-center justify-center gap-2 py-12 text-xs text-slate-400">
+                <Loader2 className="w-5 h-5 animate-spin text-cyan-400" /> Đang tải lịch sử giao dịch...
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                {userTransactions.length === 0 ? (
+                  <div className="bg-[#05080E] border border-slate-800/80 p-8 rounded-2xl text-center text-xs text-slate-500">
+                    Chưa có lịch sử biến động số dư.
+                  </div>
+                ) : (
+                  userTransactions.map((log: any, idx: number) => {
+                    const isBonus = log.type === 'BONUS';
+                    const isExtend = log.type === 'EXTEND';
+                    const isPositive = log.amount > 0;
+                    const isCheckin = log.type === 'CHECKIN';
+                    const isBuy = log.type === 'BUY' || log.amount < 0;
+
+                    return (
+                      <div 
+                        key={idx} 
+                        className={`bg-[#05080E] border p-4 rounded-2xl flex items-center justify-between gap-3 text-xs transition duration-300 hover:-translate-y-0.5 ${
+                          isBonus 
+                            ? 'border-amber-500/40 bg-amber-500/5 hover:border-amber-400' 
+                            : isExtend
+                            ? 'border-cyan-500/40 bg-cyan-500/5 hover:border-cyan-400'
+                            : isBuy 
+                            ? 'border-slate-800/90 hover:border-rose-500/40 hover:shadow-[0_0_15px_rgba(244,63,94,0.12)]' 
+                            : isCheckin 
+                            ? 'border-slate-800/90 hover:border-cyan-500/40 hover:shadow-[0_0_15px_rgba(6,182,212,0.12)]'
+                            : 'border-slate-800/90 hover:border-emerald-500/40 hover:shadow-[0_0_15px_rgba(16,185,129,0.12)]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                            isBonus
+                              ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                              : isExtend
+                              ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
+                              : isBuy 
+                              ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' 
+                              : isCheckin 
+                              ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
+                              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                          }`}>
+                            {isBonus ? <Gift className="w-5 h-5" /> : isExtend ? <Hourglass className="w-5 h-5" /> : isBuy ? <ShoppingBag className="w-5 h-5" /> : isCheckin ? <Gift className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
+                          </div>
+
+                          <div className="space-y-0.5 min-w-0">
+                            <span className="font-extrabold text-slate-100 block truncate text-xs sm:text-sm">
+                              {log.title}
+                            </span>
+                            <span className="text-[10px] font-mono font-bold text-slate-500 block">
+                              {log.created_at ? new Date(log.created_at).toLocaleString('vi-VN') : ''}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <span className={`text-sm font-mono font-black block ${
+                            isBonus
+                              ? 'text-amber-300'
+                              : isExtend
+                              ? 'text-cyan-300'
+                              : isPositive 
+                              ? 'text-emerald-400' 
+                              : 'text-rose-400'
+                          }`}>
+                            {isExtend ? '0đ' : `${isPositive ? '+' : ''}${(log.amount || 0).toLocaleString('vi-VN')}đ`}
+                          </span>
+                          <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider block mt-0.5">
+                            {log.status || 'Thành công'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL TOOL ĐÃ MUA ================= */}
+      {showPurchasedToolsModal && currentUser && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center px-4">
+          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-2xl rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)] max-h-[85vh] overflow-y-auto">
+            <button onClick={() => setShowPurchasedToolsModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
+            
+            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+                <Wrench className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">QUẢN LÝ BẢN QUYỀN</span>
+                <h3 className="text-lg font-black text-white tracking-wide">DANH SÁCH TOOL ĐÃ MUA</h3>
+              </div>
+            </div>
+
+            {loadingPurchasedTools ? (
+              <div className="flex items-center justify-center gap-2 py-12 text-xs text-slate-400">
+                <Loader2 className="w-5 h-5 animate-spin text-cyan-400" /> Đang kiểm tra dữ liệu bản quyền...
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {!userGistData || userGistData.length === 0 ? (
+                  <div className="bg-[#05080E] border border-slate-800/80 p-8 rounded-2xl text-center text-xs text-slate-400 space-y-2">
+                    <p className="font-bold text-slate-300 text-sm">Bạn chưa sở hữu bản quyền Tool nào.</p>
+                    <p className="text-slate-500">Hãy truy cập mục "TOOL AUTO" để chọn mua và kích hoạt ứng dụng.</p>
+                  </div>
+                ) : (
+                  userGistData.map((toolAcc: any, idx: number) => {
+                    const isLifetime = !toolAcc.expire_timestamp || toolAcc.expire_timestamp === 0;
+                    const isShowPass = showToolPasswords[toolAcc.accountKey] || false;
+
+                    return (
+                      <div key={idx} className="bg-[#05080E] border border-slate-800/90 p-5 rounded-2xl space-y-4 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.12)] hover:-translate-y-0.5 transition duration-300">
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3.5">
+                          <div>
+                            <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">BẢN QUYỀN HOẠT ĐỘNG</span>
+                            <h4 className="font-black text-white text-base mt-0.5">{toolAcc.toolName}</h4>
+                          </div>
+                          <div>
+                            {renderRemainingTime(toolAcc.expire_timestamp)}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#0B1019] border border-slate-800/80 p-3.5 rounded-xl text-xs">
+                          <div className="space-y-1">
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Tài khoản tool</span>
+                            <div className="flex items-center justify-between bg-[#05080E] border border-slate-800/90 focus-within:border-cyan-400/60 px-3 py-2 rounded-lg font-mono font-bold text-cyan-300 transition">
+                              <span className="truncate pr-2">{toolAcc.appUsername}</span>
+                              <button 
+                                onClick={() => copyTextToClipboard(toolAcc.appUsername, `user_${idx}`)} 
+                                className="text-slate-400 hover:text-cyan-400 transition cursor-pointer flex items-center gap-1" 
+                                title="Sao chép tài khoản"
+                              >
+                                {copiedKey === `user_${idx}` ? <span className="text-[10px] text-emerald-400 font-sans">Đã chép!</span> : <Copy className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Mật khẩu tool</span>
+                            <div className="flex items-center justify-between bg-[#05080E] border border-slate-800/90 focus-within:border-cyan-400/60 px-3 py-2 rounded-lg font-mono font-bold text-slate-200 transition">
+                              <span>{isShowPass ? toolAcc.appPassword : '••••••••'}</span>
+                              <div className="flex items-center gap-2">
+                                <button 
+                                  onClick={() => setShowToolPasswords(prev => ({ ...prev, [toolAcc.accountKey]: !prev[toolAcc.accountKey] }))} 
+                                  className="text-slate-400 hover:text-white transition cursor-pointer" 
+                                  title={isShowPass ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                                >
+                                  {isShowPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                </button>
+                                <button 
+                                  onClick={() => copyTextToClipboard(toolAcc.appPassword, `pass_${idx}`)} 
+                                  className="text-slate-400 hover:text-cyan-400 transition cursor-pointer flex items-center gap-1" 
+                                  title="Sao chép mật khẩu"
+                                >
+                                  {copiedKey === `pass_${idx}` ? <span className="text-[10px] text-emerald-400 font-sans">Đã chép!</span> : <Copy className="w-3.5 h-3.5" />}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3 pt-1">
+                          {!isLifetime ? (
+                            <button
+                              onClick={() => handleOpenRenewModal(toolAcc.toolCode)}
+                              className="bg-amber-500/10 border border-amber-500/40 text-amber-400 font-black px-4 py-2.5 rounded-xl text-xs transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-sm hover:scale-[1.03] hover:bg-amber-500/25 hover:border-amber-400 hover:text-amber-300 hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '10s' }} /> GIA HẠN THỜI HẠN
+                            </button>
+                          ) : (
+                            <div className="text-[11px] text-slate-500 font-bold italic flex items-center gap-1">
+                              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" /> Sở hữu vĩnh viễn (Không cần gia hạn)
+                            </div>
+                          )}
+
+                          {toolAcc.downloadLink && (
+                            <a 
+                              href={toolAcc.downloadLink} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-black px-4 py-2.5 rounded-xl text-xs transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-sm hover:scale-[1.03] hover:bg-cyan-500/35 hover:border-cyan-300 hover:text-white hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]"
+                            >
+                              <Download className="w-3.5 h-3.5 text-cyan-400" /> Tải Tool về máy
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL ĐIỂM DANH ================= */}
+      {checkInModalShow && currentUser && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4">
+          <div className="bg-[#0B1019] border-2 border-cyan-400/80 w-full max-w-md rounded-3xl p-6 sm:p-7 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.3)]">
+            <button onClick={() => setCheckInModalShow(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-[#05080E] border border-slate-800 cursor-pointer transition hover:border-cyan-400"><X className="w-5 h-5" /></button>
+            
+            <div className="flex items-center gap-3.5 border-b border-slate-800/80 pb-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+                <CalendarCheck className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">ƯU ĐÃI THÀNH VIÊN</span>
+                <h3 className="text-lg font-black text-white tracking-wide">ĐIỂM DANH MỖI NGÀY</h3>
+              </div>
+            </div>
+
+            <div className="bg-[#05080E] border border-slate-800/90 p-6 rounded-2xl flex flex-col items-center space-y-4 text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-2 border-cyan-400 rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(6,182,212,0.4)] animate-pulse">
+                <Gift className="w-10 h-10 text-cyan-300" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-300 uppercase tracking-wider">
+                  Phần thưởng điểm danh hôm nay
+                </h4>
+                <p className="text-3xl font-black text-emerald-400 font-mono tracking-tight">
+                  +1.000 VNĐ
+                </p>
+              </div>
+            </div>
+
+            {checkInMsg && (
+              <div className={`p-4 rounded-xl text-xs font-bold flex items-start gap-2.5 ${checkInMsg.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'}`}>
+                {checkInMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />}
+                <span className="leading-relaxed">{checkInMsg.text}</span>
+              </div>
+            )}
+
+            <button 
+              type="button"
+              disabled={checkInLoading || hasCheckedInToday}
+              onClick={handleDailyCheckIn} 
+              className={`w-full font-black py-4 rounded-2xl text-xs shadow-lg transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${
+                hasCheckedInToday
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' 
+                  : 'bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 shadow-[0_0_25px_rgba(6,182,212,0.35)] hover:scale-[1.02]'
+              }`}
+            >
+              {checkInLoading ? (
+                <><Loader2 className="w-4 h-4 animate-spin text-slate-950" /> ĐANG XỬ LÝ HỆ THỐNG...</>
+              ) : hasCheckedInToday ? (
+                <><CheckCircle2 className="w-4 h-4 text-emerald-400" /> ĐÃ ĐIỂM DANH HÔM NAY</>
+              ) : (
+                <><Gift className="w-4 h-4" /> BẤM ĐỂ ĐIỂM DANH NHẬN 1.000đ</>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL ĐĂNG NHẬP / ĐĂNG KÝ (THIẾT KẾ MỚI CHUYÊN NGHIỆP) ================= */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-4 animate-fade-in">
           <div className="bg-[#0B1019] border-2 border-cyan-500/50 w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-[0_0_50px_rgba(6,182,212,0.25)]">
