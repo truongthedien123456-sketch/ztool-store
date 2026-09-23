@@ -16,20 +16,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Thiếu tên tài khoản' }, { status: 400 });
     }
 
-    // 1. Kiểm tra trạng thái Tool
+    // 1. Kiểm tra trạng thái Tool (Chặn cả 'Tạm ngưng' và 'Bảo trì ngầm')
     if (toolCode && toolCode.toLowerCase() !== 'chung' && toolCode.toLowerCase() !== 'all') {
       const { data: toolData } = await supabase
         .from('tools')
         .select('status, name')
-        .ilike('toolCode', toolCode)
-        .single();
+        .or(`toolCode.ilike.${toolCode},tool_code.ilike.${toolCode}`)
+        .maybeSingle();
 
-      if (toolData && toolData.status === 'Tạm ngưng') {
-        return NextResponse.json({
-          success: false,
-          code: 'TOOL_MAINTENANCE',
-          message: `Tool [${toolData.name}] đang tạm ngưng bảo trì.`
-        });
+      if (toolData) {
+        const isMaintenance = toolData.status === 'Tạm ngưng' || toolData.status === 'Bảo trì ngầm';
+        if (isMaintenance) {
+          return NextResponse.json({
+            success: false,
+            code: 'TOOL_MAINTENANCE',
+            is_active: false,
+            message: `Tool [${toolData.name}] đang tạm ngưng bảo trì.`
+          });
+        }
       }
     }
 
