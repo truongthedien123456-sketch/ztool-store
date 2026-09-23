@@ -17,16 +17,45 @@ export async function POST(req: Request) {
 
     const now = new Date();
 
-    if (newStatus === 'Tạm ngưng') {
-      // 1. BẮT ĐẦU TẠM NGƯNG: Ghi lại thời điểm bắt đầu đóng băng
+    // =========================================================================
+    // 1. TRẠNG THÁI: BẢO TRÌ NGẦM (Khách thấy Đang hoạt động, Tool bị chặn)
+    // =========================================================================
+    if (newStatus === 'Bảo trì ngầm') {
+      // Giữ nguyên thời gian paused_at nếu trước đó tool đã bị tạm ngưng/bảo trì
+      const pausedAt = currentTool.paused_at || now.toISOString();
+
       await supabase
         .from('tools')
-        .update({ status: 'Tạm ngưng', paused_at: now.toISOString() })
+        .update({ status: 'Bảo trì ngầm', paused_at: pausedAt })
         .eq('id', toolId);
 
-      return NextResponse.json({ success: true, message: 'Đã tạm ngưng tool và đóng băng thời hạn!' });
-    } else {
-      // 2. MỞ LẠI HOẠT ĐỘNG: Tính số giây đã bảo trì và bù giờ tự động cho tất cả key
+      return NextResponse.json({ 
+        success: true, 
+        message: '🟡 Đã bật BẢO TRÌ NGẦM! Trên web vẫn hiện Đang hoạt động nhưng Tool sẽ bị chặn đăng nhập.' 
+      });
+    }
+
+    // =========================================================================
+    // 2. TRẠNG THÁI: TẠM NGƯNG (Đóng băng công khai)
+    // =========================================================================
+    if (newStatus === 'Tạm ngưng') {
+      const pausedAt = currentTool.paused_at || now.toISOString();
+
+      await supabase
+        .from('tools')
+        .update({ status: 'Tạm ngưng', paused_at: pausedAt })
+        .eq('id', toolId);
+
+      return NextResponse.json({ 
+        success: true, 
+        message: '🔴 Đã tạm ngưng tool và đóng băng thời hạn!' 
+      });
+    }
+
+    // =========================================================================
+    // 3. TRẠNG THÁI: ĐANG HOẠT ĐỘNG (Mở lại và tự động bù giờ cho khách)
+    // =========================================================================
+    if (newStatus === 'Đang hoạt động') {
       let addedSeconds = 0;
       if (currentTool.paused_at) {
         const pausedDate = new Date(currentTool.paused_at);
@@ -40,8 +69,11 @@ export async function POST(req: Request) {
         .eq('id', toolId);
 
       // Nếu có thời gian bảo trì và có bù giờ, cộng thêm vào GitHub Gist
-      if (addedSeconds > 0 && toolCode) {
-        const gistRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || ''}/api/get-gist`, { cache: 'no-store' });
+      const activeToolCode = toolCode || currentTool.toolCode || currentTool.tool_code;
+      if (addedSeconds > 0 && activeToolCode) {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
+        const gistRes = await fetch(`${siteUrl}/api/get-gist`, { cache: 'no-store' });
+        
         if (gistRes.ok) {
           const gistJson = await gistRes.json();
           if (gistJson.success && gistJson.data) {
@@ -51,7 +83,7 @@ export async function POST(req: Request) {
             for (const key of Object.keys(accounts)) {
               const acc = accounts[key];
               const accToolCode = (acc.tool_code || acc.toolCode || '').toLowerCase();
-              if (accToolCode === toolCode.toLowerCase() && acc.expire_timestamp > 0) {
+              if (accToolCode === activeToolCode.toLowerCase() && acc.expire_timestamp > 0) {
                 // Cộng thêm đúng số giây đã đóng băng
                 acc.expire_timestamp += addedSeconds;
                 hasChange = true;
@@ -81,9 +113,18 @@ export async function POST(req: Request) {
       const minutes = Math.floor((addedSeconds % 3600) / 60);
       return NextResponse.json({ 
         success: true, 
-        message: `Đã mở lại hoạt động! Tự động bù ${hours}h ${minutes}m cho toàn bộ khách hàng.` 
+        message: `🟢 Đã mở lại hoạt động! Tự động bù ${hours}h ${minutes}m cho toàn bộ khách hàng.` 
       });
     }
+
+    // Mặc định fallback cập nhật trạng thái khác nếu có
+    await supabase
+      .from('tools')
+      .update({ status: newStatus })
+      .eq('id', toolId);
+
+    return NextResponse.json({ success: true, message: `Đã cập nhật trạng thái thành: ${newStatus}` });
+
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
