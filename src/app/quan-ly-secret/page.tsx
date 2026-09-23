@@ -6,7 +6,7 @@ import {
   Lock, User, Key, ShieldCheck, LogOut, Users, 
   Wrench, FolderKanban, MessageSquare, Plus, Trash2, Edit, RefreshCw,
   Ban, CheckCircle, CheckCircle2, CreditCard, KeyRound, Search, DollarSign, Settings,
-  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent, Crown, Gem, Flame, Star, Award, Video, Send, Headset, Volume2, FileText, Check, Gift, Hourglass, AlertTriangle, PauseCircle, PlayCircle, ChevronDown, ChevronUp
+  Upload, Loader2, Eye, EyeOff, History, X, ArrowUpRight, ArrowDownLeft, Clock, Tag, Bell, ShoppingBag, ShieldAlert, Cpu, Activity, TrendingUp, Laptop, Mail, Shield, Sparkles, XCircle, Percent, Crown, Gem, Flame, Star, Award, Video, Send, Headset, Volume2, FileText, Check, Gift, Hourglass, AlertTriangle, PauseCircle, PlayCircle, ChevronDown, ChevronUp, Wrench as WrenchIcon
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -72,7 +72,7 @@ export default function AdminPage() {
   const [exemptLoadingId, setExemptLoadingId] = useState<number | null>(null);
   const [deleteEmailLoadingId, setDeleteEmailLoadingId] = useState<number | null>(null);
 
-  // Form Tool hỗ trợ đa phiên bản và lịch sử cập nhật
+  // Form Tool hỗ trợ trạng thái 'Bảo trì ngầm'
   const [toolForm, setToolForm] = useState({
     id: 0, name: '', toolCode: '', image: '', status: 'Đang hoạt động',
     priceDay: '', priceWeek: '', priceMonth: '', priceLifetime: '', description: '', downloadLink: '', videoLink: '',
@@ -488,11 +488,21 @@ export default function AdminPage() {
     }
   };
 
-  const handleToggleToolStatus = async (tool: any) => {
-    const nextStatus = tool.status === 'Đang hoạt động' ? 'Tạm ngưng' : 'Đang hoạt động';
-    const confirmMsg = nextStatus === 'Tạm ngưng' 
-      ? `TẠM NGƯNG Tool "${tool.name}"?\n\n• Tool sẽ chặn khách đăng nhập.\n• Toàn bộ thời gian bản quyền của khách sẽ được ĐÓNG BĂNG tự động!`
-      : `MỞ LẠI HOẠT ĐỘNG cho Tool "${tool.name}"?\n\n• Hệ thống sẽ TỰ ĐỘNG BÙ LẠI toàn bộ thời gian đã bảo trì cho tất cả khách hàng.`;
+  // Cập nhật trạng thái Tool hỗ trợ 'Bảo trì ngầm'
+  const handleToggleToolStatus = async (tool: any, specificStatus?: string) => {
+    let nextStatus = specificStatus;
+    if (!nextStatus) {
+      nextStatus = tool.status === 'Đang hoạt động' ? 'Tạm ngưng' : 'Đang hoạt động';
+    }
+
+    let confirmMsg = '';
+    if (nextStatus === 'Tạm ngưng') {
+      confirmMsg = `TẠM NGƯNG Tool "${tool.name}"?\n\n• Tool sẽ chặn đăng nhập & hiện "Tạm ngưng" trên web.\n• Toàn bộ thời gian bản quyền của khách sẽ được ĐÓNG BĂNG!`;
+    } else if (nextStatus === 'Bảo trì ngầm') {
+      confirmMsg = `BẬT BẢO TRÌ NGẦM cho Tool "${tool.name}"?\n\n• Trên giao diện Web VẪN HIỆN "🟢 ĐANG HOẠT ĐỘNG".\n• Nhưng khi khách mở tool sẽ BỊ CHẶN KHÔNG ĐĂNG NHẬP ĐƯỢC!`;
+    } else {
+      confirmMsg = `MỞ LẠI HOẠT ĐỘNG cho Tool "${tool.name}"?\n\n• Tool mở lại bình thường và tự động bù thời gian đã bảo trì cho khách.`;
+    }
 
     if (!confirm(confirmMsg)) return;
 
@@ -509,7 +519,7 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(data.message);
+        alert(data.message || 'Cập nhật trạng thái thành công!');
         loadAllSyncData();
       } else {
         alert('Lỗi: ' + data.message);
@@ -906,12 +916,12 @@ export default function AdminPage() {
   const activeGistAccounts = gistAccounts.filter(acc => !acc.expire_timestamp || acc.expire_timestamp === 0 || acc.expire_timestamp > nowSec);
   const expiredGistAccounts = gistAccounts.filter(acc => acc.expire_timestamp && acc.expire_timestamp > 0 && acc.expire_timestamp <= nowSec);
 
-  // Sắp xếp danh sách Tool: Ưu tiên "Đang hoạt động" lên đầu, "Tạm ngưng" xuống dưới
+  // Sắp xếp danh sách Tool: Ưu tiên "Đang hoạt động" & "Bảo trì ngầm" lên đầu, "Tạm ngưng" xuống dưới
   const sortedTools = [...tools].sort((a, b) => {
-    const aActive = a.status === 'Đang hoạt động' ? 1 : 0;
-    const bActive = b.status === 'Đang hoạt động' ? 1 : 0;
-    if (aActive !== bActive) {
-      return bActive - aActive; // Đang hoạt động đứng trước
+    const aPriority = a.status === 'Đang hoạt động' ? 2 : (a.status === 'Bảo trì ngầm' ? 1 : 0);
+    const bPriority = b.status === 'Đang hoạt động' ? 2 : (b.status === 'Bảo trì ngầm' ? 1 : 0);
+    if (aPriority !== bPriority) {
+      return bPriority - aPriority;
     }
     return (b.id || 0) - (a.id || 0);
   });
@@ -1507,7 +1517,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 4: SẢN PHẨM TOOL */}
+        {/* TAB 4: SẢN PHẨM TOOL (HỖ TRỢ TRẠNG THÁI BẢO TRÌ NGẦM) */}
         {activeTab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSaveTool} className="bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 h-fit shadow-xl">
@@ -1542,20 +1552,21 @@ export default function AdminPage() {
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[11px] text-cyan-400 mb-1 font-bold">Mã Tool (Gist)</label>
-                  <input type="text" required value={toolForm.toolCode} onChange={e => setToolForm({ ...toolForm, toolCode: e.target.value })} className="w-full bg-[#05080E] border border-cyan-500/50 rounded-xl p-2.5 text-xs text-white focus:outline-none font-mono" placeholder="vd: congtruongf17" />
+                  <label className="block text-[11px] text-cyan-400 mb-1 font-bold">Mã Tool (Gist / API)</label>
+                  <input type="text" required value={toolForm.toolCode} onChange={e => setToolForm({ ...toolForm, toolCode: e.target.value })} className="w-full bg-[#05080E] border border-cyan-500/50 rounded-xl p-2.5 text-xs text-white focus:outline-none font-mono" placeholder="vd: caucalq" />
                 </div>
                 <div>
                   <label className="block text-[11px] text-cyan-300 mb-1 font-bold">Phiên bản hiện tại</label>
-                  <input type="text" value={toolForm.version} onChange={e => setToolForm({ ...toolForm, version: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono font-bold" placeholder="vd: v2.0 hoặc v1.8" />
+                  <input type="text" value={toolForm.version} onChange={e => setToolForm({ ...toolForm, version: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono font-bold" placeholder="vd: v3.0" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1 font-bold">Trạng Thái</label>
+                <label className="block text-[11px] text-slate-400 mb-1 font-bold">Trạng Thái Hệ Thống</label>
                 <select value={toolForm.status} onChange={e => setToolForm({ ...toolForm, status: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2.5 text-xs text-white">
-                  <option value="Đang hoạt động">Đang hoạt động</option>
-                  <option value="Tạm ngưng">Tạm ngưng</option>
+                  <option value="Đang hoạt động">🟢 Đang hoạt động (Bình thường)</option>
+                  <option value="Bảo trì ngầm">🟡 Bảo trì ngầm (Vẫn hiện Đang hoạt động trên web - Tool chặn vào)</option>
+                  <option value="Tạm ngưng">🔴 Tạm ngưng (Hiện Đóng băng trên web)</option>
                 </select>
               </div>
               
@@ -1581,10 +1592,10 @@ export default function AdminPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <div><label className="block text-[10px] text-slate-400 font-bold">Giá Ngày</label><input type="text" value={toolForm.priceDay} onChange={e => setToolForm({ ...toolForm, priceDay: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white font-mono" placeholder="5000" /></div>
-                <div><label className="block text-[10px] text-slate-400 font-bold">Giá Tuần</label><input type="text" value={toolForm.priceWeek} onChange={e => setToolForm({ ...toolForm, priceWeek: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white font-mono" placeholder="20000" /></div>
-                <div><label className="block text-[10px] text-slate-400 font-bold">Giá Tháng</label><input type="text" value={toolForm.priceMonth} onChange={e => setToolForm({ ...toolForm, priceMonth: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white font-mono" placeholder="50000" /></div>
-                <div><label className="block text-[10px] text-slate-400 font-bold">Giá Vĩnh Viễn</label><input type="text" value={toolForm.priceLifetime} onChange={e => setToolForm({ ...toolForm, priceLifetime: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white font-mono" placeholder="100000" /></div>
+                <div><label className="block text-[10px] text-slate-400 font-bold">Giá Ngày</label><input type="text" value={toolForm.priceDay} onChange={e => setToolForm({ ...toolForm, priceDay: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white font-mono" placeholder="10000" /></div>
+                <div><label className="block text-[10px] text-slate-400 font-bold">Giá Tuần</label><input type="text" value={toolForm.priceWeek} onChange={e => setToolForm({ ...toolForm, priceWeek: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white font-mono" placeholder="50000" /></div>
+                <div><label className="block text-[10px] text-slate-400 font-bold">Giá Tháng</label><input type="text" value={toolForm.priceMonth} onChange={e => setToolForm({ ...toolForm, priceMonth: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white font-mono" placeholder="180000" /></div>
+                <div><label className="block text-[10px] text-slate-400 font-bold">Giá Vĩnh Viễn</label><input type="text" value={toolForm.priceLifetime} onChange={e => setToolForm({ ...toolForm, priceLifetime: e.target.value })} className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-2 text-xs text-white font-mono" placeholder="350000" /></div>
               </div>
 
               <div>
@@ -1601,7 +1612,7 @@ export default function AdminPage() {
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={() => appendChangelogTemplate(toolForm.version || 'v2.0')}
+                      onClick={() => appendChangelogTemplate(toolForm.version || 'v3.0')}
                       className="text-[10px] font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded transition cursor-pointer"
                       title="Chèn khung phiên bản hiện tại"
                     >
@@ -1609,7 +1620,7 @@ export default function AdminPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => appendChangelogTemplate('v1.0 - Bản Cũ')}
+                      onClick={() => appendChangelogTemplate('v2.6 - Bản Cũ')}
                       className="text-[10px] font-bold text-slate-400 bg-slate-800 hover:text-white px-2 py-0.5 rounded transition cursor-pointer"
                       title="Chèn lịch sử bản cũ"
                     >
@@ -1623,7 +1634,7 @@ export default function AdminPage() {
                   onChange={e => setToolForm({ ...toolForm, changelog: e.target.value })} 
                   className="w-full bg-[#05080E] border border-slate-800 rounded-xl p-3 text-xs text-white leading-relaxed font-mono focus:outline-none focus:border-cyan-400" 
                   rows={4} 
-                  placeholder="[v2.0 - Mới nhất]&#10;- Tối ưu tốc độ di chuyển và tự động hóa&#10;- Thêm cơ chế vượt Anticheat mới&#10;&#10;[v1.0 - Bản Cũ]&#10;- Khởi tạo tính năng tự động cơ bản"
+                  placeholder="[v3.0 - Mới nhất]&#10;- Auto chọn cửa sổ lũ quỷ&#10;- Tối ưu nhận diện"
                 />
               </div>
 
@@ -1637,11 +1648,11 @@ export default function AdminPage() {
               </button>
             </form>
             
-            {/* DANH SÁCH TOOL ĐÃ SẮP XẾP ƯU TIÊN HOẠT ĐỘNG TRÊN ĐẦU & CHANGELOG TỐI ĐA 5 DÒNG */}
+            {/* DANH SÁCH TOOL VỚI 3 TRẠNG THÁI */}
             <div className="lg:col-span-2 bg-[#0B1019] border border-slate-800/80 rounded-3xl p-6 space-y-4 shadow-xl">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                <h3 className="text-xs font-bold text-white uppercase">DANH SÁCH TOOL ĐANG BÁN ({sortedTools.length})</h3>
-                <span className="text-[11px] text-slate-400">Ưu tiên Tool hoạt động ở trên • Bấm "Tạm ngưng" để đóng băng giờ</span>
+                <h3 className="text-xs font-bold text-white uppercase">DANH SÁCH TOOL ĐANG QUẢN LÝ ({sortedTools.length})</h3>
+                <span className="text-[11px] text-slate-400">Hỗ trợ chế độ Bảo trì ngầm • Tool bị chặn nhưng Web vẫn xanh</span>
               </div>
 
               <div className="space-y-3">
@@ -1650,15 +1661,19 @@ export default function AdminPage() {
                 ) : (
                   sortedTools.map((t) => {
                     const isPaused = t.status === 'Tạm ngưng';
+                    const isSecretMaintenance = t.status === 'Bảo trì ngầm';
                     
-                    // Xử lý đếm và cắt 5 dòng changelog
                     const changelogLines = (t.changelog || '').split('\n');
                     const hasMoreLines = changelogLines.length > 5;
                     const isExpanded = expandedChangelogs[t.id] === true;
                     const displayChangelog = isExpanded ? t.changelog : changelogLines.slice(0, 5).join('\n');
 
                     return (
-                      <div key={t.id} className={`bg-[#05080E] border p-4 rounded-2xl space-y-3 transition duration-300 ${isPaused ? 'border-rose-500/40 bg-rose-500/[0.02] opacity-90' : 'border-slate-800 hover:border-cyan-500/40'}`}>
+                      <div key={t.id} className={`bg-[#05080E] border p-4 rounded-2xl space-y-3 transition duration-300 ${
+                        isPaused ? 'border-rose-500/40 bg-rose-500/[0.02] opacity-90' : 
+                        isSecretMaintenance ? 'border-amber-500/50 bg-amber-500/[0.03]' : 
+                        'border-slate-800 hover:border-cyan-500/40'
+                      }`}>
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex items-center gap-4 flex-1">
                             {t.image && (
@@ -1680,23 +1695,52 @@ export default function AdminPage() {
                                 )}
                               </div>
                               <span className="text-[10px] font-mono text-cyan-300 block mt-0.5">Mã Tool: {t.toolCode}</span>
-                              <span className={`inline-block mt-1 text-[9px] font-extrabold px-2 py-0.5 rounded border ${isPaused ? 'bg-rose-500/20 border-rose-500/40 text-rose-400 animate-pulse' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'}`}>
-                                {isPaused ? '⏸️ TẠM NGƯNG (ĐÓNG BĂNG)' : '🟢 ĐANG HOẠT ĐỘNG'}
-                              </span>
+                              
+                              {/* BADGE TRẠNG THÁI CHI TIẾT TRÊN ADMIN */}
+                              <div className="flex items-center gap-2 mt-1">
+                                {isSecretMaintenance ? (
+                                  <span className="text-[9px] font-extrabold px-2.5 py-0.5 rounded border bg-amber-500/20 border-amber-500/50 text-amber-300 flex items-center gap-1 shadow-sm">
+                                    <WrenchIcon className="w-3 h-3 text-amber-400" /> BẢO TRÌ NGẦM (Khách thấy Đang hoạt động)
+                                  </span>
+                                ) : isPaused ? (
+                                  <span className="text-[9px] font-extrabold px-2.5 py-0.5 rounded border bg-rose-500/20 border-rose-500/40 text-rose-400 animate-pulse">
+                                    ⏸️ TẠM NGƯNG (ĐÓNG BĂNG)
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] font-extrabold px-2.5 py-0.5 rounded border bg-emerald-500/20 border-emerald-500/40 text-emerald-400">
+                                    🟢 ĐANG HOẠT ĐỘNG
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                           
                           <div className="flex items-center gap-2">
-                            {/* NÚT BẬT / TẠM NGƯNG ĐÓNG BĂNG */}
+                            {/* NÚT BẬT / TẮT BẢO TRÌ NGẦM */}
                             <button
                               disabled={togglingToolId === t.id}
-                              onClick={() => handleToggleToolStatus(t)}
+                              onClick={() => handleToggleToolStatus(t, isSecretMaintenance ? 'Đang hoạt động' : 'Bảo trì ngầm')}
+                              className={`px-3 py-1.5 rounded-xl border text-xs font-black transition cursor-pointer flex items-center gap-1.5 shadow-sm ${
+                                isSecretMaintenance
+                                  ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500 hover:text-slate-950'
+                                  : 'bg-amber-500/10 border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-slate-950'
+                              }`}
+                              title="Khách xem web vẫn thấy Đang hoạt động nhưng vào tool sẽ bị chặn"
+                            >
+                              <WrenchIcon className="w-3.5 h-3.5" />
+                              {isSecretMaintenance ? 'Tắt bảo trì ngầm' : 'Bảo trì ngầm'}
+                            </button>
+
+                            {/* NÚT TẠM NGƯNG / MỞ LẠI CÔNG KHAI */}
+                            <button
+                              disabled={togglingToolId === t.id}
+                              onClick={() => handleToggleToolStatus(t, isPaused ? 'Đang hoạt động' : 'Tạm ngưng')}
                               className={`px-3 py-1.5 rounded-xl border text-xs font-black transition cursor-pointer flex items-center gap-1.5 shadow-sm ${
                                 isPaused
                                   ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950'
                                   : 'bg-rose-500/20 border-rose-500/40 text-rose-300 hover:bg-rose-500 hover:text-white'
                               }`}
-                              title={isPaused ? "Mở lại và tự động bù giờ cho khách" : "Tạm ngưng và đóng băng thời gian dùng"}
+                              title={isPaused ? "Mở lại và tự động bù giờ cho khách" : "Tạm ngưng công khai và đóng băng thời gian dùng"}
                             >
                               {togglingToolId === t.id ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1744,7 +1788,7 @@ export default function AdminPage() {
                           </div>
                         </div>
 
-                        {/* KHUNG NHẬT KÝ CẬP NHẬT TỐI ĐA 5 DÒNG GỌN GÀNG */}
+                        {/* KHUNG NHẬT KÝ CẬP NHẬT TỐI ĐA 5 DÒNG */}
                         {t.changelog ? (
                           <div className="text-[11px] text-slate-300 bg-[#0B1019] border border-slate-800/80 p-2.5 rounded-xl space-y-1">
                             <div className="flex items-center justify-between">
